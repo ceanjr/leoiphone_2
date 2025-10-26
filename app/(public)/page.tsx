@@ -1,0 +1,660 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { ProdutoCard } from '@/components/public/produto-card'
+import { BannerCarousel } from '@/components/public/banner-carousel'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Search, Filter, X, LayoutGrid, List } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import type { Produto } from '@/types/produto'
+
+interface Categoria {
+  id: string
+  nome: string
+  slug: string
+  ordem: number
+}
+
+interface Secao {
+  id: string
+  tipo: 'destaques' | 'promocoes' | 'lancamentos'
+  titulo: string
+  subtitulo: string | null
+  produtos: Produto[]
+}
+
+interface ProdutosAgrupados {
+  categoria: Categoria
+  produtos: Produto[]
+}
+
+// Função para ordenar produtos por modelo iPhone
+function ordenarProdutosPorModelo(produtos: Produto[]): Produto[] {
+  return produtos.sort((a, b) => {
+    // Extrair número do modelo do nome (ex: "iPhone 11 Pro" -> 11)
+    const extrairNumero = (nome: string): number => {
+      // Casos especiais
+      if (
+        nome.toLowerCase().includes('iphone x') &&
+        !nome.toLowerCase().includes('xr') &&
+        !nome.toLowerCase().includes('xs')
+      )
+        return 10 // iPhone X = 10
+      if (nome.toLowerCase().includes('iphone xr')) return 10.3 // iPhone XR entre X e 11
+      if (nome.toLowerCase().includes('iphone xs')) return 10.5 // iPhone XS
+
+      // Extrair número padrão (8, 11, 12, 13, 14, 15, 16)
+      const match = nome.match(/iphone\s+(\d+)/i)
+      if (match) return parseInt(match[1])
+
+      // Se não for iPhone, colocar no final
+      return 9999
+    }
+
+    const numA = extrairNumero(a.nome)
+    const numB = extrairNumero(b.nome)
+
+    // Ordenar por número (crescente)
+    if (numA !== numB) return numA - numB
+
+    // Se forem do mesmo modelo, ordenar por nome (alfabético)
+    return a.nome.localeCompare(b.nome)
+  })
+}
+
+export default function HomePage() {
+  const [produtos, setProdutos] = useState<Produto[]>([])
+  const [produtosAgrupados, setProdutosAgrupados] = useState<ProdutosAgrupados[]>([])
+  const [secoes, setSecoes] = useState<Secao[]>([])
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [categoriasExibidas, setCategoriasExibidas] = useState(1) // Quantas categorias mostrar
+  const [todasCategorias, setTodasCategorias] = useState<ProdutosAgrupados[]>([]) // Todos os produtos agrupados
+  const [produtosEmDestaqueIds, setProdutosEmDestaqueIds] = useState<string[]>([]) // IDs dos produtos em destaque nos banners
+
+  // Filtros
+  const [busca, setBusca] = useState('')
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string>('todas')
+  const [condicaoFiltro, setCondicaoFiltro] = useState<string>('todas')
+  const [ordenacao, setOrdenacao] = useState('recentes')
+  const [mostrarFiltros, setMostrarFiltros] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+
+  useEffect(() => {
+    async function loadData() {
+      const supabase = createClient()
+
+      // Carregar categorias
+      const { data: cats } = await supabase
+        .from('categorias')
+        .select('id, nome, slug, ordem')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true })
+
+      if (cats) setCategorias(cats)
+
+      // Carregar IDs de produtos em destaque de banners ativos
+      const { data: bannersAtivos } = await supabase
+        .from('banners')
+        .select('produtos_destaque, tipo')
+        .eq('ativo', true)
+        .eq('tipo', 'produtos_destaque')
+
+      if (bannersAtivos && bannersAtivos.length > 0) {
+        const idsDestaque: string[] = []
+        bannersAtivos.forEach((banner: any) => {
+          if (banner.produtos_destaque && Array.isArray(banner.produtos_destaque)) {
+            banner.produtos_destaque.forEach((p: any) => {
+              if (p.produto_id && !idsDestaque.includes(p.produto_id)) {
+                idsDestaque.push(p.produto_id)
+              }
+            })
+          }
+        })
+        setProdutosEmDestaqueIds(idsDestaque)
+      }
+
+      // Carregar seções de destaque (promoções, lançamentos, etc)
+      const { data: secoesData } = await supabase
+        .from('secoes_home')
+        .select('id, tipo, titulo, subtitulo')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true })
+
+      if (secoesData) {
+        // Para cada seção, buscar seus produtos
+        const secoesComProdutos = await Promise.all(
+          secoesData.map(async (secao: any) => {
+            const { data: produtosSecao } = await supabase
+              .from('produtos_secoes')
+              .select(
+                `
+                ordem,
+                produto:produtos(*)
+              `
+              )
+              .eq('secao_id', secao.id)
+              .order('ordem', { ascending: true })
+
+            const produtos =
+              produtosSecao
+                ?.map((ps: any) => ps.produto)
+                .filter((p: Produto) => p && p.ativo && !p.deleted_at) || []
+
+            return {
+              ...secao,
+              produtos,
+            }
+          })
+        )
+
+        // Filtrar seções que têm produtos
+        setSecoes(secoesComProdutos.filter((s) => s.produtos.length > 0))
+      }
+
+      // Carregar todos os produtos
+      await loadProdutos()
+    }
+
+    loadData()
+  }, [])
+
+  async function loadProdutos() {
+    setLoading(true)
+    setCategoriasExibidas(1)
+
+    const supabase = createClient()
+
+    // Carregar TODOS os produtos (sem paginação)
+    let query = supabase
+      .from('produtos')
+      .select(
+        `
+        *,
+        categoria:categorias(id, nome, slug, ordem)
+      `
+      )
+      .eq('ativo', true)
+      .is('deleted_at', null)
+
+    // Filtrar por categoria
+    if (categoriaFiltro !== 'todas') {
+      query = query.eq('categoria_id', categoriaFiltro)
+    }
+
+    // Filtrar por condição
+    if (condicaoFiltro !== 'todas') {
+      query = query.eq('condicao', condicaoFiltro)
+    }
+
+    const { data, error } = await query
+
+    if (!error && data) {
+      // Filtrar produtos em destaque dos banners
+      let produtosFiltrados = data.filter((p: any) => !produtosEmDestaqueIds.includes(p.id))
+
+      // Filtrar por busca (cliente)
+      if (busca.trim()) {
+        const buscaLower = busca.toLowerCase()
+        produtosFiltrados = produtosFiltrados.filter(
+          (p: any) =>
+            p.nome.toLowerCase().includes(buscaLower) ||
+            p.descricao?.toLowerCase().includes(buscaLower) ||
+            p.codigo_produto?.toLowerCase().includes(buscaLower)
+        )
+      }
+
+      // Aplicar ordenação customizada baseada no filtro
+      let produtosOrdenados: any[] = [...produtosFiltrados]
+
+      switch (ordenacao) {
+        case 'menor_preco':
+          produtosOrdenados.sort((a: any, b: any) => a.preco - b.preco)
+          break
+        case 'maior_preco':
+          produtosOrdenados.sort((a: any, b: any) => b.preco - a.preco)
+          break
+        case 'recentes':
+          produtosOrdenados.sort(
+            (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          )
+          break
+        default:
+          // Ordenação padrão: por modelo iPhone
+          produtosOrdenados = ordenarProdutosPorModelo(produtosOrdenados as Produto[])
+          break
+      }
+
+      // Agrupar por categoria
+      const grupos: { [key: string]: ProdutosAgrupados } = {}
+
+      produtosOrdenados.forEach((produto: any) => {
+        const catId = produto.categoria?.id || 'sem-categoria'
+        if (!grupos[catId]) {
+          grupos[catId] = {
+            categoria: produto.categoria || {
+              id: 'sem-categoria',
+              nome: 'Outros Produtos',
+              slug: 'outros',
+              ordem: 9999,
+            },
+            produtos: [],
+          }
+        }
+        grupos[catId].produtos.push(produto)
+      })
+
+      // Ordenar cada grupo internamente por modelo
+      Object.values(grupos).forEach((grupo) => {
+        grupo.produtos = ordenarProdutosPorModelo(grupo.produtos)
+      })
+
+      // Converter para array e ordenar por ordem da categoria
+      const gruposArray = Object.values(grupos).sort(
+        (a, b) => (a.categoria.ordem || 9999) - (b.categoria.ordem || 9999)
+      )
+
+      // Salvar todos os grupos
+      setTodasCategorias(gruposArray)
+
+      // Calcular quantas categorias são necessárias para mostrar pelo menos 20 produtos
+      const MINIMO_PRODUTOS_INICIAIS = 20
+      let totalProdutos = 0
+      let categoriasIniciais = 0
+
+      for (let i = 0; i < gruposArray.length; i++) {
+        totalProdutos += gruposArray[i].produtos.length
+        categoriasIniciais++
+        if (totalProdutos >= MINIMO_PRODUTOS_INICIAIS) {
+          break
+        }
+      }
+
+      // Exibir categorias suficientes para ter pelo menos 20 produtos
+      setCategoriasExibidas(categoriasIniciais)
+      setProdutosAgrupados(gruposArray.slice(0, categoriasIniciais))
+      setProdutos(produtosOrdenados as Produto[])
+    }
+
+    setLoading(false)
+  }
+
+  const carregarMais = useCallback(() => {
+    setLoadingMore(true)
+
+    // Calcular quantas categorias adicionar para mostrar mais ~20 produtos
+    const PRODUTOS_POR_PAGINA = 20
+    let totalProdutosAdicionais = 0
+    let categoriasAdicionais = 0
+
+    for (let i = categoriasExibidas; i < todasCategorias.length; i++) {
+      totalProdutosAdicionais += todasCategorias[i].produtos.length
+      categoriasAdicionais++
+      if (totalProdutosAdicionais >= PRODUTOS_POR_PAGINA) {
+        break
+      }
+    }
+
+    const novaQuantidade = categoriasExibidas + categoriasAdicionais
+    setCategoriasExibidas(novaQuantidade)
+
+    // Atualizar produtos agrupados com mais categorias
+    setProdutosAgrupados(todasCategorias.slice(0, novaQuantidade))
+
+    setLoadingMore(false)
+  }, [categoriasExibidas, todasCategorias])
+
+  const temMaisProdutos = categoriasExibidas < todasCategorias.length
+
+  useEffect(() => {
+    loadProdutos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoriaFiltro, condicaoFiltro, ordenacao, busca, produtosEmDestaqueIds])
+
+  const limparFiltros = useCallback(() => {
+    setBusca('')
+    setCategoriaFiltro('todas')
+    setCondicaoFiltro('todas')
+    setOrdenacao('recentes')
+  }, [])
+
+  // Normaliza ícones/textos das seções de destaque independentemente de mojibake
+  const getSecaoConfig = (tipo: Secao['tipo']) => {
+    switch (tipo) {
+      case 'destaques':
+        return {
+          icon: '⭐',
+          borderColor: 'var(--brand-yellow)',
+          bgGradient:
+            'linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(234, 179, 8, 0.02) 100%)',
+          badge: 'Destaque',
+          badgeColor: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+        }
+      case 'promocoes':
+        return {
+          icon: '🔥',
+          borderColor: '#ef4444',
+          bgGradient:
+            'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%)',
+          badge: 'Promoção',
+          badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30',
+        }
+      case 'lancamentos':
+        return {
+          icon: '🚀',
+          borderColor: '#3b82f6',
+          bgGradient:
+            'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%)',
+          badge: 'Novo',
+          badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        }
+      default:
+        return {
+          icon: '⭐',
+          borderColor: 'var(--brand-yellow)',
+          bgGradient:
+            'linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(234, 179, 8, 0.02) 100%)',
+          badge: 'Destaque',
+          badgeColor: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+        }
+    }
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Catálogo */}
+      <div className="mb-8">
+        <h1 className="mb-2 text-4xl font-bold text-white">Catálogo Completo</h1>
+        <p className="text-zinc-400">Explore todos os nossos iPhones disponíveis</p>
+      </div>
+
+      {/* Carrossel de Banners - ACIMA DOS FILTROS */}
+      <BannerCarousel />
+
+      {/* Barra de Busca e Filtros */}
+      <div className="mb-8 space-y-4">
+        {/* Busca */}
+        <div className="relative">
+          <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+          <Input
+            type="search"
+            placeholder="Buscar por nome, modelo ou código..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="border-zinc-800 bg-zinc-900 pl-10 text-white placeholder:text-zinc-500"
+          />
+        </div>
+
+        {/* Botão Filtros Mobile */}
+        <div className="flex items-center justify-between lg:hidden">
+          <Button variant="outline" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
+            <Filter className="mr-2 h-4 w-4" />
+            Filtros
+            {mostrarFiltros && <X className="ml-2 h-4 w-4" />}
+          </Button>
+          <Select value={ordenacao} onValueChange={setOrdenacao}>
+            <SelectTrigger className="w-48 border-zinc-800 bg-zinc-900 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="border-zinc-800 bg-zinc-900">
+              <SelectItem value="recentes">Mais Recentes</SelectItem>
+              <SelectItem value="menor_preco">Menor Preço</SelectItem>
+              <SelectItem value="maior_preco">Maior Preço</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Filtros Desktop e Mobile Expandido */}
+        <div
+          className={`grid gap-4 ${
+            mostrarFiltros ? 'grid-cols-1' : 'hidden'
+          } lg:grid lg:grid-cols-4`}
+        >
+          {/* Categoria */}
+          <div>
+            <Label className="mb-2 block text-zinc-300">Categoria</Label>
+            <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
+              <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-zinc-800 bg-zinc-900">
+                <SelectItem value="todas">Todas as Categorias</SelectItem>
+                {categorias.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Condição */}
+          <div>
+            <Label className="mb-2 block text-zinc-300">Condição</Label>
+            <Select value={condicaoFiltro} onValueChange={setCondicaoFiltro}>
+              <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-zinc-800 bg-zinc-900">
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="novo">Novo</SelectItem>
+                <SelectItem value="seminovo">Seminovo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Ordenação Desktop */}
+          <div className="hidden lg:block">
+            <Label className="mb-2 block text-zinc-300">Ordenar por</Label>
+            <Select value={ordenacao} onValueChange={setOrdenacao}>
+              <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="border-zinc-800 bg-zinc-900">
+                <SelectItem value="recentes">Mais Recentes</SelectItem>
+                <SelectItem value="menor_preco">Menor Preço</SelectItem>
+                <SelectItem value="maior_preco">Maior Preço</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Limpar Filtros */}
+          <div className="flex items-end">
+            <Button variant="outline" onClick={limparFiltros} className="w-full">
+              Limpar Filtros
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Seções de Destaque (Promoções, Lançamentos, etc) - ABAIXO DOS FILTROS */}
+      {secoes.map((secao) => {
+        // Definir cores e ícones baseados no tipo
+        const secaoConfig = {
+          destaques: {
+            icon: '⭐',
+            borderColor: 'var(--brand-yellow)',
+            bgGradient:
+              'linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(234, 179, 8, 0.02) 100%)',
+            badge: 'Destaque',
+            badgeColor: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+          },
+          promocoes: {
+            icon: '🔥',
+            borderColor: '#ef4444',
+            bgGradient:
+              'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%)',
+            badge: 'Promoção',
+            badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30',
+          },
+          lancamentos: {
+            icon: '🆕',
+            borderColor: '#3b82f6',
+            bgGradient:
+              'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%)',
+            badge: 'Novo',
+            badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+          },
+        }
+
+        const config = getSecaoConfig(secao.tipo)
+
+        return (
+          <section
+            key={secao.id}
+            className="mb-12 rounded-lg border-2 p-6"
+            style={{
+              borderColor: config.borderColor,
+              background: config.bgGradient,
+            }}
+          >
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{config.icon}</span>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">{secao.titulo}</h2>
+                  {secao.subtitulo && <p className="text-sm text-zinc-400">{secao.subtitulo}</p>}
+                </div>
+              </div>
+              <span
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${config.badgeColor}`}
+              >
+                {config.badge}
+              </span>
+            </div>
+            <div
+              className={
+                viewMode === 'list'
+                  ? 'flex flex-col gap-3'
+                  : 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'
+              }
+            >
+              {secao.produtos.map((produto, index) => (
+                <ProdutoCard
+                  key={produto.id}
+                  produto={produto}
+                  view={viewMode}
+                  priority={index < 3}
+                />
+              ))}
+            </div>
+          </section>
+        )
+      })}
+
+      {/* Resultados e Toggle de Visualização */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-sm text-zinc-400">
+          {loading
+            ? 'Carregando...'
+            : `${produtos.length} produto(s) encontrado(s) • Exibindo ${produtosAgrupados.reduce((acc, g) => acc + g.produtos.length, 0)} produtos`}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="hidden text-xs text-zinc-500 sm:inline">Visualização:</span>
+          <div className="flex rounded-lg border border-zinc-800 bg-zinc-900 p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className={`h-8 w-8 p-0 ${
+                viewMode === 'grid' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className={`h-8 w-8 p-0 ${
+                viewMode === 'list' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'
+              }`}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid de Produtos Agrupados por Categoria */}
+      {loading ? (
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-center">
+            <div className="relative mx-auto h-8 w-8 animate-pulse">
+              <div className="h-full w-full rounded-full border-4 border-zinc-700 opacity-40 brightness-150 grayscale" />
+            </div>
+            <p className="mt-4 text-sm text-zinc-400">Carregando produtos...</p>
+          </div>
+        </div>
+      ) : produtos.length > 0 ? (
+        <div className="space-y-12">
+          {produtosAgrupados.map((grupo) => (
+            <section key={grupo.categoria.id}>
+              {/* Título da Categoria */}
+              <div className="mb-6 border-b border-zinc-800 pb-3">
+                <h2 className="text-2xl font-bold text-white">{grupo.categoria.nome}</h2>
+                <p className="text-sm text-zinc-400">{grupo.produtos.length} produto(s)</p>
+              </div>
+
+              {/* Grid de Produtos da Categoria */}
+              <div
+                className={
+                  viewMode === 'list'
+                    ? 'flex flex-col gap-3'
+                    : 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                }
+              >
+                {grupo.produtos.map((produto, index) => (
+                  <ProdutoCard
+                    key={produto.id}
+                    produto={produto}
+                    view={viewMode}
+                    priority={index < 4}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+
+          {/* Botão Ver Mais */}
+          {temMaisProdutos && (
+            <div className="mt-8 flex justify-center">
+              <Button
+                onClick={carregarMais}
+                disabled={loadingMore}
+                variant="outline"
+                className="min-w-[200px]"
+              >
+                {loadingMore ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" />
+                    Carregando...
+                  </>
+                ) : (
+                  'Ver Mais Produtos'
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-12 text-center">
+          <p className="text-zinc-400">Nenhum produto encontrado com esses filtros.</p>
+          <Button onClick={limparFiltros} variant="outline" className="mt-4">
+            Limpar Filtros
+          </Button>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,26 +1,96 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@layer base {
+  :root {
+    /* === Cores da Marca === */
+    --brand-yellow: #eab308;
+    --brand-black: #000000;
+    --brand-white: #ffffff;
+
+    /* === Cores de Fundo === */
+    --bg-primary: #000000; /* Fundo principal (preto) */
+    --bg-secondary: #09090b; /* Fundo secundário (zinc-950) */
+    --bg-card: #18181b; /* Fundo de cards (zinc-900) */
+
+    /* === Cores de Texto === */
+    --text-primary: #fafafa; /* Texto principal (zinc-50) */
+    --text-secondary: #a1a1aa; /* Texto secundário (zinc-400) */
+    --text-muted: #71717a; /* Texto discreto (zinc-500) */
+
+    /* === Cores de Borda === */
+    --border-primary: #27272a; /* Borda principal (zinc-800) */
+    --border-secondary: #3f3f46; /* Borda secundária (zinc-700) */
+
+    /* === Cores de Estado === */
+    --color-success: #22c55e; /* Verde */
+    --color-error: #ef4444; /* Vermelho */
+    --color-warning: #f59e0b; /* Laranja */
+    --color-info: #3b82f6; /* Azul */
+
+    /* === Tipografia === */
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+
+    /* === Espaçamento === */
+    --radius-sm: 0.375rem; /* 6px */
+    --radius-md: 0.5rem; /* 8px */
+    --radius-lg: 0.75rem; /* 12px */
+    --radius-xl: 1rem; /* 16px */
+
+    /* === Compatibilidade shadcn/ui === */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --primary: 45 93% 47%;
+    --primary-foreground: 0 0% 0%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 45 93% 47%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --card: 0 0% 9.8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --radius: 0.5rem;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: hsl(var(--border));
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
 }
