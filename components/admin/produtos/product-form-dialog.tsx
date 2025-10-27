@@ -284,6 +284,31 @@ export function ProductFormDialog({
                     <section className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
                       <header className="mb-6 flex flex-col gap-1">
                         <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                          Imagens
+                        </span>
+                        <h3 className="text-lg font-semibold text-white">Fotos do produto *</h3>
+                        <p className="text-sm text-zinc-400">
+                          A primeira imagem enviada será usada como foto principal.
+                        </p>
+                      </header>
+
+                      <ImageUpload
+                        images={formData.fotos ?? []}
+                        onChange={(images) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            fotos: images,
+                            foto_principal: images[0] || undefined,
+                          }))
+                        }
+                        maxImages={5}
+                        disabled={isSaving}
+                      />
+                    </section>
+
+                    <section className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
+                      <header className="mb-6 flex flex-col gap-1">
+                        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                           Informações básicas
                         </span>
                         <h3 className="text-lg font-semibold text-white">Detalhes do produto</h3>
@@ -457,31 +482,6 @@ export function ProductFormDialog({
                   </div>
 
                   <div className="space-y-6">
-                    <section className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
-                      <header className="mb-6 flex flex-col gap-1">
-                        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                          Imagens
-                        </span>
-                        <h3 className="text-lg font-semibold text-white">Fotos do produto *</h3>
-                        <p className="text-sm text-zinc-400">
-                          A primeira imagem enviada será usada como foto principal.
-                        </p>
-                      </header>
-
-                      <ImageUpload
-                        images={formData.fotos ?? []}
-                        onChange={(images) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            fotos: images,
-                            foto_principal: images[0] || undefined,
-                          }))
-                        }
-                        maxImages={5}
-                        disabled={isSaving}
-                      />
-                    </section>
-
                     <section className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
                       <header className="mb-6 flex flex-col gap-1">
                         <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">

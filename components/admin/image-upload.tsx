@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Image from 'next/image'
-import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
+import { Upload, X, Loader2, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import imageCompression from 'browser-image-compression'
@@ -127,48 +127,64 @@ export function ImageUpload({ images, onChange, maxImages = 5, disabled = false 
     <div className="space-y-4">
       {/* Preview das imagens */}
       {images.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
           {images.map((url, index) => (
             <div
               key={index}
-              className="group relative aspect-square overflow-hidden rounded-lg border-2 border-zinc-800 bg-zinc-950"
+              className="group relative overflow-hidden rounded-lg border-2 border-zinc-800 bg-zinc-950"
             >
-              <Image
-                src={url}
-                alt={`Foto ${index + 1}`}
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
-                className="object-cover"
-              />
+              {/* Imagem */}
+              <div className="aspect-square relative">
+                <Image
+                  src={url}
+                  alt={`Foto ${index + 1}`}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
+                  className="object-cover"
+                />
+              </div>
 
               {/* Badge "Principal" */}
               {index === 0 && (
-                <div className="absolute left-2 top-2 rounded bg-yellow-500 px-2 py-1 text-xs font-medium text-black">
+                <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded bg-yellow-500 px-2 py-1 text-xs font-medium text-black shadow-lg">
+                  <Star className="h-3 w-3 fill-current" />
                   Principal
                 </div>
               )}
 
-              {/* Overlay com ações */}
-              <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">
+              {/* Botões de ação - Sempre visíveis no mobile, hover no desktop */}
+              <div className="absolute bottom-0 left-0 right-0 flex gap-1 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-2 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                 {index !== 0 && (
                   <Button
                     type="button"
                     size="sm"
                     variant="secondary"
-                    onClick={() => handleSetAsPrincipal(index)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleSetAsPrincipal(index)
+                    }}
                     disabled={disabled || uploading}
+                    className="flex-1 gap-1 text-xs h-8"
+                    title="Definir como principal"
                   >
-                    <ImageIcon className="h-4 w-4" />
+                    <Star className="h-3 w-3" />
+                    Principal
                   </Button>
                 )}
                 <Button
                   type="button"
                   size="sm"
                   variant="destructive"
-                  onClick={() => handleRemoveImage(index)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemoveImage(index)
+                  }}
                   disabled={disabled || uploading}
+                  className={`gap-1 text-xs h-8 ${index === 0 ? 'flex-1' : 'flex-none px-3'}`}
+                  title="Remover imagem"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-3 w-3" />
+                  {index === 0 && 'Remover'}
                 </Button>
               </div>
             </div>
@@ -230,7 +246,7 @@ export function ImageUpload({ images, onChange, maxImages = 5, disabled = false 
       {/* Dica sobre foto principal */}
       {images.length > 0 && (
         <p className="text-xs text-zinc-500">
-          💡 A primeira foto será a foto principal do produto. Clique no ícone de imagem para definir outra foto como principal.
+          💡 A primeira foto será a foto principal do produto. Use o botão &quot;Principal&quot; para reorganizar.
         </p>
       )}
     </div>
