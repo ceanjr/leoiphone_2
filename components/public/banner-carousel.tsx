@@ -106,12 +106,16 @@ export function BannerCarousel() {
     setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length)
   }, [banners.length])
 
-  if (loading || banners.length === 0) {
+  if (loading) {
     return (
       <div className="mb-8">
         <div className="relative h-[300px] w-full rounded-lg bg-zinc-900 md:h-[400px] lg:h-[500px]" />
       </div>
     )
+  }
+
+  if (banners.length === 0) {
+    return null
   }
 
   // Renderizar produtos em destaque

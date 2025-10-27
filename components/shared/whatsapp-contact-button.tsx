@@ -51,8 +51,8 @@ export function WhatsAppContactButton({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md border-none bg-transparent p-0 text-white">
-          <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950/95 shadow-[0_24px_80px_-35px_rgba(0,0,0,0.85)]">
+        <DialogContent className="max-w-md border-zinc-800 bg-zinc-950/95 p-0 text-white shadow-[0_24px_80px_-35px_rgba(0,0,0,0.85)]">
+          <div className="flex flex-col overflow-hidden rounded-2xl">
             <div className="relative border-b border-zinc-800 bg-zinc-950 px-6 py-6">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.12),transparent_55%)] blur-2xl opacity-60" />
               <div className="relative z-10 flex items-start justify-between gap-4">

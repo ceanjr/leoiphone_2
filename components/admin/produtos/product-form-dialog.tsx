@@ -304,7 +304,6 @@ export function ProductFormDialog({
                               setFormData((prev) => ({ ...prev, codigo_produto: event.target.value }))
                             }
                             className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
-                            placeholder="Ex: IPH15PM256"
                           />
                         </div>
 
@@ -320,7 +319,6 @@ export function ProductFormDialog({
                               setFormData((prev) => ({ ...prev, nome: event.target.value }))
                             }
                             className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
-                            placeholder="Ex: iPhone 15 Pro Max 256GB"
                           />
                         </div>
 
@@ -380,7 +378,6 @@ export function ProductFormDialog({
                           }
                           className="min-h-[120px] border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
                           rows={4}
-                          placeholder="Destaque diferenciais, estado de conservação e garantia."
                         />
                       </div>
 
