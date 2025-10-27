@@ -47,6 +47,12 @@ export default function RootLayout({
           href="https://aswejqbtejibrilrblnm.supabase.co"
           crossOrigin="anonymous"
         />
+        {/* Optimization LCP: Preconnect to image storage */}
+        <link
+          rel="preconnect"
+          href="https://aswejqbtejibrilrblnm.supabase.co/storage"
+          crossOrigin="anonymous"
+        />
       </head>
       <body
         className="antialiased"

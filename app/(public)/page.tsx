@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback, Suspense, memo, useMemo } from 'react'
-import dynamic from 'next/dynamic'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ProdutoCard } from '@/components/public/produto-card'
+import { BannerCarousel } from '@/components/public/banner-carousel'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -17,15 +17,6 @@ import { Button } from '@/components/ui/button'
 import { Search, Filter, X, LayoutGrid, List } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Produto } from '@/types/produto'
-
-// Optimization: Lazy load banner carousel (not critical for initial render)
-const BannerCarousel = dynamic(
-  () => import('@/components/public/banner-carousel').then(mod => ({ default: mod.BannerCarousel })),
-  {
-    ssr: false,
-    loading: () => <div className="mb-8 h-[300px] animate-pulse rounded-lg bg-zinc-800 md:h-[400px] lg:h-[500px]" />
-  }
-)
 
 interface Categoria {
   id: string

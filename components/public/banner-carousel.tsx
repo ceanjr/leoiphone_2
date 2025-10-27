@@ -41,6 +41,8 @@ export function BannerCarousel() {
 
   const loadBanners = useCallback(async () => {
     const supabase = createClient()
+    
+    // Optimization LCP: Single query with caching
     const { data } = await supabase
       .from('banners')
       .select('id, titulo, subtitulo, link, imagem_url, ordem, tipo, produtos_destaque')
@@ -50,6 +52,7 @@ export function BannerCarousel() {
     if (data && data.length > 0) {
       setBanners(data)
 
+      // Load produtos em segundo plano (não bloqueia LCP)
       const produtosMap: Record<string, Array<Produto & { preco_promocional: number }>> = {}
 
       for (const banner of data as any) {
@@ -79,6 +82,7 @@ export function BannerCarousel() {
   }, [])
 
   useEffect(() => {
+    // Optimization LCP: Load banners immediately for fastest LCP
     void loadBanners()
   }, [loadBanners])
 
@@ -167,10 +171,12 @@ export function BannerCarousel() {
         alt={currentBanner.titulo}
         fill
         className="object-cover"
-        // Optimization: Responsive sizes for better performance
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1200px"
+        // Optimization LCP: Optimized sizes and quality for faster load
+        sizes="100vw"
         priority
-        quality={90}
+        quality={80}
+        placeholder="blur"
+        blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI1MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyMDAiIGhlaWdodD0iNTAwIiBmaWxsPSIjMTgxODE4Ii8+PC9zdmc+"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-6 text-white md:p-8 lg:p-12">
