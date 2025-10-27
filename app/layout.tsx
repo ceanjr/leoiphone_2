@@ -47,8 +47,6 @@ export default function RootLayout({
           href="https://aswejqbtejibrilrblnm.supabase.co"
           crossOrigin="anonymous"
         />
-        {/* Optimization: Preload critical resources */}
-        <link rel="preload" href="/globals.css" as="style" />
       </head>
       <body
         className="antialiased"

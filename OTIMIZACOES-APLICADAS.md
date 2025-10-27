@@ -46,7 +46,7 @@
 ### 4. **Layout Principal (app/layout.tsx)**
 - ✅ DNS prefetch para Supabase
 - ✅ Preconnect para Supabase com crossOrigin
-- ✅ Preload de globals.css
+- ✅ CSS carregamento otimizado (automático pelo Next.js)
 
 ### 5. **Otimizações Gerais**
 - ✅ Componente de erro do build corrigido (Client Component)
@@ -149,16 +149,15 @@ npm start
 
 1. **Build Warnings**: O warning sobre `/admin/dashboard` usando cookies é esperado e correto (rota dinâmica)
 
-2. **Firebase**: Biblioteca Firebase está no package.json mas não é usada - considere remover se não for necessária:
-   ```bash
-   npm uninstall firebase
-   ```
+2. **Firebase Removido**: ✅ 79 pacotes desnecessários foram removidos, reduzindo significativamente o bundle
 
-3. **Date-fns**: Já está usando date-fns (leve) ✅
+3. **CSS Loading**: Next.js gerencia automaticamente o carregamento de CSS de forma otimizada
 
-4. **Code Splitting**: Implementado para BannerCarousel ✅
+4. **Date-fns**: Já está usando date-fns (leve) ✅
 
-5. **Memoization**: Aplicado em componentes críticos ✅
+5. **Code Splitting**: Implementado para BannerCarousel ✅
+
+6. **Memoization**: Aplicado em componentes críticos ✅
 
 ---
 
