@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, memo, type ChangeEvent, type KeyboardEvent } from 'react'
 import Image from 'next/image'
-import { Edit, Eye, EyeOff, MoreVertical, Save, Search, Trash2 } from 'lucide-react'
+import { Edit, Eye, EyeOff, MoreVertical, Save, Search, Trash2, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ExportImagesDialog } from '@/components/admin/produtos/export-images-dialog'
 
 function parsePriceInput(value: string): number | null {
   const trimmed = value.trim()
@@ -154,6 +155,8 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
   const [busca, setBusca] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>('todas')
   const [savingPriceId, setSavingPriceId] = useState<string | null>(null)
+  const [exportImagesOpen, setExportImagesOpen] = useState(false)
+  const [produtoToExport, setProdutoToExport] = useState<ProdutoComCategoria | null>(null)
   const [savedPrices, setSavedPrices] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {}
     produtos.forEach((produto) => {
@@ -330,6 +333,16 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
     }
   }
 
+  function handleOpenExportImages(produto: ProdutoComCategoria) {
+    setProdutoToExport(produto)
+    setExportImagesOpen(true)
+  }
+
+  function handleCloseExportImages() {
+    setExportImagesOpen(false)
+    setProdutoToExport(null)
+  }
+
   if (produtos.length === 0) {
     return (
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8 text-center md:p-12">
@@ -460,6 +473,16 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                         >
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={(event) => {
+                            event.preventDefault()
+                            handleOpenExportImages(produto)
+                          }}
+                          className="flex items-center"
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Exportar Imagens
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleToggleAtivo(produto.id, produto.ativo)}>
                           {produto.ativo ? (
@@ -628,6 +651,15 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => handleOpenExportImages(produto)}
+                        className="h-8 w-8 text-zinc-400 hover:text-[var(--brand-yellow)]"
+                        title="Exportar Imagens"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => onEditProduto(produto.id)}
                         className="h-8 w-8 text-zinc-400 hover:text-white"
                       >
@@ -664,6 +696,12 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
         cancelText="Cancelar"
         onConfirm={handleDelete}
         variant="destructive"
+      />
+
+      <ExportImagesDialog
+        open={exportImagesOpen}
+        onClose={handleCloseExportImages}
+        produto={produtoToExport}
       />
     </>
   )
