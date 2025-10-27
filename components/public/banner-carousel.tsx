@@ -171,10 +171,11 @@ export function BannerCarousel() {
         alt={currentBanner.titulo}
         fill
         className="object-cover"
-        // Optimization LCP: Optimized sizes and quality for faster load
+        // Optimization LCP: Ultra-fast loading
         sizes="100vw"
         priority
-        quality={80}
+        loading="eager"
+        quality={70}
         placeholder="blur"
         blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI1MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyMDAiIGhlaWdodD0iNTAwIiBmaWxsPSIjMTgxODE4Ii8+PC9zdmc+"
       />

@@ -23,10 +23,10 @@ const nextConfig: NextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-    formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 3600, // Optimization LCP: 1 hour cache for images
+    formats: ['image/webp'], // Optimization LCP: Only WebP for faster processing
+    minimumCacheTTL: 86400, // Optimization LCP: 24 hours cache
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 292, 384],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'inline',
   },
