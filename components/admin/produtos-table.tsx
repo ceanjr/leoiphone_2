@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, memo, type ChangeEvent, type KeyboardEvent } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Edit, Eye, EyeOff, MoreVertical, Save, Search, Trash2, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -415,7 +416,7 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
       ) : (
         <>
           {/* VIEW MOBILE: Cards */}
-          <div className="flex flex-col gap-3 md:hidden" suppressHydrationWarning>
+          <div className="flex flex-col gap-4 md:hidden" suppressHydrationWarning>
             {produtosFiltrados.map((produto) => {
               const currentSavedPrice = savedPrices[produto.id] ?? produto.preco
               const isSaving = savingPriceId === produto.id
@@ -423,14 +424,14 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
               return (
                 <div
                   key={produto.id}
-                  className="rounded-lg border border-zinc-800 bg-zinc-900 p-4"
+                  className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900"
                   suppressHydrationWarning
                 >
                   {/* Header do Card */}
-                  <div className="mb-3 flex items-start gap-3" suppressHydrationWarning>
+                  <div className="flex items-start gap-3 border-b border-zinc-800 bg-zinc-900/50 p-3" suppressHydrationWarning>
                     {/* Foto */}
                     <div
-                      className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-zinc-950"
+                      className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-950 ring-1 ring-zinc-800"
                       suppressHydrationWarning
                     >
                       {produto.foto_principal ? (
@@ -438,7 +439,7 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                           src={produto.foto_principal}
                           alt={produto.nome}
                           fill
-                          sizes="64px"
+                          sizes="80px"
                           className="object-cover"
                           suppressHydrationWarning
                         />
@@ -451,23 +452,46 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
 
                     {/* Info Principal */}
                     <div className="min-w-0 flex-1" suppressHydrationWarning>
-                      <h3 className="truncate font-medium text-white">{produto.nome}</h3>
+                      <Link href={`/produto/${produto.slug}`} target="_blank" rel="noopener noreferrer">
+                        <h3 className="line-clamp-2 text-base font-semibold leading-tight text-white hover:text-[var(--brand-yellow)] transition-colors cursor-pointer">
+                          {produto.nome}
+                        </h3>
+                      </Link>
                       {produto.codigo_produto && (
-                        <p className="text-xs text-zinc-500">{produto.codigo_produto}</p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          Cód: {produto.codigo_produto}
+                        </p>
                       )}
-                      <p className="mt-1 text-sm text-zinc-400">
-                        {produto.categoria?.nome || '-'}
-                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium border ${
+                            produto.condicao === 'novo'
+                              ? 'bg-green-600 text-white border-green-600'
+                              : 'bg-amber-600 text-white border-amber-600'
+                          }`}
+                        >
+                          {produto.condicao === 'novo' ? 'Novo' : 'Seminovo'}
+                        </span>
+                        {produto.categoria && (
+                          <span className="inline-flex rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
+                            {produto.categoria.nome}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Menu de Ações */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 shrink-0 text-zinc-400 hover:text-white"
+                        >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem
                           onSelect={(event) => {
                             event.preventDefault()
@@ -515,8 +539,8 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                     </DropdownMenu>
                   </div>
 
-                  {/* Info Secundária */}
-                  <div className="space-y-3 border-t border-zinc-800 pt-3 text-sm" suppressHydrationWarning>
+                  {/* Seção de Preço */}
+                  <div className="p-4" suppressHydrationWarning>
                     <PriceEditor
                       savedPrice={currentSavedPrice}
                       isSaving={isSaving}
@@ -524,51 +548,36 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                     >
                       {({ inputProps, submit, isSaving: saving, isActionDisabled }) => (
                         <div className="space-y-3">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                              Preço
-                            </span>
-                            <div className="flex flex-1 items-center justify-end gap-2">
-                              <span className="text-sm text-zinc-400">R$</span>
+                          {/* Campo de Preço */}
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                                Preço
+                              </label>
                               <Input
                                 {...inputProps}
-                                className="h-9 flex-1 min-w-[130px] max-w-[180px] border-zinc-700 bg-zinc-950 text-right text-white"
+                                className="h-10 flex-1 border-zinc-700 bg-zinc-950 text-base text-white"
+                                placeholder="0,00"
                               />
                             </div>
                           </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <Button
-                              size="sm"
-                              className="flex-1 justify-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/15 text-yellow-200 transition hover:border-yellow-500/40 hover:bg-yellow-500/20"
-                              onClick={submit}
-                              disabled={isActionDisabled}
-                            >
-                              {saving ? (
-                                'Salvando...'
-                              ) : (
-                                <>
-                                  <Save className="h-4 w-4" />
-                                  Salvar
-                                </>
-                              )}
-                            </Button>
-                            <div className="text-right">
-                              <span className="text-xs uppercase tracking-wider text-zinc-500">
-                                Condição
-                              </span>
-                              <p className="mt-1">
-                                <span
-                                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                    produto.condicao === 'novo'
-                                      ? 'bg-green-900/30 text-green-400'
-                                      : 'bg-blue-900/30 text-blue-400'
-                                  }`}
-                                >
-                                  {produto.condicao === 'novo' ? 'Novo' : 'Seminovo'}
-                                </span>
-                              </p>
-                            </div>
-                          </div>
+
+                          {/* Botão Salvar */}
+                          <Button
+                            size="sm"
+                            className="w-full justify-center gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/15 text-yellow-200 transition hover:border-yellow-500/40 hover:bg-yellow-500/20"
+                            onClick={submit}
+                            disabled={isActionDisabled}
+                          >
+                            {saving ? (
+                              'Salvando...'
+                            ) : (
+                              <>
+                                <Save className="h-4 w-4" />
+                                Salvar Preço
+                              </>
+                            )}
+                          </Button>
                         </div>
                       )}
                     </PriceEditor>
@@ -618,7 +627,9 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                   </TableCell>
                   <TableCell className="min-w-[200px] font-medium text-white">
                     <div>
-                      {produto.nome}
+                      <Link href={`/produto/${produto.slug}`} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--brand-yellow)] transition-colors">
+                        {produto.nome}
+                      </Link>
                       {produto.codigo_produto && (
                         <span className="ml-2 text-xs text-zinc-500">
                           ({produto.codigo_produto})
@@ -641,10 +652,10 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                   </TableCell>
                   <TableCell className="text-zinc-300">
                     <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold border ${
                         produto.condicao === 'novo'
-                          ? 'bg-green-900/30 text-green-400'
-                          : 'bg-blue-900/30 text-blue-400'
+                          ? 'bg-green-600 text-white border-green-600'
+                          : 'bg-amber-600 text-white border-amber-600'
                       }`}
                     >
                       {produto.condicao === 'novo' ? 'Novo' : 'Seminovo'}

@@ -107,7 +107,7 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
   )
 
   const handleShare = async () => {
-    if (navigator.share) {
+    if (typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({
           title: produto.nome,
@@ -120,6 +120,8 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
       }
     }
   }
+
+  const showShareButton = typeof navigator !== 'undefined' && navigator.share
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -134,14 +136,16 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
         </div>
 
         {/* Mobile Share Button */}
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-white lg:hidden"
-          aria-label="Compartilhar produto"
-        >
-          <Share2 className="h-4 w-4" />
-          <span>Compartilhar</span>
-        </button>
+        {showShareButton && (
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-white lg:hidden"
+            aria-label="Compartilhar produto"
+          >
+            <Share2 className="h-4 w-4" />
+            <span>Compartilhar</span>
+          </button>
+        )}
       </div>
 
       {/* Botão Voltar */}
