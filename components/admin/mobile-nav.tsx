@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Menu, X, LogOut } from 'lucide-react'
+import { Menu, X, LogOut, ExternalLink } from 'lucide-react'
 import { menuItems } from '@/components/admin/sidebar'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
@@ -78,6 +78,21 @@ export function AdminMobileNav() {
                   </Link>
                 )
               })}
+
+              {/* Catalog Link */}
+              <Link
+                href="/catalogo"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleNavigate}
+                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-zinc-400 transition hover:text-white"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400">
+                  <ExternalLink className="h-4 w-4" />
+                </span>
+                <span>Ver Catálogo</span>
+                <ExternalLink className="ml-auto h-3 w-3 text-zinc-600" />
+              </Link>
             </nav>
             <div className="border-t border-zinc-800/80 bg-zinc-950/90 px-4 py-3">
               <Button

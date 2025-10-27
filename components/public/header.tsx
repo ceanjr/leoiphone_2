@@ -74,7 +74,7 @@ export function PublicHeader() {
               WhatsApp
             </WhatsAppContactButton>
             <Button asChild variant="outline">
-              <Link href="/login">Login</Link>
+              <Link href="/login">Admin</Link>
             </Button>
           </div>
         </div>

@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
   LogOut,
   BarChart3,
+  ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -99,6 +100,20 @@ export function Sidebar() {
             </Link>
           )
         })}
+
+        {/* Separator */}
+        <div className="my-2 border-t border-zinc-800" />
+
+        {/* Catalog Link */}
+        <Link
+          href="/catalogo"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white"
+        >
+          <ExternalLink className="h-5 w-5" />
+          Ver Catálogo
+        </Link>
       </nav>
 
       {/* Logout */}
