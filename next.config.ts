@@ -104,6 +104,7 @@ const nextConfig: NextConfig = {
   // Optimization: Security and performance headers
   poweredByHeader: false,
   generateEtags: true,
+  turbopack: {},
 }
 
 export default withPWA(withBundleAnalyzer(nextConfig))
