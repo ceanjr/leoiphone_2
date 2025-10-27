@@ -185,11 +185,10 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
               src={produto.foto_principal}
               alt={produto.nome}
               fill
-              // Optimization: Responsive sizes for optimal loading
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 292px"
               className="object-cover transition-transform group-hover:scale-105"
               loading={priority ? 'eager' : 'lazy'}
-              quality={75}
+              quality={65}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-zinc-700">
