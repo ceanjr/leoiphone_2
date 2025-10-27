@@ -10,7 +10,7 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/images/logo.png",
+      "src": "/images/app-icon.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any maskable"

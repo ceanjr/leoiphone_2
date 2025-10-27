@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Script para gerar ícones PWA a partir do logo
+# Script para gerar ícones PWA a partir do app-icon.png
 # Requer ImageMagick: sudo apt install imagemagick
 
-INPUT="public/images/logo.png"
+INPUT="public/images/app-icon.png"
 OUTPUT_DIR="public/icons"
 
 # Verificar se ImageMagick está instalado
@@ -18,7 +18,7 @@ if [ ! -f "$INPUT" ]; then
     exit 1
 fi
 
-echo "🎨 Gerando ícones PWA..."
+echo "🎨 Gerando ícones PWA a partir do app-icon.png..."
 
 # Criar diretório de saída
 mkdir -p "$OUTPUT_DIR"
