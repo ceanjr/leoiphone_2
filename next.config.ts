@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
       },
     ],
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 120, // Optimization: 2 minutes for faster updates
+    minimumCacheTTL: 180, // Optimization Phase 2: 3 minutes cache
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 292, 384],
     dangerouslyAllowSVG: true,
@@ -29,15 +29,22 @@ const nextConfig: NextConfig = {
   // Optimization: Enable compression for smaller bundles
   compress: true,
 
-  // Optimization: Remove console logs in production, minify code
+  // Optimization Phase 2: Advanced compiler options
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
 
-  // Optimization: Package imports optimization for tree shaking
+  // Optimization Phase 2: Enhanced package imports and CSS optimization
   experimental: {
-    optimizePackageImports: ['lucide-react', '@/components/ui', '@radix-ui/react-icons'],
-    optimizeCss: true, // Optimization: CSS optimization
+    optimizePackageImports: [
+      'lucide-react',
+      '@/components/ui',
+      '@radix-ui/react-icons',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-select',
+      '@radix-ui/react-dropdown-menu',
+    ],
+    optimizeCss: true,
   },
 
   // Optimization: Disable source maps in production for smaller builds
