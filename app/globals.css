@@ -128,3 +128,32 @@
     transform: translateY(0.5px);
   }
 }
+
+/* Custom Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(113 113 122) rgb(39 39 42);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgb(39 39 42);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgb(113 113 122);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(161 161 170);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #fbbf24;
+}

@@ -26,13 +26,17 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
 
   if (!produto) return null
 
+  // Evitar duplicação da foto principal
+  const fotosAdicionais = (produto.fotos || []).filter(url => url !== produto.foto_principal)
+  
   const allImages = [
-    produto.foto_principal ? { url: produto.foto_principal, label: 'Foto Principal' } : null,
-    ...(produto.fotos || []).map((url, idx) => ({
+    produto.foto_principal ? { url: produto.foto_principal, label: 'Foto Principal', isPrincipal: true } : null,
+    ...fotosAdicionais.map((url, idx) => ({
       url,
       label: `Foto ${idx + 1}`,
+      isPrincipal: false,
     })),
-  ].filter((img): img is { url: string; label: string } => img !== null && Boolean(img.url))
+  ].filter((img): img is { url: string; label: string; isPrincipal: boolean } => img !== null && Boolean(img.url))
 
   const toggleImage = (url: string) => {
     const newSelected = new Set(selectedImages)
@@ -95,89 +99,114 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ImageIcon className="h-5 w-5" />
-            Exportar Imagens
+      <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800">
+          <DialogTitle className="flex items-center gap-3 text-xl">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-yellow)]/10">
+              <ImageIcon className="h-5 w-5 text-[var(--brand-yellow)]" />
+            </div>
+            <div>
+              <div className="text-white">Exportar Imagens</div>
+              <div className="text-sm font-normal text-zinc-400 mt-0.5">
+                {produto.nome}
+              </div>
+            </div>
           </DialogTitle>
-          <DialogDescription>
-            Selecione as imagens que deseja exportar de <strong>{produto.nome}</strong>
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Select All */}
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="select-all"
-                checked={selectedImages.size === allImages.length && allImages.length > 0}
-                onCheckedChange={toggleAll}
-              />
-              <label htmlFor="select-all" className="text-sm font-medium cursor-pointer">
-                Selecionar todas ({allImages.length})
-              </label>
-            </div>
-
-            <Button
-              onClick={handleExport}
-              disabled={selectedImages.size === 0 || downloading}
-              className="bg-[var(--brand-yellow)] text-black hover:bg-[var(--brand-yellow)]/90"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {downloading
-                ? `Exportando ${selectedImages.size}...`
-                : `Exportar (${selectedImages.size})`}
-            </Button>
-          </div>
-
-          {/* Images Grid */}
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-            {allImages.map((image, index) => (
-              <div
-                key={index}
-                className={`relative rounded-lg border-2 transition-all cursor-pointer ${
-                  selectedImages.has(image.url)
-                    ? 'border-[var(--brand-yellow)] shadow-lg shadow-[var(--brand-yellow)]/20'
-                    : 'border-zinc-800 hover:border-zinc-700'
-                }`}
-                onClick={() => toggleImage(image.url)}
-              >
-                {/* Checkbox */}
-                <div className="absolute left-2 top-2 z-10">
-                  <Checkbox
-                    checked={selectedImages.has(image.url)}
-                    onCheckedChange={() => toggleImage(image.url)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-
-                {/* Image */}
-                <div className="relative aspect-square overflow-hidden rounded-t-lg bg-zinc-900">
-                  <Image
-                    src={image.url}
-                    alt={image.label}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 50vw, 33vw"
-                  />
-                </div>
-
-                {/* Label */}
-                <div className="p-2 text-center">
-                  <p className="text-xs font-medium text-zinc-300">{image.label}</p>
-                </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar">
+          <div className="space-y-5">
+            {/* Stats & Actions Bar */}
+            <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="select-all"
+                  checked={selectedImages.size === allImages.length && allImages.length > 0}
+                  onCheckedChange={toggleAll}
+                  className="data-[state=checked]:bg-[var(--brand-yellow)] data-[state=checked]:border-[var(--brand-yellow)]"
+                />
+                <label htmlFor="select-all" className="text-sm font-medium cursor-pointer select-none">
+                  <span className="text-white">Selecionar todas</span>
+                  <span className="ml-2 text-zinc-500">({allImages.length} {allImages.length === 1 ? 'imagem' : 'imagens'})</span>
+                </label>
               </div>
-            ))}
-          </div>
 
-          {allImages.length === 0 && (
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8 text-center">
-              <ImageIcon className="mx-auto h-12 w-12 text-zinc-600" />
-              <p className="mt-2 text-sm text-zinc-400">Nenhuma imagem disponível</p>
+              <Button
+                onClick={handleExport}
+                disabled={selectedImages.size === 0 || downloading}
+                className="bg-[var(--brand-yellow)] text-black hover:bg-[var(--brand-yellow)]/90 font-medium"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {downloading
+                  ? `Exportando ${selectedImages.size}...`
+                  : selectedImages.size === 0
+                  ? 'Selecione imagens'
+                  : `Exportar ${selectedImages.size} ${selectedImages.size === 1 ? 'imagem' : 'imagens'}`}
+              </Button>
             </div>
-          )}
+
+            {/* Images Grid */}
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {allImages.map((image, index) => (
+                <div
+                  key={index}
+                  className={`group relative rounded-xl border-2 transition-all cursor-pointer overflow-hidden ${
+                    selectedImages.has(image.url)
+                      ? 'border-[var(--brand-yellow)] shadow-lg shadow-[var(--brand-yellow)]/20 scale-[1.02]'
+                      : 'border-zinc-800 hover:border-zinc-700 hover:shadow-md'
+                  }`}
+                  onClick={() => toggleImage(image.url)}
+                >
+                  {/* Checkbox */}
+                  <div className="absolute left-3 top-3 z-10">
+                    <Checkbox
+                      checked={selectedImages.has(image.url)}
+                      onCheckedChange={() => toggleImage(image.url)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="border-2 bg-black/50 backdrop-blur-sm data-[state=checked]:bg-[var(--brand-yellow)] data-[state=checked]:border-[var(--brand-yellow)]"
+                    />
+                  </div>
+
+                  {/* Principal Badge */}
+                  {image.isPrincipal && (
+                    <div className="absolute right-3 top-3 z-10">
+                      <div className="rounded-full bg-[var(--brand-yellow)] px-2 py-1 text-[10px] font-bold text-black">
+                        PRINCIPAL
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Image */}
+                  <div className="relative aspect-square overflow-hidden bg-zinc-900">
+                    <Image
+                      src={image.url}
+                      alt={image.label}
+                      fill
+                      className="object-cover transition-transform group-hover:scale-105"
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                    />
+                  </div>
+
+                  {/* Label */}
+                  <div className={`p-3 text-center ${selectedImages.has(image.url) ? 'bg-[var(--brand-yellow)]/10' : 'bg-zinc-900/50'}`}>
+                    <p className={`text-xs font-medium truncate ${selectedImages.has(image.url) ? 'text-[var(--brand-yellow)]' : 'text-zinc-400'}`}>
+                      {image.label}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {allImages.length === 0 && (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-12 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800">
+                  <ImageIcon className="h-8 w-8 text-zinc-600" />
+                </div>
+                <p className="mt-4 text-sm font-medium text-zinc-400">Nenhuma imagem disponível</p>
+                <p className="mt-1 text-xs text-zinc-500">Este produto não possui imagens cadastradas</p>
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
