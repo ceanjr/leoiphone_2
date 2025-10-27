@@ -6,7 +6,7 @@ import { Header } from '@/components/admin/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/shared/loading'
-import { InstallPrompt } from '@/components/shared/install-prompt'
+import { InstallPrompt, InstallButton } from '@/components/shared/install-prompt'
 import { createClient } from '@/lib/supabase/server'
 
 
@@ -257,6 +257,19 @@ async function DashboardStats() {
               </Button>
             </Link>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Card de Instalação PWA */}
+      <Card className="border-zinc-800 bg-zinc-950">
+        <CardHeader>
+          <CardTitle className="text-white">📱 Instalar como App</CardTitle>
+          <CardDescription className="text-zinc-400">
+            Instale o Leo iPhone na tela inicial do seu dispositivo para acesso rápido
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InstallButton />
         </CardContent>
       </Card>
     </>
