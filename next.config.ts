@@ -1,8 +1,54 @@
 import type { NextConfig } from 'next'
 
+// @ts-ignore - next-pwa doesn't have types
+import withPWAInit from 'next-pwa'
+
 // Optimization Phase 2: Bundle analyzer to identify unused JS
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
+})
+
+// PWA Configuration
+const withPWA = withPWAInit({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+  skipWaiting: true,
+  runtimeCaching: [
+    {
+      urlPattern: /^https:\/\/aswejqbtejibrilrblnm\.supabase\.co\/storage/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'supabase-images',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+        },
+      },
+    },
+    {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'images',
+        expiration: {
+          maxEntries: 60,
+          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+        },
+      },
+    },
+    {
+      urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'google-fonts',
+        expiration: {
+          maxEntries: 30,
+          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
+        },
+      },
+    },
+  ],
 })
 
 const nextConfig: NextConfig = {
@@ -60,4 +106,4 @@ const nextConfig: NextConfig = {
   generateEtags: true,
 }
 
-export default withBundleAnalyzer(nextConfig)
+export default withPWA(withBundleAnalyzer(nextConfig))

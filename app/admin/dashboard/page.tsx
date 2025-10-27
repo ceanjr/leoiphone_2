@@ -6,6 +6,7 @@ import { Header } from '@/components/admin/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/shared/loading'
+import { InstallPrompt } from '@/components/shared/install-prompt'
 import { createClient } from '@/lib/supabase/server'
 
 
@@ -281,6 +282,9 @@ export default function DashboardPage() {
           <DashboardStats />
         </Suspense>
       </div>
+      
+      {/* PWA Install Prompt - apenas mobile */}
+      <InstallPrompt />
     </div>
   )
 }
