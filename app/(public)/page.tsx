@@ -6,19 +6,12 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ProdutoCard } from '@/components/public/produto-card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Search, Filter, X, LayoutGrid, List } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Produto } from '@/types/produto'
 
-// Optimization: Lazy load banner carousel (not critical for initial render)
+// Optimization Phase 2: Aggressive code splitting for better TBT
 const BannerCarousel = dynamic(
   () => import('@/components/public/banner-carousel').then(mod => ({ default: mod.BannerCarousel })),
   {
@@ -26,6 +19,13 @@ const BannerCarousel = dynamic(
     loading: () => <div className="mb-8 h-[300px] animate-pulse rounded-lg bg-zinc-800 md:h-[400px] lg:h-[500px]" />
   }
 )
+
+// Optimization Phase 2: Lazy load Select components
+const Select = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.Select })))
+const SelectContent = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectContent })))
+const SelectItem = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectItem })))
+const SelectTrigger = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectTrigger })))
+const SelectValue = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectValue })))
 
 interface Categoria {
   id: string
