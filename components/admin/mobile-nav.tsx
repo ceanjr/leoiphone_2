@@ -81,7 +81,7 @@ export function AdminMobileNav() {
 
               {/* Catalog Link */}
               <Link
-                href="/catalogo"
+                href="/"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleNavigate}

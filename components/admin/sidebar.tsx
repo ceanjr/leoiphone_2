@@ -106,7 +106,7 @@ export function Sidebar() {
 
         {/* Catalog Link */}
         <Link
-          href="/catalogo"
+          href="/"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white"
