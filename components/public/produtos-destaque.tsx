@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Flame } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 interface ProdutoDestaque {
   id: string
@@ -50,7 +51,7 @@ export function ProdutosDestaque({ titulo, subtitulo, produtos }: ProdutosDestaq
             >
               {/* Badge de Desconto */}
               {desconto > 0 && (
-                <div className="mb-2 flex items-center gap-1.5 text-orange-500">
+                <div className="mb-2 flex items-center justify-center gap-1.5 rounded-md bg-orange-600/20 px-2 py-1 text-orange-500">
                   <Flame className="h-4 w-4 animate-pulse" />
                   <span className="text-xs font-bold">-{desconto}% OFF</span>
                 </div>
@@ -73,24 +74,24 @@ export function ProdutosDestaque({ titulo, subtitulo, produtos }: ProdutosDestaq
                   {produto.nome}
                 </h3>
 
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-zinc-500">Código:</span>
-                  <span className="font-mono text-zinc-400">{produto.codigo_produto}</span>
-                </div>
+                {produto.codigo_produto && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-zinc-500">Código:</span>
+                    <span className="font-mono text-zinc-400">{produto.codigo_produto}</span>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 text-xs">
                   <span className="text-zinc-500">Condição:</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 font-medium ${
-                      produto.condicao.toLowerCase() === 'novo'
-                        ? 'bg-green-900/30 text-green-400'
-                        : produto.condicao.toLowerCase() === 'seminovo'
-                          ? 'bg-blue-900/30 text-blue-400'
-                          : 'bg-yellow-900/30 text-yellow-400'
-                    }`}
-                  >
-                    {produto.condicao}
-                  </span>
+                  {produto.condicao.toLowerCase() === 'novo' ? (
+                    <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs px-2 py-0">
+                      Novo
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-amber-600 text-white hover:bg-amber-700 text-xs px-2 py-0">
+                      Seminovo
+                    </Badge>
+                  )}
                 </div>
 
                 {/* Preços */}

@@ -416,7 +416,7 @@ function HomePageContent() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Catálogo */}
-      <div className="mb-8">
+      <div className="mb-8 text-center">
         <h1 className="mb-2 text-4xl font-bold text-white">Catálogo Completo</h1>
         <p className="text-zinc-400">Explore todos os nossos iPhones disponíveis</p>
       </div>
