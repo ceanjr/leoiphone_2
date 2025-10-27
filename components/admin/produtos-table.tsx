@@ -189,15 +189,19 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
     })
   }, [produtos])
 
-  // Extrair categorias únicas
+  // Extrair categorias únicas e ordenar pela ordem definida em admin/categorias
   const categorias = useMemo(() => {
-    const cats = new Map<string, { id: string; nome: string }>()
+    const cats = new Map<string, { id: string; nome: string; ordem: number }>()
     produtos.forEach(p => {
       if (p.categoria && !cats.has(p.categoria.id)) {
-        cats.set(p.categoria.id, { id: p.categoria.id, nome: p.categoria.nome })
+        cats.set(p.categoria.id, { 
+          id: p.categoria.id, 
+          nome: p.categoria.nome,
+          ordem: p.categoria.ordem || 9999
+        })
       }
     })
-    return Array.from(cats.values()).sort((a, b) => a.nome.localeCompare(b.nome))
+    return Array.from(cats.values()).sort((a, b) => a.ordem - b.ordem)
   }, [produtos])
 
   // Função para extrair número do modelo iPhone

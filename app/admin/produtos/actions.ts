@@ -23,7 +23,7 @@ export async function getProdutos() {
 
   const { data, error } = await supabase
     .from('produtos')
-    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, cor_oficial, categoria:categorias(id, nome, slug)`)
+    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, cor_oficial, categoria:categorias(id, nome, slug, ordem)`)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
@@ -40,7 +40,7 @@ export async function getProdutoById(id: string) {
 
   const { data, error } = await supabase
     .from('produtos')
-    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, cor_oficial, categoria:categorias(id, nome, slug)`)
+    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, cor_oficial, categoria:categorias(id, nome, slug, ordem)`)
     .eq('id', id)
     .is('deleted_at', null)
     .single()
