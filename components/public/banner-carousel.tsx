@@ -103,8 +103,8 @@ export function BannerCarousel() {
   }, [banners.length])
 
   if (loading || banners.length === 0) {
-    // Optimization: Reserve space to prevent CLS
-    return <div className="mb-8 h-[300px] animate-pulse rounded-lg bg-zinc-800 md:h-[400px] lg:h-[500px]" />
+    // Optimization: Reserve exact space to prevent CLS
+    return <div className="mb-8 h-[300px] rounded-lg bg-zinc-900 md:h-[400px] lg:h-[500px]" />
   }
 
   // Renderizar produtos em destaque
@@ -167,11 +167,10 @@ export function BannerCarousel() {
         alt={currentBanner.titulo}
         fill
         className="object-cover"
-        // Optimization Phase 2: Responsive sizes + fetchPriority for LCP
+        // Optimization: Responsive sizes for better performance
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1200px"
         priority
-        fetchPriority="high"
-        quality={85}
+        quality={90}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-6 text-white md:p-8 lg:p-12">

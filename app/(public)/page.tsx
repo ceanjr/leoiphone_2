@@ -6,12 +6,19 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ProdutoCard } from '@/components/public/produto-card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Search, Filter, X, LayoutGrid, List } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Produto } from '@/types/produto'
 
-// Optimization Phase 2: Aggressive code splitting for better TBT
+// Optimization: Lazy load banner carousel (not critical for initial render)
 const BannerCarousel = dynamic(
   () => import('@/components/public/banner-carousel').then(mod => ({ default: mod.BannerCarousel })),
   {
@@ -19,13 +26,6 @@ const BannerCarousel = dynamic(
     loading: () => <div className="mb-8 h-[300px] animate-pulse rounded-lg bg-zinc-800 md:h-[400px] lg:h-[500px]" />
   }
 )
-
-// Optimization Phase 2: Lazy load Select components
-const Select = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.Select })))
-const SelectContent = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectContent })))
-const SelectItem = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectItem })))
-const SelectTrigger = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectTrigger })))
-const SelectValue = dynamic(() => import('@/components/ui/select').then(mod => ({ default: mod.SelectValue })))
 
 interface Categoria {
   id: string
@@ -366,20 +366,9 @@ function HomePageContent() {
 
   const temMaisProdutos = categoriasExibidas < todasCategorias.length
 
-  // Optimization: Defer non-critical work with requestIdleCallback
+  // Optimization: Load products efficiently
   useEffect(() => {
-    const hasIdleCallback = typeof window !== 'undefined' && 'requestIdleCallback' in window
-    const handle = hasIdleCallback
-      ? window.requestIdleCallback(() => void loadProdutos())
-      : window.setTimeout(() => void loadProdutos(), 0)
-    
-    return () => {
-      if (hasIdleCallback) {
-        window.cancelIdleCallback(handle as number)
-      } else {
-        window.clearTimeout(handle as number)
-      }
-    }
+    void loadProdutos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoriaFiltro, condicaoFiltro, ordenacao, busca, produtosEmDestaqueIds])
 

@@ -37,13 +37,6 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        {/* Optimization Phase 2: Preload critical resources for LCP */}
-        <link
-          rel="preload"
-          href="/images/logo.png"
-          as="image"
-          type="image/png"
-        />
         {/* Optimization: DNS prefetch and preconnect for faster resource loading */}
         <link
           rel="dns-prefetch"
