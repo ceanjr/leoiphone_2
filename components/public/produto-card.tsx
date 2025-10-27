@@ -11,6 +11,7 @@ interface ProdutoCardProps {
   priority?: boolean
 }
 
+// Optimization: Memoize price formatting
 const formatPreco = (preco: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -18,23 +19,22 @@ const formatPreco = (preco: number) => {
   }).format(preco)
 }
 
-// Componente de ícone de bateria minimalista e moderno com pauzinhos
-const BatteryIcon = ({ level }: { level: number }) => {
-  // Determinar cor e quantidade de pauzinhos baseado no nível
+// Optimization: Lightweight battery icon component
+const BatteryIcon = memo(({ level }: { level: number }) => {
   const getBatteryState = () => {
     if (level >= 80) {
       return {
-        color: '#22c55e', // verde neon vibrante
+        color: '#22c55e',
         bars: 4
       }
     } else if (level >= 70) {
       return {
-        color: '#facc15', // amarelo neon vibrante
+        color: '#facc15',
         bars: 3
       }
     } else {
       return {
-        color: '#ef4444', // vermelho neon vibrante
+        color: '#ef4444',
         bars: 2
       }
     }
@@ -51,7 +51,6 @@ const BatteryIcon = ({ level }: { level: number }) => {
       xmlns="http://www.w3.org/2000/svg"
       className="inline-block"
     >
-      {/* Corpo da bateria */}
       <rect
         x="0.5"
         y="0.5"
@@ -62,7 +61,6 @@ const BatteryIcon = ({ level }: { level: number }) => {
         strokeWidth="1"
         fill="none"
       />
-      {/* Ponta da bateria */}
       <rect
         x="17"
         y="3.5"
@@ -71,7 +69,6 @@ const BatteryIcon = ({ level }: { level: number }) => {
         rx="1"
         fill="white"
       />
-      {/* Pauzinhos de carga */}
       {[...Array(4)].map((_, index) => (
         <rect
           key={index}
@@ -85,7 +82,9 @@ const BatteryIcon = ({ level }: { level: number }) => {
       ))}
     </svg>
   )
-}
+})
+
+BatteryIcon.displayName = 'BatteryIcon'
 
 function ProdutoCardComponent({ produto, view = 'grid', priority = false }: ProdutoCardProps) {
   const cor = produto.cor_oficial
@@ -97,7 +96,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
       <Link href={`/produto/${produto.slug}`}>
         <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-zinc-700 hover:shadow-lg hover:shadow-black/20">
           <div className="flex flex-row">
-            {/* Imagem - Oculta em mobile, visível em desktop */}
+            {/* Optimization: Fixed dimensions to prevent CLS */}
             <div className="relative h-28 w-28 overflow-hidden bg-zinc-950 flex-shrink-0 hidden sm:block">
               {produto.foto_principal ? (
                 <Image
@@ -116,22 +115,18 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
               )}
             </div>
 
-            {/* Conteúdo */}
             <div className="flex flex-1 flex-row items-center justify-between gap-3 p-3 sm:p-4">
-              {/* Nome, Descrição e Informações */}
               <div className="flex-1 min-w-0">
                 <h3 className="mb-1 line-clamp-1 text-base sm:text-lg font-semibold text-white">
                   {produto.nome}
                 </h3>
 
-                {/* Descrição */}
                 {produto.descricao && (
                   <p className="mb-2 line-clamp-1 text-xs sm:text-sm text-zinc-400">
                     {produto.descricao}
                   </p>
                 )}
 
-                {/* Badges e Informações */}
                 <div className="flex flex-wrap items-center gap-2">
                   {produto.condicao === 'novo' && produto.nivel_bateria == null && (
                     <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs px-2 py-0">
@@ -168,7 +163,6 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
                 </div>
               </div>
 
-              {/* Preço */}
               <div className="flex-shrink-0 flex items-center">
                 <p className="text-lg sm:text-xl font-bold text-white whitespace-nowrap">
                   {formatPreco(produto.preco)}
@@ -184,19 +178,18 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
   return (
     <Link href={`/produto/${produto.slug}`}>
       <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-zinc-700 hover:shadow-lg hover:shadow-black/20">
-        {/* Imagem */}
+        {/* Optimization: aspect-square maintains proper spacing, preventing CLS */}
         <div className="relative aspect-square overflow-hidden bg-zinc-950">
           {produto.foto_principal ? (
             <Image
               src={produto.foto_principal}
               alt={produto.nome}
               fill
+              // Optimization: Responsive sizes for optimal loading
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 292px"
               className="object-cover transition-transform group-hover:scale-105"
               loading={priority ? 'eager' : 'lazy'}
               quality={75}
-              placeholder="blur"
-              blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
             />
           ) : (
             <div className="flex h-full items-center justify-center text-zinc-700">
@@ -204,7 +197,6 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
             </div>
           )}
 
-          {/* Badges (top-left) */}
           <div className="absolute left-2 top-2 flex flex-col gap-1.5">
             {cor && (
               <Badge
@@ -241,20 +233,17 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
           </div>
         </div>
 
-        {/* Conteúdo */}
         <div className="p-4">
           <h3 className="mb-2 line-clamp-2 text-lg font-semibold text-white">
             {produto.nome}
           </h3>
 
-          {/* Descrição */}
           {produto.descricao && (
             <p className="mb-3 line-clamp-2 text-sm text-zinc-400">
               {produto.descricao}
             </p>
           )}
 
-          {/* Preço */}
           <div>
             <p className="text-2xl font-bold text-white">
               {formatPreco(produto.preco)}

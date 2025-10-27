@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense, memo, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ProdutoCard } from '@/components/public/produto-card'
-import { BannerCarousel } from '@/components/public/banner-carousel'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -17,6 +17,15 @@ import { Button } from '@/components/ui/button'
 import { Search, Filter, X, LayoutGrid, List } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Produto } from '@/types/produto'
+
+// Optimization: Lazy load banner carousel (not critical for initial render)
+const BannerCarousel = dynamic(
+  () => import('@/components/public/banner-carousel').then(mod => ({ default: mod.BannerCarousel })),
+  {
+    ssr: false,
+    loading: () => <div className="mb-8 h-[300px] animate-pulse rounded-lg bg-zinc-800 md:h-[400px] lg:h-[500px]" />
+  }
+)
 
 interface Categoria {
   id: string
@@ -357,8 +366,20 @@ function HomePageContent() {
 
   const temMaisProdutos = categoriasExibidas < todasCategorias.length
 
+  // Optimization: Defer non-critical work with requestIdleCallback
   useEffect(() => {
-    loadProdutos()
+    const hasIdleCallback = typeof window !== 'undefined' && 'requestIdleCallback' in window
+    const handle = hasIdleCallback
+      ? window.requestIdleCallback(() => void loadProdutos())
+      : window.setTimeout(() => void loadProdutos(), 0)
+    
+    return () => {
+      if (hasIdleCallback) {
+        window.cancelIdleCallback(handle as number)
+      } else {
+        window.clearTimeout(handle as number)
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoriaFiltro, condicaoFiltro, ordenacao, busca, produtosEmDestaqueIds])
 
@@ -370,8 +391,8 @@ function HomePageContent() {
     router.replace(pathname)
   }, [pathname, router])
 
-  // Normaliza ícones/textos das seções de destaque independentemente de mojibake
-  const getSecaoConfig = (tipo: Secao['tipo']) => {
+  // Optimization: Memoize section config to prevent recalculation
+  const getSecaoConfig = useCallback((tipo: Secao['tipo']) => {
     switch (tipo) {
       case 'destaques':
         return {
@@ -410,7 +431,7 @@ function HomePageContent() {
           badgeColor: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
         }
     }
-  }
+  }, [])
 
   return (
     <div className="container mx-auto px-4 py-8">

@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   reactStrictMode: true,
 
-  // Otimizações de imagem
+  // Optimization: Enhanced image configuration for better performance
   images: {
     remotePatterns: [
       {
@@ -19,31 +19,31 @@ const nextConfig: NextConfig = {
       },
     ],
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60 * 60 * 24 * 7, // 7 dias
+    minimumCacheTTL: 120, // Optimization: 2 minutes for faster updates
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 292, 384],
     dangerouslyAllowSVG: true,
     contentDispositionType: 'inline',
   },
 
-  // Compressão e otimizações
+  // Optimization: Enable compression for smaller bundles
   compress: true,
 
-  // Otimizações do compilador
+  // Optimization: Remove console logs in production, minify code
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
 
-  // Configurações experimentais para melhor performance
+  // Optimization: Package imports optimization for tree shaking
   experimental: {
     optimizePackageImports: ['lucide-react', '@/components/ui', '@radix-ui/react-icons'],
+    optimizeCss: true, // Optimization: CSS optimization
   },
 
+  // Optimization: Disable source maps in production for smaller builds
+  productionBrowserSourceMaps: false,
 
-  // Desabilitar devIndicators em produção
-  productionBrowserSourceMaps: true,
-
-  // Configurações de produção
+  // Optimization: Security and performance headers
   poweredByHeader: false,
   generateEtags: true,
 }

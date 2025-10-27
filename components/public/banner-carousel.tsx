@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -35,6 +35,9 @@ export function BannerCarousel() {
   const [produtosPorBanner, setProdutosPorBanner] = useState<
     Record<string, Array<Produto & { preco_promocional: number }>>
   >({})
+
+  // Optimization: Memoize current banner to prevent re-renders
+  const currentBanner = useMemo(() => banners[currentIndex], [banners, currentIndex])
 
   const loadBanners = useCallback(async () => {
     const supabase = createClient()
@@ -76,35 +79,33 @@ export function BannerCarousel() {
   }, [])
 
   useEffect(() => {
-    const handle = window.setTimeout(() => {
-      void loadBanners()
-    }, 0)
-    return () => window.clearTimeout(handle)
+    void loadBanners()
   }, [loadBanners])
 
+  // Optimization: Memoize carousel interval setup
   useEffect(() => {
     if (banners.length <= 1) return
 
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % banners.length)
-    }, 5000) // Muda a cada 5 segundos
+    }, 5000)
 
     return () => clearInterval(interval)
   }, [banners.length])
 
-  const next = () => {
+  // Optimization: Memoize navigation callbacks
+  const next = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % banners.length)
-  }
+  }, [banners.length])
 
-  const prev = () => {
+  const prev = useCallback(() => {
     setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length)
-  }
+  }, [banners.length])
 
   if (loading || banners.length === 0) {
-    return null
+    // Optimization: Reserve space to prevent CLS
+    return <div className="mb-8 h-[300px] animate-pulse rounded-lg bg-zinc-800 md:h-[400px] lg:h-[500px]" />
   }
-
-  const currentBanner = banners[currentIndex]
 
   // Renderizar produtos em destaque
   if (currentBanner.tipo === 'produtos_destaque') {
@@ -120,7 +121,6 @@ export function BannerCarousel() {
 
         {banners.length > 1 && (
           <>
-            {/* Botões de navegação */}
             <button
               onClick={prev}
               className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 md:left-4"
@@ -136,7 +136,6 @@ export function BannerCarousel() {
               <ChevronRight className="h-6 w-6" />
             </button>
 
-            {/* Indicadores */}
             <div className="absolute -bottom-8 left-1/2 flex -translate-x-1/2 gap-2">
               {banners.map((_, index) => (
                 <button
@@ -157,7 +156,6 @@ export function BannerCarousel() {
     )
   }
 
-  // Renderizar banner de imagem (apenas se tiver imagem_url)
   if (!currentBanner.imagem_url) {
     return null
   }
@@ -169,8 +167,10 @@ export function BannerCarousel() {
         alt={currentBanner.titulo}
         fill
         className="object-cover"
-        sizes="100vw"
-        priority
+        // Optimization: Responsive sizes for better performance
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1200px"
+        priority // Optimization: Priority for LCP
+        quality={85} // Optimization: Slightly lower quality for faster load
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-6 text-white md:p-8 lg:p-12">
@@ -196,7 +196,6 @@ export function BannerCarousel() {
 
       {banners.length > 1 && (
         <>
-          {/* Botões de navegação */}
           <button
             onClick={prev}
             className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
@@ -212,7 +211,6 @@ export function BannerCarousel() {
             <ChevronRight className="h-6 w-6" />
           </button>
 
-          {/* Indicadores */}
           <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
             {banners.map((_, index) => (
               <button

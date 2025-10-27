@@ -37,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        {/* Optimization: DNS prefetch and preconnect for faster resource loading */}
         <link
           rel="dns-prefetch"
           href="https://aswejqbtejibrilrblnm.supabase.co"
@@ -46,6 +47,8 @@ export default function RootLayout({
           href="https://aswejqbtejibrilrblnm.supabase.co"
           crossOrigin="anonymous"
         />
+        {/* Optimization: Preload critical resources */}
+        <link rel="preload" href="/globals.css" as="style" />
       </head>
       <body
         className="antialiased"
