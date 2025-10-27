@@ -1,11 +1,13 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Package, Eye, TrendingUp, DollarSign, RefreshCw } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Package, Eye, TrendingUp, DollarSign, RefreshCw, RotateCcw } from 'lucide-react'
+import { useEffect, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
+import { toast } from 'sonner'
+import { resetAnalytics } from './actions'
 
 interface ProdutoView {
   id: string
@@ -23,13 +25,16 @@ export default function AnalyticsPage() {
   })
   const [topProdutos, setTopProdutos] = useState<ProdutoView[]>([])
   const [loading, setLoading] = useState(true)
+  const [isResetting, startReset] = useTransition()
 
   useEffect(() => {
     loadStats()
   }, [])
 
-  async function loadStats() {
-    setLoading(true)
+  async function loadStats({ silent = false }: { silent?: boolean } = {}) {
+    if (!silent) {
+      setLoading(true)
+    }
     const supabase = createClient()
 
     // Total de produtos
@@ -64,6 +69,38 @@ export default function AnalyticsPage() {
     setLoading(false)
   }
 
+  function handleResetAnalytics() {
+    if (loading || isResetting) {
+      return
+    }
+
+    const confirmed = window.confirm(
+      'Tem certeza que deseja zerar todas as visualizações registradas? Esta ação não pode ser desfeita.'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    startReset(async () => {
+      const result = await resetAnalytics()
+
+      if (!result?.success) {
+        toast.error('Não foi possível zerar as visualizações', {
+          description: result?.error || 'Tente novamente em instantes.',
+          duration: 4000,
+        })
+        return
+      }
+
+      toast.success('Visualizações zeradas com sucesso!', {
+        duration: 3500,
+      })
+
+      await loadStats({ silent: true })
+    })
+  }
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center p-6">
@@ -88,15 +125,28 @@ export default function AnalyticsPage() {
             Métricas e estatísticas do seu catálogo
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={loadStats}
-          className="gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadStats()}
+            className="gap-2"
+            disabled={loading}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Atualizar
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetAnalytics}
+            disabled={isResetting}
+            className="gap-2 border-red-500 text-red-400 hover:bg-red-500/10 hover:text-red-200"
+          >
+            <RotateCcw className={`h-4 w-4 ${isResetting ? 'animate-spin' : ''}`} />
+            {isResetting ? 'Zerando...' : 'Zerar métricas'}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -177,6 +227,7 @@ export default function AnalyticsPage() {
                     alt={produtoMaisVisto.nome}
                     fill
                     className="object-cover"
+                    sizes="64px"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-zinc-600">
@@ -219,6 +270,7 @@ export default function AnalyticsPage() {
                         alt={produto.nome}
                         fill
                         className="object-cover"
+                        sizes="48px"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-xs text-zinc-600">

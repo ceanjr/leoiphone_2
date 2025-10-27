@@ -9,7 +9,6 @@ import {
   Package,
   FolderTree,
   Image as ImageIcon,
-  Settings,
   LogOut,
   BarChart3,
 } from 'lucide-react'
@@ -18,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { logout } from '@/app/(auth)/login/actions'
 
-const menuItems = [
+export const menuItems = [
   {
     title: 'Dashboard',
     icon: LayoutDashboard,
@@ -38,11 +37,6 @@ const menuItems = [
     title: 'Banners',
     icon: ImageIcon,
     href: '/admin/banners',
-  },
-  {
-    title: 'Seções da Home',
-    icon: Settings,
-    href: '/admin/secoes',
   },
   {
     title: 'Analytics',
@@ -68,7 +62,14 @@ export function Sidebar() {
         className="flex h-16 items-center gap-3 border-b border-zinc-800 px-6 transition-opacity hover:opacity-80"
       >
         <div className="relative h-10 w-10 flex-shrink-0">
-          <Image src="/images/logo.png" alt="Léo iPhone" fill className="object-contain" priority />
+          <Image
+            src="/images/logo.png"
+            alt="Léo iPhone"
+            fill
+            className="object-contain"
+            sizes="40px"
+            priority
+          />
         </div>
         <div>
           <h1 className="text-lg font-bold text-white">Léo iPhone</h1>

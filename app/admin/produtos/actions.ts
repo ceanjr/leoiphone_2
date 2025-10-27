@@ -1,7 +1,8 @@
 'use server'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { produtoSchema } from '@/lib/validations/produto'
 import type { ProdutoFormData } from '@/types/produto'
@@ -22,10 +23,7 @@ export async function getProdutos() {
 
   const { data, error } = await supabase
     .from('produtos')
-    .select(`
-      *,
-      categoria:categorias(id, nome, slug)
-    `)
+    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, cor_oficial, categoria:categorias(id, nome, slug)`)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
@@ -42,10 +40,7 @@ export async function getProdutoById(id: string) {
 
   const { data, error } = await supabase
     .from('produtos')
-    .select(`
-      *,
-      categoria:categorias(id, nome, slug)
-    `)
+    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, cor_oficial, categoria:categorias(id, nome, slug)`)
     .eq('id', id)
     .is('deleted_at', null)
     .single()
@@ -140,7 +135,6 @@ export async function updateProduto(id: string, data: ProdutoFormData) {
   }
 
   revalidatePath('/admin/produtos')
-  revalidatePath(`/admin/produtos/${id}`)
   return {
     success: true,
     produto,
@@ -169,6 +163,39 @@ export async function deleteProduto(id: string) {
   revalidatePath('/admin/produtos')
   return {
     success: true,
+  }
+}
+
+export async function updateProdutoPreco(id: string, preco: number) {
+  const supabase = await createClient()
+
+  if (!Number.isFinite(preco) || preco <= 0) {
+    return {
+      success: false,
+      error: 'Preço inválido',
+    }
+  }
+
+  const { error } = await (supabase as any)
+    .from('produtos')
+    .update({
+      preco,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) {
+    console.error('Erro ao atualizar preço do produto:', error)
+    return {
+      success: false,
+      error: 'Erro ao atualizar preço',
+    }
+  }
+
+  revalidatePath('/admin/produtos')
+  return {
+    success: true,
+    preco,
   }
 }
 

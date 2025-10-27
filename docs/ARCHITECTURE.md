@@ -359,11 +359,7 @@ app/
     ├── dashboard/
     │   └── page.tsx     # URL: /admin/dashboard
     └── produtos/
-        ├── page.tsx     # URL: /admin/produtos
-        ├── novo/
-        │   └── page.tsx # URL: /admin/produtos/novo
-        └── [id]/
-            └── page.tsx # URL: /admin/produtos/[id]
+        └── page.tsx     # URL: /admin/produtos (lista + modal de cadastro/edição)
 ```
 
 ### Dynamic Routes
@@ -382,16 +378,20 @@ export default async function ProdutoPage({
 }
 ```
 
-**Editar Produto por ID** (Admin):
+**Modal de Produtos (Admin):**
 ```typescript
-// app/admin/produtos/[id]/page.tsx
-export default function EditProdutoPage({
-  params
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = use(params)  // Client Component: use React.use()
-  // ...
+// components/admin/produtos/product-form-dialog.tsx
+export function ProductFormDialog({ mode, productId, open, onClose }) {
+  useEffect(() => {
+    if (!open) return
+    // Carrega categorias e, se `mode === 'edit'`, busca o produto
+  }, [open, mode, productId])
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      {/* Formulário compartilhado entre criar e editar */}
+    </Dialog>
+  )
 }
 ```
 
@@ -405,12 +405,17 @@ export default function EditProdutoPage({
 
 ```typescript
 // Server Component (default)
-export default async function ProdutosPage() {
-  const { data: produtos } = await supabase
-    .from('produtos')
-    .select('*')
+export default async function ProdutosPage({ searchParams }) {
+  const { produtos, error } = await getProdutos()
 
-  return <ProdutosTable produtos={produtos} />
+  return (
+    <ProdutosManager
+      produtos={produtos}
+      errorMessage={error}
+      initialModalMode={searchParams.modal}
+      initialProductId={searchParams.id}
+    />
+  )
 }
 ```
 

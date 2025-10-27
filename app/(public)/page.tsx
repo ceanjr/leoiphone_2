@@ -1,6 +1,9 @@
 'use client'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useState, useEffect, useCallback } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ProdutoCard } from '@/components/public/produto-card'
 import { BannerCarousel } from '@/components/public/banner-carousel'
 import { Input } from '@/components/ui/input'
@@ -36,6 +39,28 @@ interface ProdutosAgrupados {
   categoria: Categoria
   produtos: Produto[]
 }
+
+interface BannerProdutoDestaqueRow {
+  produto_id?: string
+}
+
+interface BannerAtivoRow {
+  produtos_destaque?: BannerProdutoDestaqueRow[] | null
+  tipo: 'banner' | 'produtos_destaque'
+}
+
+interface SecaoHomeRow {
+  id: string
+  tipo: Secao['tipo']
+  titulo: string
+  subtitulo: string | null
+}
+
+interface ProdutoSecaoRow {
+  ordem: number
+  produto: Produto | null
+}
+
 
 // Função para ordenar produtos por modelo iPhone
 function ordenarProdutosPorModelo(produtos: Produto[]): Produto[] {
@@ -83,12 +108,26 @@ export default function HomePage() {
   const [produtosEmDestaqueIds, setProdutosEmDestaqueIds] = useState<string[]>([]) // IDs dos produtos em destaque nos banners
 
   // Filtros
-  const [busca, setBusca] = useState('')
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  const [busca, setBusca] = useState(() => searchParams?.get('busca') ?? '')
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>('todas')
   const [condicaoFiltro, setCondicaoFiltro] = useState<string>('todas')
   const [ordenacao, setOrdenacao] = useState('recentes')
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+
+  useEffect(() => {
+    if (!searchParams) return
+    const paramBusca = searchParams.get('busca') ?? ''
+    if (typeof window === 'undefined') return
+    const handle = window.setTimeout(() => {
+      setBusca((prev) => (prev === paramBusca ? prev : paramBusca))
+    }, 0)
+    return () => window.clearTimeout(handle)
+  }, [searchParams])
 
   useEffect(() => {
     async function loadData() {
@@ -112,14 +151,14 @@ export default function HomePage() {
 
       if (bannersAtivos && bannersAtivos.length > 0) {
         const idsDestaque: string[] = []
-        bannersAtivos.forEach((banner: any) => {
-          if (banner.produtos_destaque && Array.isArray(banner.produtos_destaque)) {
-            banner.produtos_destaque.forEach((p: any) => {
-              if (p.produto_id && !idsDestaque.includes(p.produto_id)) {
-                idsDestaque.push(p.produto_id)
-              }
-            })
-          }
+        const ativos = (bannersAtivos ?? []) as BannerAtivoRow[]
+        ativos.forEach((banner) => {
+          (banner.produtos_destaque ?? []).forEach((entry) => {
+            const produtoId = entry?.produto_id
+            if (produtoId && !idsDestaque.includes(produtoId)) {
+              idsDestaque.push(produtoId)
+            }
+          })
         })
         setProdutosEmDestaqueIds(idsDestaque)
       }
@@ -132,9 +171,9 @@ export default function HomePage() {
         .order('ordem', { ascending: true })
 
       if (secoesData) {
-        // Para cada seção, buscar seus produtos
+        const secoesBase = (secoesData ?? []) as SecaoHomeRow[]
         const secoesComProdutos = await Promise.all(
-          secoesData.map(async (secao: any) => {
+          secoesBase.map(async (secao) => {
             const { data: produtosSecao } = await supabase
               .from('produtos_secoes')
               .select(
@@ -146,10 +185,9 @@ export default function HomePage() {
               .eq('secao_id', secao.id)
               .order('ordem', { ascending: true })
 
-            const produtos =
-              produtosSecao
-                ?.map((ps: any) => ps.produto)
-                .filter((p: Produto) => p && p.ativo && !p.deleted_at) || []
+            const produtos = ((produtosSecao ?? []) as ProdutoSecaoRow[])
+              .map((ps) => ps.produto)
+              .filter((p): p is Produto => Boolean(p && p.ativo && !p.deleted_at))
 
             return {
               ...secao,
@@ -158,7 +196,6 @@ export default function HomePage() {
           })
         )
 
-        // Filtrar seções que têm produtos
         setSecoes(secoesComProdutos.filter((s) => s.produtos.length > 0))
       }
 
@@ -167,6 +204,7 @@ export default function HomePage() {
     }
 
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadProdutos() {
@@ -326,7 +364,8 @@ export default function HomePage() {
     setCategoriaFiltro('todas')
     setCondicaoFiltro('todas')
     setOrdenacao('recentes')
-  }, [])
+    router.replace(pathname)
+  }, [pathname, router])
 
   // Normaliza ícones/textos das seções de destaque independentemente de mojibake
   const getSecaoConfig = (tipo: Secao['tipo']) => {
@@ -384,7 +423,24 @@ export default function HomePage() {
       {/* Barra de Busca e Filtros */}
       <div className="mb-8 space-y-4">
         {/* Busca */}
-        <div className="relative">
+        <form
+          className="relative"
+          onSubmit={(event) => {
+            event.preventDefault()
+            const trimmed = busca.trim()
+            const params = new URLSearchParams(searchParams?.toString())
+            if (trimmed) {
+              params.set('busca', trimmed)
+            } else {
+              params.delete('busca')
+            }
+            const query = params.toString()
+            const target = query ? `/?${query}` : '/'
+            const currentQuery = searchParams?.toString() ?? ''
+            if (pathname === '/' && query === currentQuery) return
+            router.replace(target)
+          }}
+        >
           <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-zinc-500" />
           <Input
             type="search"
@@ -393,7 +449,10 @@ export default function HomePage() {
             onChange={(e) => setBusca(e.target.value)}
             className="border-zinc-800 bg-zinc-900 pl-10 text-white placeholder:text-zinc-500"
           />
-        </div>
+          <button type="submit" className="sr-only">
+            Buscar
+          </button>
+        </form>
 
         {/* Botão Filtros Mobile */}
         <div className="flex items-center justify-between lg:hidden">
@@ -479,34 +538,6 @@ export default function HomePage() {
 
       {/* Seções de Destaque (Promoções, Lançamentos, etc) - ABAIXO DOS FILTROS */}
       {secoes.map((secao) => {
-        // Definir cores e ícones baseados no tipo
-        const secaoConfig = {
-          destaques: {
-            icon: '⭐',
-            borderColor: 'var(--brand-yellow)',
-            bgGradient:
-              'linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(234, 179, 8, 0.02) 100%)',
-            badge: 'Destaque',
-            badgeColor: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-          },
-          promocoes: {
-            icon: '🔥',
-            borderColor: '#ef4444',
-            bgGradient:
-              'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%)',
-            badge: 'Promoção',
-            badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30',
-          },
-          lancamentos: {
-            icon: '🆕',
-            borderColor: '#3b82f6',
-            bgGradient:
-              'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%)',
-            badge: 'Novo',
-            badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-          },
-        }
-
         const config = getSecaoConfig(secao.tipo)
 
         return (

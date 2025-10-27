@@ -133,12 +133,12 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
 
                 {/* Badges e Informações */}
                 <div className="flex flex-wrap items-center gap-2">
-                  {produto.condicao === 'novo' && (
+                  {produto.condicao === 'novo' && produto.nivel_bateria == null && (
                     <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs px-2 py-0">
                       Novo
                     </Badge>
                   )}
-                  {produto.condicao === 'seminovo' && (
+                  {produto.condicao === 'seminovo' && produto.nivel_bateria == null && (
                     <Badge className="bg-amber-600 text-white hover:bg-amber-700 text-xs px-2 py-0">
                       Seminovo
                     </Badge>
@@ -156,7 +156,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
                   )}
                   {cor && (
                     <Badge
-                      className="text-xs px-2 py-0"
+                      className="text-xs px-2 py-0.5"
                       style={{
                         backgroundColor: cor.hex,
                         color: getContrastColor(cor.hex),
@@ -206,33 +206,9 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
 
           {/* Badges (top-left) */}
           <div className="absolute left-2 top-2 flex flex-col gap-1.5">
-            {produto.condicao === 'novo' && (
-              <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs">
-                Novo
-              </Badge>
-            )}
-            {produto.condicao === 'seminovo' && (
-              <Badge className="bg-amber-600 text-white hover:bg-amber-700 text-xs">
-                Seminovo
-              </Badge>
-            )}
-            {produto.garantia !== 'nenhuma' && (
-              <Badge className="bg-purple-600 text-white hover:bg-purple-700 text-xs">
-                Garantia
-              </Badge>
-            )}
-            {produto.nivel_bateria && (
-              <Badge className="bg-zinc-700 text-white hover:bg-zinc-600 text-xs flex items-center gap-1.5">
-                <BatteryIcon level={produto.nivel_bateria} />
-                <span>{produto.nivel_bateria}%</span>
-              </Badge>
-            )}
-            {/* color badge moved to bottom-left */}
-          </div>
-          {cor && (
-            <div className="absolute left-2 bottom-2">
+            {cor && (
               <Badge
-                className="text-xs px-2 py-0"
+                className="text-xs px-2 py-0.5  w-fit"
                 style={{
                   backgroundColor: cor.hex,
                   color: getContrastColor(cor.hex),
@@ -240,8 +216,29 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
               >
                 {cor.nome}
               </Badge>
-            </div>
-          )}
+            )}
+            {produto.nivel_bateria && (
+              <Badge className="bg-zinc-700 text-white hover:bg-zinc-600 text-xs flex items-center gap-1.5 px-2 py-0.5 w-fit">
+                <BatteryIcon level={produto.nivel_bateria} />
+                <span>{produto.nivel_bateria}%</span>
+              </Badge>
+            )}
+            {produto.condicao === 'novo' && produto.nivel_bateria == null && (
+              <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs px-2 py-0.5 w-fit">
+                Novo
+              </Badge>
+            )}
+            {produto.condicao === 'seminovo' && produto.nivel_bateria == null && (
+              <Badge className="bg-amber-600 text-white hover:bg-amber-700 text-xs px-2 py-0.5 w-fit">
+                Seminovo
+              </Badge>
+            )}
+            {produto.garantia !== 'nenhuma' && (
+              <Badge className="bg-purple-600 text-white hover:bg-purple-700 text-xs px-2 py-0.5 w-fit">
+                Garantia
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Conteúdo */}

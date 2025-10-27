@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, Search, X } from 'lucide-react'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -9,16 +9,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { ImageUpload } from '@/components/admin/image-upload'
+import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import {
   getBanners,
@@ -72,16 +66,19 @@ export default function BannersPage() {
     Array<Produto & { preco_promocional: number }>
   >([])
 
-  useEffect(() => {
-    loadBanners()
-  }, [])
-
-  async function loadBanners() {
+  const loadBanners = useCallback(async () => {
     setLoading(true)
     const { banners: data } = await getBanners()
     setBanners(data)
     setLoading(false)
-  }
+  }, [])
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void loadBanners()
+    }, 0)
+    return () => window.clearTimeout(timeout)
+  }, [loadBanners])
 
   async function handleOpenDialog(banner?: Banner) {
     if (banner) {
@@ -361,6 +358,7 @@ export default function BannersPage() {
                             alt={banner.titulo}
                             fill
                             className="object-cover"
+                            sizes="112px"
                           />
                         </div>
                       ) : (
@@ -432,261 +430,365 @@ export default function BannersPage() {
 
       {/* Dialog Criar/Editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto border-zinc-800 bg-zinc-900 text-white">
-          <DialogHeader>
-            <DialogTitle>
-              {editingBanner ? 'Editar Banner' : 'Novo Banner'}
-            </DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              {editingBanner
-                ? 'Atualize as informações do banner'
-                : 'Preencha os dados do novo banner'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="titulo">Título *</Label>
-              <Input
-                id="titulo"
-                value={formData.titulo}
-                onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
-                className="border-zinc-800 bg-zinc-950 text-white"
-                placeholder="Ex: Promoção de Verão"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="subtitulo">Subtítulo</Label>
-              <Input
-                id="subtitulo"
-                value={formData.subtitulo}
-                onChange={(e) => setFormData({ ...formData, subtitulo: e.target.value })}
-                className="border-zinc-800 bg-zinc-950 text-white"
-                placeholder="Ex: Até 30% de desconto"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="link">Link (opcional)</Label>
-              <Input
-                id="link"
-                value={formData.link}
-                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                className="border-zinc-800 bg-zinc-950 text-white"
-                placeholder="Ex: /produtos/iphone-15"
-              />
-            </div>
-
-            {/* Tipo de Banner */}
-            <div className="space-y-3">
-              <Label>Tipo de Banner *</Label>
-              <RadioGroup
-                value={formData.tipo}
-                onValueChange={(value) => {
-                  setFormData({ ...formData, tipo: value as 'banner' | 'produtos_destaque' })
-                  if (value === 'produtos_destaque') {
-                    setFormData((prev) => ({ ...prev, imagem_url: '' }))
+        <DialogContent className="sm:max-w-5xl border-none bg-transparent p-0 text-white">
+          <div className="-mx-4 -my-6 flex h-full flex-col overflow-hidden border border-zinc-800/80 bg-zinc-950/95 shadow-[0_28px_120px_-40px_rgba(0,0,0,0.85)] sm:mx-0 sm:my-0 sm:rounded-2xl">
+            {(() => {
+              const isEditing = Boolean(editingBanner)
+              const accentStyles = isEditing
+                ? {
+                    circle: 'border-blue-500/40 bg-blue-500/10 text-blue-300',
+                    badge: 'border-blue-500/30 bg-blue-500/15 text-blue-200/90',
+                    glow: 'shadow-[0_0_35px_-10px_rgba(59,130,246,0.35)]',
                   }
-                }}
-                className="flex flex-col gap-3"
-              >
-                <div className="flex items-start space-x-3 rounded-lg border border-zinc-800 p-3 hover:bg-zinc-800/30">
-                  <RadioGroupItem value="banner" id="tipo-banner" className="mt-0.5" />
-                  <div className="flex-1">
-                    <Label htmlFor="tipo-banner" className="cursor-pointer font-medium">
-                      Banner (Imagem)
-                    </Label>
-                    <p className="text-xs text-zinc-500">Exibe uma imagem no carrossel</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3 rounded-lg border border-zinc-800 p-3 hover:bg-zinc-800/30">
-                  <RadioGroupItem
-                    value="produtos_destaque"
-                    id="tipo-produtos"
-                    className="mt-0.5"
+                : {
+                    circle: 'border-yellow-500/40 bg-yellow-500/10 text-yellow-300',
+                    badge: 'border-yellow-500/30 bg-yellow-500/15 text-yellow-200/90',
+                    glow: 'shadow-[0_0_35px_-10px_rgba(250,204,21,0.35)]',
+                  }
+              const HeaderIcon = isEditing ? Edit : Plus
+              const modeBadgeText = isEditing ? 'Edição ativa' : 'Novo cadastro'
+              return (
+                <div className="relative border-b border-zinc-800/70 bg-zinc-950/80 px-6 py-6 sm:px-8">
+                  <div
+                    className={`pointer-events-none absolute inset-0 opacity-70 blur-3xl ${accentStyles.glow}`}
+                    aria-hidden
                   />
-                  <div className="flex-1">
-                    <Label htmlFor="tipo-produtos" className="cursor-pointer font-medium">
-                      Produtos em Destaque
-                    </Label>
-                    <p className="text-xs text-zinc-500">
-                      Exibe até 4 produtos com preços promocionais
-                    </p>
-                  </div>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Campo de Imagem - apenas para tipo banner */}
-            {formData.tipo === 'banner' && (
-              <div className="space-y-2">
-                <Label>Imagem do Banner *</Label>
-                <ImageUpload
-                  images={formData.imagem_url ? [formData.imagem_url] : []}
-                  onChange={(images) => {
-                    setFormData({
-                      ...formData,
-                      imagem_url: images[0] || '',
-                    })
-                  }}
-                  maxImages={1}
-                  disabled={saving}
-                />
-                <p className="text-xs text-zinc-500">
-                  Recomendado: 1920x600px (formato landscape)
-                </p>
-              </div>
-            )}
-
-            {/* Seleção de Produtos - apenas para tipo produtos_destaque */}
-            {formData.tipo === 'produtos_destaque' && (
-              <div className="space-y-3">
-                <Label>Produtos em Destaque (máx. 4) *</Label>
-
-                {/* Busca de Produtos */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                  <Input
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value)
-                      searchProdutos(e.target.value)
-                    }}
-                    placeholder="Buscar por nome ou código do produto..."
-                    className="border-zinc-800 bg-zinc-950 pl-10 text-white"
-                    disabled={selectedProdutos.length >= 4}
-                  />
-
-                  {/* Resultados da Busca */}
-                  {searchResults.length > 0 && (
-                    <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-zinc-800 bg-zinc-950 shadow-lg">
-                      {searchResults.map((produto) => (
-                        <button
-                          key={produto.id}
-                          onClick={() => handleAddProduto(produto)}
-                          className="flex w-full items-center gap-3 border-b border-zinc-800 p-3 text-left hover:bg-zinc-800/50"
-                        >
-                          <div className="relative h-12 w-12 overflow-hidden rounded bg-zinc-900">
-                            <Image
-                              src={produto.foto_principal}
-                              alt={produto.nome}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-white">{produto.nome}</div>
-                            <div className="text-xs text-zinc-500">{produto.codigo_produto}</div>
-                          </div>
-                          <div className="text-sm text-zinc-400">
-                            R$ {produto.preco.toFixed(2)}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Produtos Selecionados */}
-                {selectedProdutos.length > 0 && (
-                  <div className="space-y-2">
-                    {selectedProdutos.map((produto) => (
-                      <div
-                        key={produto.id}
-                        className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950 p-3"
+                  <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-4">
+                      <span
+                        className={`flex h-12 w-12 items-center justify-center rounded-full border ${accentStyles.circle}`}
                       >
-                        <div className="relative h-16 w-16 overflow-hidden rounded bg-zinc-900">
-                          <Image
-                            src={produto.foto_principal}
-                            alt={produto.nome}
-                            fill
-                            className="object-cover"
+                        <HeaderIcon className="h-5 w-5" />
+                      </span>
+                      <div className="space-y-1">
+                        <DialogTitle className="text-2xl font-semibold text-white">
+                          {isEditing ? 'Editar Banner' : 'Novo Banner'}
+                        </DialogTitle>
+                        <DialogDescription className="text-sm text-zinc-400">
+                          {isEditing
+                            ? 'Atualize as informações do banner selecionado.'
+                            : 'Preencha os dados para destacar uma nova campanha.'}
+                        </DialogDescription>
+                      </div>
+                    </div>
+                    <Badge className={`border ${accentStyles.badge}`}>{modeBadgeText}</Badge>
+                  </div>
+                  <p className="relative z-10 mt-4 text-xs uppercase tracking-[0.22em] text-zinc-500">
+                    Campos marcados com <span className="text-yellow-300">*</span> são obrigatórios
+                  </p>
+                </div>
+              )
+            })()}
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                void handleSave()
+              }}
+              className="flex flex-1 min-h-0 flex-col overflow-hidden"
+            >
+              <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+                <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+                  <section className="space-y-6">
+                    <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
+                      <header className="mb-6 flex flex-col gap-1">
+                        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                          Informações básicas
+                        </span>
+                        <h3 className="text-lg font-semibold text-white">Conteúdo do banner</h3>
+                        <p className="text-sm text-zinc-400">
+                          Defina os textos e o link exibidos para o usuário.
+                        </p>
+                      </header>
+
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="titulo">Título *</Label>
+                          <Input
+                            id="titulo"
+                            value={formData.titulo}
+                            onChange={(event) =>
+                              setFormData({ ...formData, titulo: event.target.value })
+                            }
+                            className="border-zinc-800 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
+                            placeholder="Ex: Promoção de Verão"
                           />
                         </div>
-                        <div className="flex-1 space-y-2">
-                          <div>
-                            <div className="text-sm font-medium text-white">{produto.nome}</div>
-                            <div className="text-xs text-zinc-500">{produto.codigo_produto}</div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor={`preco-${produto.id}`} className="text-xs">
-                              Preço promocional:
+
+                        <div className="space-y-2">
+                          <Label htmlFor="subtitulo">Subtítulo</Label>
+                          <Input
+                            id="subtitulo"
+                            value={formData.subtitulo}
+                            onChange={(event) =>
+                              setFormData({ ...formData, subtitulo: event.target.value })
+                            }
+                            className="border-zinc-800 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
+                            placeholder="Ex: Até 30% de desconto"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="link">Link (opcional)</Label>
+                          <Input
+                            id="link"
+                            value={formData.link}
+                            onChange={(event) =>
+                              setFormData({ ...formData, link: event.target.value })
+                            }
+                            className="border-zinc-800 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
+                            placeholder="Ex: /produtos/iphone-15"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
+                      <header className="mb-6 flex flex-col gap-1">
+                        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                          Tipo de banner *
+                        </span>
+                        <h3 className="text-lg font-semibold text-white">Formato de destaque</h3>
+                        <p className="text-sm text-zinc-400">
+                          Escolha entre uma imagem única ou um bloco de produtos.
+                        </p>
+                      </header>
+
+                      <RadioGroup
+                        value={formData.tipo}
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, tipo: value as 'banner' | 'produtos_destaque' })
+                          if (value === 'produtos_destaque') {
+                            setFormData((prev) => ({ ...prev, imagem_url: '' }))
+                          }
+                        }}
+                        className="flex flex-col gap-3"
+                      >
+                        <div className="flex items-start gap-3 rounded-lg border border-zinc-800 p-3 transition hover:border-zinc-700 hover:bg-zinc-900/20">
+                          <RadioGroupItem value="banner" id="tipo-banner" className="mt-0.5" />
+                          <div className="flex-1">
+                            <Label htmlFor="tipo-banner" className="cursor-pointer font-medium text-white">
+                              Banner (Imagem)
                             </Label>
-                            <Input
-                              id={`preco-${produto.id}`}
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={produto.preco_promocional}
-                              onChange={(e) =>
-                                handleUpdatePrecoPromocional(
-                                  produto.id,
-                                  parseFloat(e.target.value) || 0
-                                )
-                              }
-                              className="h-8 w-32 border-zinc-800 bg-zinc-900 text-sm"
-                            />
+                            <p className="text-xs text-zinc-500">Exibe uma peça visual no carrossel.</p>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveProduto(produto.id)}
-                          className="h-8 w-8 text-zinc-400 hover:text-red-400"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-start gap-3 rounded-lg border border-zinc-800 p-3 transition hover:border-zinc-700 hover:bg-zinc-900/20">
+                          <RadioGroupItem value="produtos_destaque" id="tipo-produtos" className="mt-0.5" />
+                          <div className="flex-1">
+                            <Label htmlFor="tipo-produtos" className="cursor-pointer font-medium text-white">
+                              Produtos em Destaque
+                            </Label>
+                            <p className="text-xs text-zinc-500">Mostra até 4 produtos com preços especiais.</p>
+                          </div>
+                        </div>
+                      </RadioGroup>
+
+                      <div className="mt-6 flex items-center gap-2 rounded-lg border border-zinc-800/70 bg-zinc-950/80 p-3">
+                        <Checkbox
+                          id="ativo"
+                          checked={formData.ativo}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, ativo: !!checked })
+                          }
+                        />
+                        <Label htmlFor="ativo" className="cursor-pointer text-sm text-zinc-200">
+                          Banner ativo
+                        </Label>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  </section>
 
-                {selectedProdutos.length === 0 && (
-                  <p className="text-center text-sm text-zinc-500">
-                    Busque e selecione produtos para destacar
-                  </p>
-                )}
+                  <section className="space-y-6">
+                    {formData.tipo === 'banner' ? (
+                      <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
+                        <header className="mb-6 flex flex-col gap-1">
+                          <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                            Imagem do banner
+                          </span>
+                          <h3 className="text-lg font-semibold text-white">Upload</h3>
+                          <p className="text-sm text-zinc-400">
+                            Recomendamos imagens no formato 1920x600 (landscape).
+                          </p>
+                        </header>
+                        <ImageUpload
+                          images={formData.imagem_url ? [formData.imagem_url] : []}
+                          onChange={(images) =>
+                            setFormData({
+                              ...formData,
+                              imagem_url: images[0] || '',
+                            })
+                          }
+                          maxImages={1}
+                          disabled={saving}
+                        />
+                        {formData.imagem_url ? (
+                          <p className="mt-3 text-xs text-zinc-500">
+                            URL atual: <span className="break-all text-zinc-300">{formData.imagem_url}</span>
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
+                        <header className="mb-6 flex flex-col gap-1">
+                          <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                            Produtos em destaque
+                          </span>
+                          <h3 className="text-lg font-semibold text-white">Seleção e promoções</h3>
+                          <p className="text-sm text-zinc-400">
+                            Busque produtos para adicionar ao banner e defina preços promocionais.
+                          </p>
+                        </header>
+
+                        <div className="space-y-4">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                            <Input
+                              value={searchTerm}
+                              onChange={(event) => {
+                                const value = event.target.value
+                                setSearchTerm(value)
+                                void searchProdutos(value)
+                              }}
+                              placeholder="Buscar por nome ou código..."
+                              className="border-zinc-800 bg-zinc-950 pl-10 text-white placeholder:text-zinc-500"
+                              disabled={selectedProdutos.length >= 4}
+                            />
+                            {searchResults.length > 0 && (
+                              <div className="absolute z-10 mt-2 max-h-60 w-full overflow-auto rounded-lg border border-zinc-800 bg-zinc-950/95 shadow-xl">
+                                {searchResults.map((produto) => (
+                                  <button
+                                    key={produto.id}
+                                    type="button"
+                                    onClick={() => handleAddProduto(produto)}
+                                    className="flex w-full items-center gap-3 border-b border-zinc-800/70 p-3 text-left transition hover:bg-zinc-900/70"
+                                  >
+                                    <div className="relative h-12 w-12 overflow-hidden rounded bg-zinc-900">
+                                      {produto.foto_principal ? (
+                                        <Image
+                                          src={produto.foto_principal}
+                                          alt={produto.nome}
+                                          fill
+                                          className="object-cover"
+                                          sizes="48px"
+                                        />
+                                      ) : (
+                                        <div className="flex h-full items-center justify-center text-[10px] text-zinc-500">
+                                          Sem foto
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="text-sm font-medium text-white">{produto.nome}</div>
+                                      <div className="text-xs text-zinc-500">{produto.codigo_produto}</div>
+                                    </div>
+                                    <div className="text-sm text-zinc-400">
+                                      R$ {produto.preco.toFixed(2)}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {selectedProdutos.length > 0 ? (
+                            <div className="space-y-3">
+                              {selectedProdutos.map((produto) => (
+                                <div
+                                  key={produto.id}
+                                  className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950/90 p-3"
+                                >
+                                  <div className="relative h-16 w-16 overflow-hidden rounded bg-zinc-900">
+                                    {produto.foto_principal ? (
+                                      <Image
+                                        src={produto.foto_principal}
+                                        alt={produto.nome}
+                                        fill
+                                        className="object-cover"
+                                        sizes="64px"
+                                      />
+                                    ) : (
+                                      <div className="flex h-full items-center justify-center text-xs text-zinc-500">
+                                        Sem foto
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 space-y-2">
+                                    <div>
+                                      <div className="text-sm font-medium text-white">{produto.nome}</div>
+                                      <div className="text-xs text-zinc-500">{produto.codigo_produto}</div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Label htmlFor={`preco-${produto.id}`} className="text-xs text-zinc-400">
+                                        Preço promocional:
+                                      </Label>
+                                      <Input
+                                        id={`preco-${produto.id}`}
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={produto.preco_promocional}
+                                        onChange={(event) =>
+                                          handleUpdatePrecoPromocional(
+                                            produto.id,
+                                            parseFloat(event.target.value) || 0
+                                          )
+                                        }
+                                        className="h-8 w-28 border-zinc-800 bg-zinc-900 text-right text-sm text-white"
+                                      />
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleRemoveProduto(produto.id)}
+                                    className="h-8 w-8 text-zinc-400 hover:text-red-400"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-center text-sm text-zinc-500">
+                              Busque e selecione produtos para destacar.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                </div>
               </div>
-            )}
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="ativo"
-                checked={formData.ativo}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, ativo: !!checked })
-                }
-              />
-              <Label htmlFor="ativo" className="cursor-pointer text-sm">
-                Banner ativo
-              </Label>
-            </div>
+              <div className="border-t border-zinc-800/70 bg-zinc-950/85 px-4 py-4 shadow-[0_-20px_40px_-40px_rgba(0,0,0,0.8)] sm:px-8">
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-600 hover:bg-zinc-800 sm:w-auto"
+                    onClick={() => setDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={
+                      saving ||
+                      !formData.titulo.trim() ||
+                      (formData.tipo === 'banner' && !formData.imagem_url) ||
+                      (formData.tipo === 'produtos_destaque' && selectedProdutos.length === 0)
+                    }
+                    className="w-full bg-[var(--brand-yellow)] text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90 sm:w-auto"
+                  >
+                    {saving ? 'Salvando...' : editingBanner ? 'Atualizar' : 'Criar'}
+                  </Button>
+                </div>
+              </div>
+            </form>
           </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={
-                saving ||
-                !formData.titulo.trim() ||
-                (formData.tipo === 'banner' && !formData.imagem_url) ||
-                (formData.tipo === 'produtos_destaque' && selectedProdutos.length === 0)
-              }
-              style={{
-                backgroundColor: 'var(--brand-yellow)',
-                color: 'var(--brand-black)',
-              }}
-            >
-              {saving ? 'Salvando...' : editingBanner ? 'Atualizar' : 'Criar'}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Dialog Confirmar Exclusão */}
       <ConfirmDialog
         open={deleteDialogOpen}

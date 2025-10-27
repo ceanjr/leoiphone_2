@@ -199,12 +199,12 @@
 ## 📦 Produtos Admin (app/admin/produtos/)
 
 ### `app/admin/produtos/page.tsx`
-**O que faz**: Listagem de produtos no admin
+**O que faz**: Página de listagem de produtos no admin
 **Responsabilidades**:
-- Busca todos os produtos (incluindo inativos)
-- Renderiza `ProdutosTable`
-- Botão "Novo Produto"
-**Quando modificar**: Para ajustar listagem
+- Busca produtos via Server Action e entrega para o client component `ProdutosManager`
+- Controla query params (`?modal=create|edit`) para abrir o formulário em modal
+- Mantém apenas responsabilidades de data-fetching; toda interação fica no client
+**Quando modificar**: Para mudar a estratégia de carregamento inicial ou parâmetros da página
 
 ### `app/admin/produtos/actions.ts`
 **O que faz**: Server Actions para CRUD de produtos
@@ -214,30 +214,26 @@
 - `createProduto(data)` - Cria novo
 - `updateProduto(id, data)` - Atualiza
 - `deleteProduto(id)` - Soft delete
-- `toggleProdutoStatus(id)` - Ativa/desativa
+- `toggleProdutoAtivo(id, ativo)` - Ativa/desativa
 - `getCategorias()` - Lista categorias
 **Importante**: Todas verificam autenticação
 **Quando modificar**: Para adicionar novas operações de produtos
 
-### `app/admin/produtos/novo/page.tsx`
-**O que faz**: Formulário para criar novo produto
+### `components/admin/produtos/products-manager.tsx`
+**O que faz**: Client component que orquestra a listagem e os modais
 **Responsabilidades**:
-- Form com todos os campos
-- Upload de imagens (ImageUpload component)
-- Validação
-- Chama `createProduto` action
-**Client Component**: Sim
-**Quando modificar**: Para adicionar campos ao formulário
+- Renderiza cabeçalho, botão "Novo Produto" e tabela (`ProdutosTable`)
+- Controla estado do `ProductFormDialog` (create/edit)
+- Chama `router.refresh()` após salvar/deletar para atualizar dados
+**Quando modificar**: Para alterar UX de criação/edição sem sair da página
 
-### `app/admin/produtos/[id]/page.tsx`
-**O que faz**: Formulário para editar produto existente
+### `components/admin/produtos/product-form-dialog.tsx`
+**O que faz**: Modal reutilizável de cadastro/edição de produtos
 **Responsabilidades**:
-- Carrega produto por ID
-- Preenche formulário
-- Upload de imagens
-- Chama `updateProduto` action
-**Client Component**: Sim
-**Dynamic Params**: `params` é Promise (Next.js 15+)
+- Faz preload de categorias e, se necessário, do produto a ser editado
+- Reaproveita `ImageUpload` e validações antes de chamar `createProduto` ou `updateProduto`
+- Exibe feedback via `toast` e fecha modal ao concluir
+**Quando modificar**: Para inserir novos campos, validações ou fluxos específicos no formulário
 **Quando modificar**: Para adicionar campos ao formulário
 
 ---

@@ -33,6 +33,7 @@ function SubmitButton() {
                 alt="Carregando"
                 fill
                 className="object-contain opacity-40 brightness-150 grayscale"
+                sizes="16px"
                 style={{ filter: 'invert(0.8)' }}
               />
             </div>
@@ -76,6 +77,7 @@ export default function LoginPage() {
                 alt="Léo iPhone"
                 fill
                 className="object-contain"
+                sizes="80px"
                 priority
               />
             </div>

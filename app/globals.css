@@ -93,4 +93,35 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+
+  button,
+  [role='button'],
+  [data-clickable='true'],
+  label[for],
+  a[href],
+  input[type='button'],
+  input[type='submit'] {
+    cursor: pointer;
+    transition: transform 120ms ease, filter 160ms ease, opacity 160ms ease;
+  }
+
+  button:not(:disabled):hover,
+  [role='button']:not(:disabled):hover,
+  [data-clickable='true']:hover,
+  label[for]:hover,
+  a[href]:hover,
+  input[type='button']:hover,
+  input[type='submit']:hover {
+    filter: brightness(1.03);
+  }
+
+  button:not(:disabled):active,
+  [role='button']:not(:disabled):active,
+  [data-clickable='true']:active,
+  label[for]:active,
+  a[href]:active,
+  input[type='button']:active,
+  input[type='submit']:active {
+    transform: translateY(0.5px);
+  }
 }

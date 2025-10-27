@@ -145,7 +145,7 @@ async function DashboardStats() {
             <Plus className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <Link href="/admin/produtos/novo">
+            <Link href="/admin/produtos?modal=create">
               <Button className="w-full">Novo Produto</Button>
             </Link>
           </CardContent>

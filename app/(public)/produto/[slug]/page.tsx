@@ -5,9 +5,9 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { WhatsAppContactButton } from '@/components/shared/whatsapp-contact-button'
 import { createClient } from '@/lib/supabase/client'
 import type { ProdutoComCategoria } from '@/types/produto'
 import { useEffect } from 'react'
@@ -46,8 +46,18 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
       setProduto(data as ProdutoComCategoria)
       setLoading(false)
 
-      // Incrementar visualizações
-      await supabase.rpc('increment_visualizacoes', { produto_id: data.id })
+      // Incrementar visualizações apenas para visitantes
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (!session?.user) {
+          await supabase.rpc('increment_visualizacoes', { produto_id: data.id })
+        }
+      } catch (incrementError) {
+        console.warn('Não foi possível contabilizar a visualização do produto:', incrementError)
+      }
 
       // Pré-carregar todas as imagens do produto
       if (data.fotos && data.fotos.length > 0) {
@@ -174,7 +184,7 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
               <Badge className="bg-green-600 text-white">Novo</Badge>
             )}
             {produto.condicao === 'seminovo' && (
-              <Badge className="bg-blue-600 text-white">Seminovo</Badge>
+              <Badge className="bg-amber-600 text-white">Seminovo</Badge>
             )}
             {produto.garantia !== 'nenhuma' && (
               <Badge className="bg-purple-600 text-white">Com Garantia</Badge>
@@ -233,18 +243,14 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span className="text-zinc-400">Garantia:</span>
-                  <span className="font-medium text-white">
-                    {garantiaTexto[produto.garantia]}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-400">Estoque:</span>
-                  <span className="font-medium text-white">
-                    {produto.estoque > 0 ? 'Disponível' : 'Indisponível'}
-                  </span>
-                </div>
+                {produto.garantia !== 'nenhuma' && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Garantia:</span>
+                    <span className="font-medium text-white">
+                      {garantiaTexto[produto.garantia]}
+                    </span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -291,23 +297,13 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
           </Card>
 
           {/* CTA WhatsApp */}
-          <Button
-            asChild
+          <WhatsAppContactButton
             size="lg"
-            className="w-full"
-            style={{
-              backgroundColor: 'var(--brand-yellow)',
-              color: 'var(--brand-black)',
-            }}
+            className="w-full bg-[var(--brand-yellow)] text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90"
+            message={whatsappMessage}
           >
-            <a
-              href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${whatsappMessage}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Comprar pelo WhatsApp
-            </a>
-          </Button>
+            Comprar pelo WhatsApp
+          </WhatsAppContactButton>
         </div>
       </div>
     </div>

@@ -12,7 +12,14 @@ const sizeMap = {
   md: 'h-12 w-12',
   lg: 'h-16 w-16',
   xl: 'h-24 w-24',
-}
+} as const
+
+const sizeAttrMap = {
+  sm: '32px',
+  md: '48px',
+  lg: '64px',
+  xl: '96px',
+} as const
 
 export function Loading({ size = 'md', className, text }: LoadingProps) {
   return (
@@ -23,6 +30,7 @@ export function Loading({ size = 'md', className, text }: LoadingProps) {
           alt="Carregando..."
           fill
           className="object-contain brightness-150 grayscale opacity-40"
+          sizes={sizeAttrMap[size]}
           priority
           style={{ filter: 'invert(0.8)' }}
         />

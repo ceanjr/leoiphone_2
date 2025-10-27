@@ -52,16 +52,19 @@ export default function CategoriasPage() {
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadCategorias()
-  }, [])
-
   async function loadCategorias() {
     setLoading(true)
     const { categorias: data } = await getCategorias()
     setCategorias(data)
     setLoading(false)
   }
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void loadCategorias()
+    }, 0)
+    return () => window.clearTimeout(timeout)
+  }, [])
 
   function handleOpenDialog(categoria?: Categoria) {
     if (categoria) {
@@ -267,123 +270,210 @@ export default function CategoriasPage() {
           </p>
         </div>
       ) : (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Ordem</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Nome</th>
-                  <th className="hidden px-4 py-3 text-left text-sm font-medium text-zinc-400 md:table-cell">
-                    Descrição
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Status</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium text-zinc-400">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categorias.map((categoria, index) => (
-                  <tr
-                    key={categoria.id}
-                    className={`border-b border-zinc-800 hover:bg-zinc-800/50 ${
-                      draggingId === categoria.id ? 'opacity-60' : ''
-                    } ${dragOverId === categoria.id ? 'bg-zinc-800/70' : ''}`}
-                    onDragOver={(e) => handleDragOver(e, categoria.id)}
-                    onDragEnter={(e) => handleDragEnter(e, categoria.id)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, categoria.id)}
+        <>
+          {/* Lista Mobile */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {categorias.map((categoria, index) => (
+              <div
+                key={categoria.id}
+                className="rounded-lg border border-zinc-800 bg-zinc-900 p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-md border border-zinc-800 px-2 py-0.5 text-xs text-zinc-500">
+                        Ordem {categoria.ordem}
+                      </span>
+                      <div className="flex items-center gap-1 text-zinc-500">
+                        <button
+                          onClick={() => moveCategoria(index, 'up')}
+                          disabled={index === 0}
+                          className="rounded px-1 text-xs transition hover:bg-zinc-800 disabled:opacity-30"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={() => moveCategoria(index, 'down')}
+                          disabled={index === categorias.length - 1}
+                          className="rounded px-1 text-xs transition hover:bg-zinc-800 disabled:opacity-30"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    </div>
+                    <h3 className="mt-2 text-base font-semibold text-white">{categoria.nome}</h3>
+                    <p className="text-xs uppercase tracking-wide text-zinc-500">{categoria.slug}</p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAtivo(categoria.id, categoria.ativo)}
+                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold transition-colors ${
+                      categoria.ativo
+                        ? 'bg-green-900/30 text-green-400 hover:bg-green-900/40'
+                        : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
+                    }`}
                   >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, categoria.id)}
-                          className="cursor-grab text-zinc-600 hover:text-zinc-400"
-                          aria-label="Arrastar para reordenar"
-                        >
-                          <GripVertical className="h-4 w-4" />
-                        </span>
-                        <div className="flex flex-col gap-1">
-                          <button
-                            onClick={() => moveCategoria(index, 'up')}
-                            disabled={index === 0}
-                            className="text-zinc-500 hover:text-white disabled:opacity-30"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            onClick={() => moveCategoria(index, 'down')}
-                            disabled={index === categorias.length - 1}
-                            className="text-zinc-500 hover:text-white disabled:opacity-30"
-                          >
-                            ↓
-                          </button>
-                        </div>
-                        <span className="text-sm text-zinc-500">{categoria.ordem}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div>
-                        <div className="font-medium text-white">{categoria.nome}</div>
-                        <div className="text-xs text-zinc-500">{categoria.slug}</div>
-                      </div>
-                    </td>
-                    <td className="hidden px-4 py-3 md:table-cell">
-                      <p className="max-w-xs truncate text-sm text-zinc-400">
-                        {categoria.descricao || '-'}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleToggleAtivo(categoria.id, categoria.ativo)}
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold transition-colors ${
-                          categoria.ativo
-                            ? 'bg-green-900/30 text-green-400 hover:bg-green-900/40'
-                            : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
-                        }`}
-                      >
-                        {categoria.ativo ? (
-                          <>
-                            <Eye className="mr-1 h-3 w-3" />
-                            Ativo
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="mr-1 h-3 w-3" />
-                            Inativo
-                          </>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenDialog(categoria)}
-                          className="h-8 w-8 text-zinc-400 hover:text-white"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setCategoriaToDelete(categoria.id)
-                            setDeleteDialogOpen(true)
-                          }}
-                          className="h-8 w-8 text-zinc-400 hover:text-red-400"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    {categoria.ativo ? (
+                      <>
+                        <Eye className="mr-1 h-3 w-3" />
+                        Ativo
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="mr-1 h-3 w-3" />
+                        Inativo
+                      </>
+                    )}
+                  </button>
+                </div>
+                {categoria.descricao ? (
+                  <p className="mt-3 text-sm text-zinc-400">{categoria.descricao}</p>
+                ) : null}
+                <div className="mt-4 flex items-center justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenDialog(categoria)}
+                    className="gap-2 border-zinc-700 text-white hover:border-zinc-600 hover:bg-zinc-800"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setCategoriaToDelete(categoria.id)
+                      setDeleteDialogOpen(true)
+                    }}
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Excluir
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+
+          {/* Tabela Desktop */}
+          <div className="hidden rounded-lg border border-zinc-800 bg-zinc-900 md:block">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-zinc-800">
+                    <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Ordem</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Nome</th>
+                    <th className="hidden px-4 py-3 text-left text-sm font-medium text-zinc-400 md:table-cell">
+                      Descrição
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Status</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium text-zinc-400">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categorias.map((categoria, index) => (
+                    <tr
+                      key={categoria.id}
+                      className={`border-b border-zinc-800 hover:bg-zinc-800/50 ${
+                        draggingId === categoria.id ? 'opacity-60' : ''
+                      } ${dragOverId === categoria.id ? 'bg-zinc-800/70' : ''}`}
+                      onDragOver={(e) => handleDragOver(e, categoria.id)}
+                      onDragEnter={(e) => handleDragEnter(e, categoria.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, categoria.id)}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, categoria.id)}
+                            className="cursor-grab text-zinc-600 hover:text-zinc-400"
+                            aria-label="Arrastar para reordenar"
+                          >
+                            <GripVertical className="h-4 w-4" />
+                          </span>
+                          <div className="flex flex-col gap-1">
+                            <button
+                              onClick={() => moveCategoria(index, 'up')}
+                              disabled={index === 0}
+                              className="text-zinc-500 hover:text-white disabled:opacity-30"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              onClick={() => moveCategoria(index, 'down')}
+                              disabled={index === categorias.length - 1}
+                              className="text-zinc-500 hover:text-white disabled:opacity-30"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                          <span className="text-sm text-zinc-500">{categoria.ordem}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div>
+                          <div className="font-medium text-white">{categoria.nome}</div>
+                          <div className="text-xs text-zinc-500">{categoria.slug}</div>
+                        </div>
+                      </td>
+                      <td className="hidden px-4 py-3 md:table-cell">
+                        <p className="max-w-xs truncate text-sm text-zinc-400">
+                          {categoria.descricao || '-'}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleToggleAtivo(categoria.id, categoria.ativo)}
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold transition-colors ${
+                            categoria.ativo
+                              ? 'bg-green-900/30 text-green-400 hover:bg-green-900/40'
+                              : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
+                          }`}
+                        >
+                          {categoria.ativo ? (
+                            <>
+                              <Eye className="mr-1 h-3 w-3" />
+                              Ativo
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff className="mr-1 h-3 w-3" />
+                              Inativo
+                            </>
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(categoria)}
+                            className="h-8 w-8 text-zinc-400 hover:text-white"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setCategoriaToDelete(categoria.id)
+                              setDeleteDialogOpen(true)
+                            }}
+                            className="h-8 w-8 text-zinc-400 hover:text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Dialog Criar/Editar */}
