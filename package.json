@@ -6,6 +6,7 @@
     "dev": "next dev",
     "dev:turbo": "next dev --turbo",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -40,6 +41,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

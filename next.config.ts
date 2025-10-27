@@ -1,5 +1,10 @@
 import type { NextConfig } from 'next'
 
+// Optimization Phase 2: Bundle analyzer to identify unused JS
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+})
+
 const nextConfig: NextConfig = {
   devIndicators: false,
   reactStrictMode: true,
@@ -55,4 +60,4 @@ const nextConfig: NextConfig = {
   generateEtags: true,
 }
 
-export default nextConfig
+export default withBundleAnalyzer(nextConfig)
