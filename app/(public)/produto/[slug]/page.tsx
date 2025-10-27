@@ -4,7 +4,7 @@ import { use, useState } from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Check } from 'lucide-react'
+import { ArrowLeft, Check, Share2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { WhatsAppContactButton } from '@/components/shared/whatsapp-contact-button'
@@ -106,15 +106,42 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
     `Olá! Tenho interesse no ${produto.nome} (${formatPreco(produto.preco)})`
   )
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: produto.nome,
+          text: `Confira: ${produto.nome} - ${formatPreco(produto.preco)}`,
+          url: window.location.href,
+        })
+      } catch (error) {
+        // User cancelled or error occurred
+        console.log('Share cancelled or failed', error)
+      }
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb */}
-      <div className="mb-6 flex items-center gap-2 text-sm text-zinc-400">
-        <Link href="/" className="hover:text-white">
-          Início
-        </Link>
-        <span>/</span>
-        <span className="text-white">{produto.nome}</span>
+      <div className="mb-6 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-sm text-zinc-400">
+          <Link href="/" className="hover:text-white">
+            Início
+          </Link>
+          <span>/</span>
+          <span className="text-white">{produto.nome}</span>
+        </div>
+
+        {/* Mobile Share Button */}
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-white lg:hidden"
+          aria-label="Compartilhar produto"
+        >
+          <Share2 className="h-4 w-4" />
+          <span>Compartilhar</span>
+        </button>
       </div>
 
       {/* Botão Voltar */}
