@@ -1,8 +1,6 @@
 'use client'
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ProdutoCard } from '@/components/public/produto-card'
 import { BannerCarousel } from '@/components/public/banner-carousel'
@@ -97,6 +95,14 @@ function ordenarProdutosPorModelo(produtos: Produto[]): Produto[] {
 }
 
 export default function HomePage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <HomePageContent />
+    </Suspense>
+  )
+}
+
+function HomePageContent() {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [produtosAgrupados, setProdutosAgrupados] = useState<ProdutosAgrupados[]>([])
   const [secoes, setSecoes] = useState<Secao[]>([])
@@ -112,21 +118,18 @@ export default function HomePage() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [busca, setBusca] = useState(() => searchParams?.get('busca') ?? '')
+  const [busca, setBusca] = useState('')
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>('todas')
   const [condicaoFiltro, setCondicaoFiltro] = useState<string>('todas')
   const [ordenacao, setOrdenacao] = useState('recentes')
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
 
+  // Sincronizar busca com searchParams
   useEffect(() => {
     if (!searchParams) return
     const paramBusca = searchParams.get('busca') ?? ''
-    if (typeof window === 'undefined') return
-    const handle = window.setTimeout(() => {
-      setBusca((prev) => (prev === paramBusca ? prev : paramBusca))
-    }, 0)
-    return () => window.clearTimeout(handle)
+    setBusca(paramBusca)
   }, [searchParams])
 
   useEffect(() => {

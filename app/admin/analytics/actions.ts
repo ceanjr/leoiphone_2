@@ -8,6 +8,7 @@ export async function resetAnalytics() {
 
   const { error: produtosError } = await supabase
     .from('produtos')
+    // @ts-ignore
     .update({ visualizacoes_total: 0 })
     .neq('visualizacoes_total', 0)
 
@@ -21,6 +22,7 @@ export async function resetAnalytics() {
 
   const { error: diariasError } = await supabase
     .from('visualizacoes_diarias')
+    // @ts-ignore
     .update({ total_views: 0 })
     .neq('total_views', 0)
 

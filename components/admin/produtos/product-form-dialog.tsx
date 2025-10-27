@@ -101,7 +101,7 @@ export function ProductFormDialog({
             return
           }
 
-          const produto = produtoResult?.produto
+          const produto = produtoResult?.produto as any
 
           if (!produto) {
             toast.error(produtoResult?.error || 'Produto não encontrado')

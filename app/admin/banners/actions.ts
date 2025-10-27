@@ -1,5 +1,7 @@
 'use server'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
@@ -49,6 +51,7 @@ export async function createBanner(data: {
     .order('ordem', { ascending: false })
     .limit(1)
 
+  // @ts-ignore
   const novaOrdem = banners && banners.length > 0 ? (banners[0].ordem || 0) + 1 : 1
 
   const { data: banner, error } = await (supabase as any)

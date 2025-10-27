@@ -1,11 +1,21 @@
 import { Suspense } from 'react'
 import { Package, DollarSign, Eye, TrendingUp, Plus } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Header } from '@/components/admin/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/shared/loading'
 import { createClient } from '@/lib/supabase/server'
+
+
+interface ProdutoResumo {
+  id: string
+  nome: string
+  foto_principal: string | null
+  visualizacoes_total: number
+  preco: number
+}
 
 async function getStats() {
   try {
@@ -16,32 +26,35 @@ async function getStats() {
       // Total de produtos
       supabase
         .from('produtos')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .is('deleted_at', null),
 
       // Produtos ativos
       supabase
         .from('produtos')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('ativo', true)
         .is('deleted_at', null),
 
       // Produtos novos
       supabase
         .from('produtos')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('condicao', 'novo')
         .is('deleted_at', null),
 
       // Produtos seminovos
       supabase
         .from('produtos')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('condicao', 'seminovo')
         .is('deleted_at', null),
 
       // Total de visualizações
-      supabase.from('produtos').select('visualizacoes_total').is('deleted_at', null),
+      supabase
+        .from('produtos')
+        .select('visualizacoes_total')
+        .is('deleted_at', null),
 
       // Produtos mais visualizados
       supabase
@@ -67,7 +80,11 @@ async function getStats() {
     if (maisVistosResult.error) console.error('Erro ao buscar mais vistos:', maisVistosResult.error)
 
     const totalVisualizacoes =
-      visualizacoesResult.data?.reduce((acc: number, curr: any) => acc + (curr.visualizacoes_total || 0), 0) || 0
+      visualizacoesResult.data?.reduce(
+        (acc: number, curr: { visualizacoes_total: number | null }) =>
+          acc + (curr.visualizacoes_total || 0),
+        0
+      ) || 0
 
     return {
       totalProdutos: totalProdutosResult.count || 0,
@@ -76,7 +93,7 @@ async function getStats() {
       produtosNovos: produtosNovosResult.count || 0,
       produtosSeminovos: produtosSeminovosResult.count || 0,
       totalVisualizacoes,
-      maisVistos: maisVistosResult.data || [],
+      maisVistos: (maisVistosResult.data as ProdutoResumo[]) || [],
     }
   } catch (error) {
     console.error('Erro ao carregar estatísticas:', error)
@@ -167,7 +184,7 @@ async function DashboardStats() {
             </p>
           ) : (
             <div className="space-y-4">
-              {stats.maisVistos.map((produto: any, index: number) => (
+              {stats.maisVistos.map((produto: ProdutoResumo, index: number) => (
                 <div
                   key={produto.id}
                   className="flex items-center gap-4 rounded-lg border border-zinc-800 p-4"
@@ -177,11 +194,15 @@ async function DashboardStats() {
                   </div>
 
                   {produto.foto_principal && (
-                    <img
-                      src={produto.foto_principal}
-                      alt={produto.nome}
-                      className="h-12 w-12 rounded-md object-cover"
-                    />
+                    <div className="relative h-12 w-12 overflow-hidden rounded-md">
+                      <Image
+                        src={produto.foto_principal}
+                        alt={produto.nome}
+                        fill
+                        sizes="48px"
+                        className="object-cover"
+                      />
+                    </div>
                   )}
 
                   <div className="flex-1">

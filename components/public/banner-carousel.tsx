@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -36,27 +36,22 @@ export function BannerCarousel() {
     Record<string, Array<Produto & { preco_promocional: number }>>
   >({})
 
-  useEffect(() => {
-    loadBanners()
-  }, [])
-
-  async function loadBanners() {
+  const loadBanners = useCallback(async () => {
     const supabase = createClient()
     const { data } = await supabase
       .from('banners')
-      .select('*')
+      .select('id, titulo, subtitulo, link, imagem_url, ordem, tipo, produtos_destaque')
       .eq('ativo', true)
       .order('ordem', { ascending: true })
 
     if (data && data.length > 0) {
       setBanners(data)
 
-      // Carregar produtos para banners do tipo produtos_destaque
       const produtosMap: Record<string, Array<Produto & { preco_promocional: number }>> = {}
 
-      for (const banner of data) {
+      for (const banner of data as any) {
         if (banner.tipo === 'produtos_destaque' && banner.produtos_destaque?.length > 0) {
-          const produtoIds = banner.produtos_destaque.map((p: any) => p.produto_id)
+          const produtoIds = banner.produtos_destaque.map((p: { produto_id: string }) => p.produto_id)
           const { data: produtos } = await supabase
             .from('produtos')
             .select('id, nome, slug, codigo_produto, preco, foto_principal, condicao')
@@ -64,10 +59,8 @@ export function BannerCarousel() {
             .is('deleted_at', null)
 
           if (produtos) {
-            produtosMap[banner.id] = produtos.map((p) => {
-              const produtoDestaque = banner.produtos_destaque.find(
-                (pd: any) => pd.produto_id === p.id
-              )
+            produtosMap[banner.id] = produtos.map((p: any) => {
+              const produtoDestaque = banner.produtos_destaque.find((pd: { produto_id: string }) => pd.produto_id === p.id)
               return {
                 ...p,
                 preco_promocional: produtoDestaque?.preco_promocional || p.preco,
@@ -80,7 +73,14 @@ export function BannerCarousel() {
       setProdutosPorBanner(produtosMap)
     }
     setLoading(false)
-  }
+  }, [])
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      void loadBanners()
+    }, 0)
+    return () => window.clearTimeout(handle)
+  }, [loadBanners])
 
   useEffect(() => {
     if (banners.length <= 1) return

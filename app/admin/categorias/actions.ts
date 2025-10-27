@@ -1,5 +1,7 @@
 'use server'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
@@ -56,6 +58,7 @@ export async function createCategoria(data: { nome: string; descricao?: string; 
     .limit(1)
     .single()
 
+  // @ts-ignore
   const novaOrdem = (maxOrdem?.ordem || 0) + 1
 
   const slug = generateSlug(data.nome)

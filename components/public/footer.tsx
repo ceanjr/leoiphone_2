@@ -12,6 +12,7 @@ export function PublicFooter() {
           <WhatsAppContactButton
             variant="ghost"
             className="flex items-center gap-2 text-zinc-400 hover:text-white"
+            label="Entre em contato pelo WhatsApp"
           >
             <span className="flex items-center gap-2">
               <Phone className="h-4 w-4" />

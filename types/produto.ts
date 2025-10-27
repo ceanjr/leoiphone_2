@@ -37,21 +37,22 @@ export interface ProdutoComCategoria extends Produto {
     id: string
     nome: string
     slug: string
+    ordem: number
   } | null
 }
 
 export interface ProdutoFormData {
-  codigo_produto?: string
+  codigo_produto?: string | null
   nome: string
   descricao?: string
   preco: number
-  nivel_bateria?: number
+  nivel_bateria?: number | null
   condicao: Condicao
   categoria_id: string
   garantia: Garantia
   acessorios: Acessorios
   fotos: string[]
-  foto_principal?: string
+  foto_principal?: string | null
   ativo: boolean
   estoque: number
   cor_oficial?: string

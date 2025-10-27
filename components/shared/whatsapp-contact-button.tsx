@@ -15,13 +15,14 @@ const CONTACTS = [
 interface WhatsAppContactButtonProps extends ButtonProps {
   message?: string
   triggerIcon?: boolean
+  label?: string
 }
 
 export function WhatsAppContactButton({
-  children,
   message,
   triggerIcon = false,
   className,
+  label,
   ...buttonProps
 }: WhatsAppContactButtonProps) {
   const [open, setOpen] = useState(false)
@@ -46,7 +47,7 @@ export function WhatsAppContactButton({
         {...buttonProps}
       >
         {triggerIcon ? <MessageCircle className="h-4 w-4" /> : null}
-        {children ?? 'WhatsApp'}
+        {label ?? 'WhatsApp'}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

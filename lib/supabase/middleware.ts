@@ -15,7 +15,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -40,14 +40,15 @@ export async function updateSession(request: NextRequest) {
 
     // Tentar validar o usuário com timeout
     try {
-      const {
-        data: { user },
-      } = await Promise.race([
-        supabase.auth.getUser(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Auth timeout')), 3000)
-        ),
-      ]) as any
+      const authPromise = supabase.auth.getUser()
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Auth timeout')), 3000)
+      )
+      const { data } = (await Promise.race([
+        authPromise,
+        timeoutPromise,
+      ])) as Awaited<ReturnType<typeof supabase.auth.getUser>>
+      const user = data.user
 
       if (!user) {
         const url = request.nextUrl.clone()
@@ -55,8 +56,7 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
       }
     } catch (error) {
-      // Em caso de timeout ou erro, permitir acesso se houver token
-      console.warn('Auth check timeout, allowing access with token')
+      console.warn('Auth check timeout, allowing access with token', error)
     }
   }
 

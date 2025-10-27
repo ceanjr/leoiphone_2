@@ -43,25 +43,23 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
         notFound()
       }
 
-      setProduto(data as ProdutoComCategoria)
+      const produtoData = data as ProdutoComCategoria
+      setProduto(produtoData)
       setLoading(false)
 
-      // Incrementar visualizações apenas para visitantes
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
+        const { data: sessionData } = await supabase.auth.getSession()
+        const session = sessionData.session
         if (!session?.user) {
-          await supabase.rpc('increment_visualizacoes', { produto_id: data.id })
+          const payload: { produto_id: string } = { produto_id: produtoData.id }
+          await supabase.rpc('increment_visualizacoes', payload as any)
         }
       } catch (incrementError) {
         console.warn('Não foi possível contabilizar a visualização do produto:', incrementError)
       }
 
-      // Pré-carregar todas as imagens do produto
-      if (data.fotos && data.fotos.length > 0) {
-        data.fotos.forEach((foto: string) => {
+      if (Array.isArray(produtoData.fotos) && produtoData.fotos.length > 0) {
+        produtoData.fotos.forEach((foto) => {
           const img = new window.Image()
           img.src = foto
         })
@@ -301,9 +299,8 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
             size="lg"
             className="w-full bg-[var(--brand-yellow)] text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90"
             message={whatsappMessage}
-          >
-            Comprar pelo WhatsApp
-          </WhatsAppContactButton>
+            label="Comprar pelo WhatsApp"
+          />
         </div>
       </div>
     </div>

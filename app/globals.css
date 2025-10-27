@@ -58,6 +58,8 @@
     --accent: 0 0% 14.9%;
     --accent-foreground: 0 0% 98%;
     --radius: 0.5rem;
+    --font-geist-sans: 'Inter', 'SF Pro Text', 'Helvetica Neue', Arial, system-ui, sans-serif;
+    --font-geist-mono: 'Roboto Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', Courier, monospace;
   }
 }
 
@@ -92,6 +94,7 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: var(--font-geist-sans);
   }
 
   button,

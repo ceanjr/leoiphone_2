@@ -39,7 +39,6 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react', '@/components/ui', '@radix-ui/react-icons'],
   },
 
-  sourceMaps: true,
 
   // Desabilitar devIndicators em produção
   productionBrowserSourceMaps: true,

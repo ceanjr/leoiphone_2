@@ -374,6 +374,8 @@ export default function CategoriasPage() {
                   {categorias.map((categoria, index) => (
                     <tr
                       key={categoria.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, categoria.id)}
                       className={`border-b border-zinc-800 hover:bg-zinc-800/50 ${
                         draggingId === categoria.id ? 'opacity-60' : ''
                       } ${dragOverId === categoria.id ? 'bg-zinc-800/70' : ''}`}
@@ -385,8 +387,6 @@ export default function CategoriasPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <span
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, categoria.id)}
                             className="cursor-grab text-zinc-600 hover:text-zinc-400"
                             aria-label="Arrastar para reordenar"
                           >

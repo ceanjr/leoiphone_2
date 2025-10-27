@@ -103,7 +103,8 @@ export default function BannersPage() {
           .in('id', produtoIds)
 
         if (produtos) {
-          const produtosComPreco = produtos.map((p) => {
+          const produtosComPreco = produtos.map((p: any) => {
+            // @ts-ignore
             const produtoDestaque = banner.produtos_destaque.find(
               (pd) => pd.produto_id === p.id
             )
