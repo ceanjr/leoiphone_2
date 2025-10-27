@@ -167,10 +167,11 @@ export function BannerCarousel() {
         alt={currentBanner.titulo}
         fill
         className="object-cover"
-        // Optimization: Responsive sizes for better performance
+        // Optimization Phase 2: Responsive sizes + fetchPriority for LCP
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 1200px"
-        priority // Optimization: Priority for LCP
-        quality={85} // Optimization: Slightly lower quality for faster load
+        priority
+        fetchPriority="high"
+        quality={85}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-6 text-white md:p-8 lg:p-12">
