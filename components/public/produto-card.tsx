@@ -94,7 +94,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
   if (view === 'list') {
     return (
       <Link href={`/produto/${produto.slug}`}>
-        <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-zinc-700 hover:shadow-lg hover:shadow-black/20">
+        <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10">
           <div className="flex flex-row">
             {/* Optimization: Fixed dimensions to prevent CLS */}
             <div className="relative h-28 w-28 overflow-hidden bg-zinc-950 flex-shrink-0 hidden sm:block">
@@ -117,7 +117,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
 
             <div className="flex flex-1 flex-row items-center justify-between gap-3 p-3 sm:p-4">
               <div className="flex-1 min-w-0">
-                <h3 className="mb-1 line-clamp-1 text-base sm:text-lg font-semibold text-white">
+                <h3 className="mb-1 line-clamp-1 text-base sm:text-lg font-semibold text-white group-hover:text-[var(--brand-yellow)] transition-colors">
                   {produto.nome}
                 </h3>
 
@@ -164,7 +164,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
               </div>
 
               <div className="flex-shrink-0 flex items-center">
-                <p className="text-lg sm:text-xl font-bold text-white whitespace-nowrap">
+                <p className="text-lg sm:text-xl font-bold text-[var(--brand-yellow)] whitespace-nowrap">
                   {formatPreco(produto.preco)}
                 </p>
               </div>
@@ -177,7 +177,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
 
   return (
     <Link href={`/produto/${produto.slug}`}>
-      <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-zinc-700 hover:shadow-lg hover:shadow-black/20">
+      <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10">
         {/* Optimization: aspect-square maintains proper spacing, preventing CLS */}
         <div className="relative aspect-square overflow-hidden bg-zinc-950">
           {produto.foto_principal ? (
@@ -233,7 +233,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
         </div>
 
         <div className="p-4">
-          <h3 className="mb-2 line-clamp-2 text-lg font-semibold text-white">
+          <h3 className="mb-2 line-clamp-2 text-lg font-semibold text-white group-hover:text-[var(--brand-yellow)] transition-colors">
             {produto.nome}
           </h3>
 
@@ -244,7 +244,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
           )}
 
           <div>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-2xl font-bold text-[var(--brand-yellow)]">
               {formatPreco(produto.preco)}
             </p>
           </div>

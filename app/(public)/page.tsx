@@ -557,7 +557,7 @@ function HomePageContent() {
               <div className="flex items-center gap-3">
                 <span className="text-3xl">{config.icon}</span>
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{secao.titulo}</h2>
+                  <h2 className="text-2xl font-bold text-[var(--brand-yellow)]">{secao.titulo}</h2>
                   {secao.subtitulo && <p className="text-sm text-zinc-400">{secao.subtitulo}</p>}
                 </div>
               </div>
@@ -602,7 +602,7 @@ function HomePageContent() {
               size="sm"
               onClick={() => setViewMode('grid')}
               className={`h-8 w-8 p-0 ${
-                viewMode === 'grid' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'
+                viewMode === 'grid' ? 'bg-zinc-800 text-[var(--brand-yellow)]' : 'text-zinc-500 hover:text-[var(--brand-yellow)]'
               }`}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -612,7 +612,7 @@ function HomePageContent() {
               size="sm"
               onClick={() => setViewMode('list')}
               className={`h-8 w-8 p-0 ${
-                viewMode === 'list' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'
+                viewMode === 'list' ? 'bg-zinc-800 text-[var(--brand-yellow)]' : 'text-zinc-500 hover:text-[var(--brand-yellow)]'
               }`}
             >
               <List className="h-4 w-4" />
@@ -637,7 +637,7 @@ function HomePageContent() {
             <section key={grupo.categoria.id}>
               {/* Título da Categoria */}
               <div className="mb-6 border-b border-zinc-800 pb-3">
-                <h2 className="text-2xl font-bold text-white">{grupo.categoria.nome}</h2>
+                <h2 className="text-2xl font-bold text-[var(--brand-yellow)]">{grupo.categoria.nome}</h2>
                 <p className="text-sm text-zinc-400">{grupo.produtos.length} produto(s)</p>
               </div>
 
