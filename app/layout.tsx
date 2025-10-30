@@ -10,9 +10,6 @@ export const metadata: Metadata = {
     'Veja os modelos disponíveis de iPhones com preço, imagens e informações detalhadas.',
   keywords: ['iPhone', 'Apple', 'iPhone novo', 'iPhone seminovo', 'comprar iPhone', 'Léo iPhone'],
   authors: [{ name: 'Léo iPhone' }],
-  icons: {
-    icon: '/icons/favicon.svg',
-  },
   openGraph: {
     title: 'Léo iPhone - Catálogo',
     description:

@@ -37,13 +37,13 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%] fixed inset-0 z-50 flex h-screen w-screen max-w-none translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-transparent bg-zinc-950 p-4 py-6 text-white shadow-[0_24px_80px_-35px_rgba(0,0,0,0.85)] backdrop-blur-sm duration-200 sm:top-1/2 sm:left-1/2 sm:h-auto sm:max-h-[calc(100vh-2rem)] sm:w-[calc(100vw-1.5rem)] sm:max-w-2xl sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:border-zinc-800 sm:p-6',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%] sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%] fixed left-0 right-0 top-0 bottom-0 z-50 flex h-screen w-screen max-w-none translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border border-transparent bg-zinc-950 p-4 py-6 text-white shadow-[0_24px_80px_-35px_rgba(0,0,0,0.85)] backdrop-blur-sm duration-200 sm:left-1/2 sm:top-1/2 sm:right-auto sm:bottom-auto sm:h-auto sm:max-h-[calc(100vh-2rem)] sm:w-[calc(100vw-1.5rem)] sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:border-zinc-800 sm:p-6',
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="ring-offset-background absolute top-3 right-3 z-50 flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-zinc-700/50 bg-zinc-800/80 text-zinc-100 shadow-lg backdrop-blur-sm transition-all hover:bg-zinc-700 hover:text-white focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:outline-none active:scale-95 disabled:pointer-events-none">
+      <DialogPrimitive.Close className="ring-offset-background absolute top-3 right-3 z-50 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-zinc-700/50 bg-zinc-800/80 text-zinc-100 shadow-lg backdrop-blur-sm transition-all hover:bg-zinc-700 hover:text-white focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:outline-none active:scale-95 disabled:pointer-events-none">
         <Cross2Icon className="h-6 w-6" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>

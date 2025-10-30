@@ -145,17 +145,71 @@ function HomePageContent() {
       console.log('[HomePage] Produtos atualizados via polling:', produtosAtualizados.length)
 
       // Filtrar produtos em destaque
-      const produtosFiltrados = produtosAtualizados.filter(
+      let produtosFiltrados = produtosAtualizados.filter(
         (p) => !produtosEmDestaqueIds.includes(p.id)
       )
 
-      // Atualizar lista completa
-      setProdutos(produtosFiltrados as Produto[])
+      // Aplicar filtro de categoria (se houver)
+      if (categoriaFiltro !== 'todas') {
+        produtosFiltrados = produtosFiltrados.filter(
+          (p) => p.categoria_id === categoriaFiltro
+        )
+      }
 
-      // Forçar recarregamento dos produtos agrupados
-      void loadProdutos()
+      // Aplicar filtro de busca (se houver)
+      if (busca.trim()) {
+        const buscaLower = busca.toLowerCase()
+        produtosFiltrados = produtosFiltrados.filter(
+          (p) =>
+            p.nome.toLowerCase().includes(buscaLower) ||
+            p.descricao?.toLowerCase().includes(buscaLower) ||
+            p.codigo_produto?.toLowerCase().includes(buscaLower)
+        )
+      }
+
+      // Ordenar por modelo iPhone
+      const produtosOrdenados = ordenarProdutosPorModelo(produtosFiltrados as Produto[])
+
+      // Agrupar por categoria mantendo a estrutura atual
+      const grupos: { [key: string]: ProdutosAgrupados } = {}
+
+      produtosOrdenados.forEach((produto: any) => {
+        const catId = produto.categoria?.id || 'sem-categoria'
+        if (!grupos[catId]) {
+          grupos[catId] = {
+            categoria: produto.categoria || {
+              id: 'sem-categoria',
+              nome: 'Outros Produtos',
+              slug: 'outros',
+              ordem: 9999,
+            },
+            produtos: [],
+          }
+        }
+        grupos[catId].produtos.push(produto)
+      })
+
+      // Ordenar cada grupo internamente
+      Object.values(grupos).forEach((grupo) => {
+        grupo.produtos = ordenarProdutosPorModelo(grupo.produtos)
+      })
+
+      // Converter para array e ordenar
+      const gruposArray = Object.values(grupos).sort(
+        (a, b) => (a.categoria.ordem || 9999) - (b.categoria.ordem || 9999)
+      )
+
+      // Atualizar dados SEM resetar categoriasExibidas
+      setTodasCategorias(gruposArray)
+      setProdutos(produtosOrdenados as Produto[])
+
+      // Atualizar apenas as categorias que estão sendo exibidas
+      setProdutosAgrupados(prevAgrupados => {
+        const currentCount = prevAgrupados.length
+        return gruposArray.slice(0, Math.max(currentCount, 1))
+      })
     },
-    [produtosEmDestaqueIds]
+    [produtosEmDestaqueIds, categoriaFiltro, busca]
   )
 
   // Ativar polling de produtos
@@ -516,6 +570,8 @@ function HomePageContent() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="border-zinc-800 bg-zinc-900 pl-10 text-white placeholder:text-zinc-500"
+            autoFocus={false}
+            autoComplete="off"
           />
           <button type="submit" className="sr-only">
             Buscar
