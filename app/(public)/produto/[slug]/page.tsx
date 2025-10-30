@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react'
 import { notFound, useSearchParams } from 'next/navigation'
-import Image from 'next/image'
+import NextImage from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Check, Share2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -41,10 +41,9 @@ function ProdutoPageContent({ slug }: { slug: string }) {
     setTaxas(config.taxas)
   }, [])
 
-  // Ativar polling para taxas (verifica a cada 2 segundos)
+  // Ativar polling para taxas
   usePollingTaxas({
     enabled: true,
-    interval: 2000,
     onUpdate: handleTaxasUpdate,
   })
 
@@ -91,8 +90,8 @@ function ProdutoPageContent({ slug }: { slug: string }) {
       }
     }
 
-    // Verificar a cada 3 segundos
-    pollingIntervalRef.current = setInterval(checkProdutoUpdate, 3000)
+    // Verificar a cada 10 segundos
+    pollingIntervalRef.current = setInterval(checkProdutoUpdate, 10000)
 
     return () => {
       if (pollingIntervalRef.current) {
@@ -161,7 +160,7 @@ function ProdutoPageContent({ slug }: { slug: string }) {
           .select('ativo, taxas')
           .order('created_at', { ascending: false })
           .limit(1)
-          .single()
+          .single() as { data: { ativo: boolean; taxas: unknown } | null }
 
         if (configData && configData.ativo) {
           setCalculadoraAtiva(true)
@@ -208,9 +207,13 @@ function ProdutoPageContent({ slug }: { slug: string }) {
     '1_ano': '1 ano de garantia',
   }
 
-  const whatsappMessage = encodeURIComponent(
-    `Olá! Tenho interesse no ${produto.nome} (${formatPreco(produto.preco)})`
-  )
+  // Construir mensagem do WhatsApp com todas as informações
+  const productUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const codigoProduto = produto.codigo_produto ? `, código ${produto.codigo_produto}` : ''
+
+  const whatsappMessage = `Tenho interesse no ${produto.nome}${codigoProduto}, ${formatPreco(produto.preco)}
+
+Link: ${productUrl}`
 
   const handleShare = async () => {
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -266,14 +269,14 @@ function ProdutoPageContent({ slug }: { slug: string }) {
         <div>
           <div className="relative aspect-square overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
             {produto.fotos[fotoSelecionada] ? (
-              <Image
+              <NextImage
                 src={produto.fotos[fotoSelecionada]}
                 alt={produto.nome}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 600px"
                 className="object-cover transition-opacity duration-200"
                 priority={fotoSelecionada === 0}
-                quality={70}
+                quality={95}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-zinc-700">
@@ -295,14 +298,14 @@ function ProdutoPageContent({ slug }: { slug: string }) {
                       : 'border-zinc-800 hover:border-zinc-700'
                   }`}
                 >
-                  <Image
+                  <NextImage
                     src={foto}
                     alt={`${produto.nome} - Foto ${index + 1}`}
                     fill
                     sizes="(max-width: 640px) 20vw, (max-width: 1024px) 15vw, 120px"
                     className="object-cover"
                     loading={index === fotoSelecionada ? 'eager' : 'lazy'}
-                    quality={50}
+                    quality={75}
                   />
                 </button>
               ))}

@@ -45,7 +45,7 @@ export function usePageTracking() {
     const trackView = async () => {
       try {
         console.log('[Tracking] Registrando view:', { pathname, visitorId: visitorId.current })
-        await supabase.rpc('track_page_view', {
+        await (supabase as any).rpc('track_page_view', {
           p_visitor_id: visitorId.current,
           p_path: pathname
         })
@@ -63,7 +63,7 @@ export function usePageTracking() {
       if (!tracked.current) return
 
       try {
-        await supabase
+        await (supabase as any)
           .from('active_sessions')
           .update({ last_seen: new Date().toISOString(), page_path: pathname })
           .eq('visitor_id', visitorId.current)

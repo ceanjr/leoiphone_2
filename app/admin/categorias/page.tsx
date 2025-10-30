@@ -529,7 +529,11 @@ export default function CategoriasPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="min-h-[48px]"
+            >
               Cancelar
             </Button>
             <Button
@@ -539,6 +543,7 @@ export default function CategoriasPage() {
                 backgroundColor: 'var(--brand-yellow)',
                 color: 'var(--brand-black)',
               }}
+              className="min-h-[48px] hover:opacity-90"
             >
               {saving ? 'Salvando...' : editingCategoria ? 'Atualizar' : 'Criar'}
             </Button>

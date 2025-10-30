@@ -56,15 +56,16 @@ export function useRealtimeTaxas(options: UseRealtimeTaxasOptions = {}) {
           }
 
           if (data) {
+            const typedData = data as any
             console.log('[useRealtimeTaxas] Taxas atualizadas:', {
-              ativo: data.ativo,
-              taxas: data.taxas,
+              ativo: typedData.ativo,
+              taxas: typedData.taxas,
             })
 
             if (onUpdate) {
               onUpdate({
-                ativo: data.ativo,
-                taxas: data.taxas as TaxasConfig,
+                ativo: typedData.ativo,
+                taxas: typedData.taxas as TaxasConfig,
               })
             }
           }

@@ -134,7 +134,7 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
               <Button
                 onClick={handleExport}
                 disabled={selectedImages.size === 0 || downloading}
-                className="bg-[var(--brand-yellow)] text-black hover:bg-[var(--brand-yellow)]/90 font-medium"
+                className="bg-[var(--brand-yellow)] text-black hover:bg-[var(--brand-yellow)]/90 font-medium min-h-[44px]"
               >
                 <Download className="mr-2 h-4 w-4" />
                 {downloading

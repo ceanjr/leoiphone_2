@@ -431,8 +431,8 @@ export default function BannersPage() {
 
       {/* Dialog Criar/Editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-5xl border-none bg-transparent p-0 text-white">
-          <div className="-mx-4 -my-6 flex h-full flex-col overflow-hidden border border-zinc-800/80 bg-zinc-950/95 shadow-[0_28px_120px_-40px_rgba(0,0,0,0.85)] sm:mx-0 sm:my-0 sm:rounded-2xl">
+        <DialogContent className="sm:max-w-5xl p-0 text-white border-zinc-800/80 bg-zinc-950/95 shadow-[0_28px_120px_-40px_rgba(0,0,0,0.85)]">
+          <div className="flex h-full flex-col overflow-hidden">
             {(() => {
               const isEditing = Boolean(editingBanner)
               const accentStyles = isEditing
@@ -449,7 +449,7 @@ export default function BannersPage() {
               const HeaderIcon = isEditing ? Edit : Plus
               const modeBadgeText = isEditing ? 'Edição ativa' : 'Novo cadastro'
               return (
-                <div className="relative border-b border-zinc-800/70 bg-zinc-950/80 px-6 py-6 sm:px-8">
+                <div className="relative border-b border-zinc-800/70 bg-zinc-950/80 px-5 py-5 sm:px-6 sm:py-6 md:px-8">
                   <div
                     className={`pointer-events-none absolute inset-0 opacity-70 blur-3xl ${accentStyles.glow}`}
                     aria-hidden
@@ -488,7 +488,7 @@ export default function BannersPage() {
               }}
               className="flex flex-1 min-h-0 flex-col overflow-hidden"
             >
-              <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+              <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6 md:px-8 md:py-8">
                 <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
                   <section className="space-y-6">
                     <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
@@ -762,12 +762,12 @@ export default function BannersPage() {
                 </div>
               </div>
 
-              <div className="border-t border-zinc-800/70 bg-zinc-950/85 px-4 py-4 shadow-[0_-20px_40px_-40px_rgba(0,0,0,0.8)] sm:px-8">
+              <div className="border-t border-zinc-800/70 bg-zinc-950/85 px-5 py-4 shadow-[0_-20px_40px_-40px_rgba(0,0,0,0.8)] sm:px-6 md:px-8">
                 <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-600 hover:bg-zinc-800 sm:w-auto"
+                    className="w-full border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-600 hover:bg-zinc-800 sm:w-auto min-h-[48px]"
                     onClick={() => setDialogOpen(false)}
                   >
                     Cancelar
@@ -780,7 +780,7 @@ export default function BannersPage() {
                       (formData.tipo === 'banner' && !formData.imagem_url) ||
                       (formData.tipo === 'produtos_destaque' && selectedProdutos.length === 0)
                     }
-                    className="w-full bg-[var(--brand-yellow)] text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90 sm:w-auto"
+                    className="w-full bg-[var(--brand-yellow)] text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90 sm:w-auto min-h-[48px]"
                   >
                     {saving ? 'Salvando...' : editingBanner ? 'Atualizar' : 'Criar'}
                   </Button>

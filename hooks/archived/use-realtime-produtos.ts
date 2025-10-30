@@ -54,7 +54,7 @@ export function useRealtimeProdutos(options: UseRealtimeProdutosOptions = {}) {
           }
 
           if (data && onInsert) {
-            console.log('[useRealtimeProdutos] Produto inserido:', data.nome)
+            console.log('[useRealtimeProdutos] Produto inserido:', (data as any).nome)
             onInsert(data as ProdutoComCategoria)
           }
         }
@@ -85,7 +85,7 @@ export function useRealtimeProdutos(options: UseRealtimeProdutosOptions = {}) {
           }
 
           if (data && onUpdate) {
-            console.log('[useRealtimeProdutos] Produto atualizado:', data.nome)
+            console.log('[useRealtimeProdutos] Produto atualizado:', (data as any).nome)
             onUpdate(data as ProdutoComCategoria)
           }
         }

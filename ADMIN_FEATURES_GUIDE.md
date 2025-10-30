@@ -1186,6 +1186,309 @@ export function CalculadoraParcelas({ preco, taxasConfig }: CalculadoraParcelasP
 }
 ```
 
+---
+
+## Sistema de Presets de Taxas
+
+O sistema de presets permite salvar múltiplas configurações de taxas e alternar entre elas rapidamente, facilitando a gestão de diferentes estratégias de parcelamento.
+
+### 1. Schema e Validação
+
+```typescript
+// lib/validations/taxas.ts
+import { z } from 'zod'
+
+// Schema para presets de taxas
+export const presetTaxasSchema = z.object({
+  id: z.string().optional(),
+  nome: z.string().min(1, 'Nome é obrigatório').max(50, 'Nome muito longo'),
+  taxas: taxasSchema,
+  is_default: z.boolean().default(false),
+})
+
+export type PresetTaxas = z.infer<typeof presetTaxasSchema>
+```
+
+### 2. Server Actions para Presets
+
+```typescript
+// app/admin/taxas/actions.ts (adicionar ao arquivo existente)
+
+/**
+ * Busca todos os presets de taxas
+ */
+export async function getPresets() {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('presets_taxas')
+    .select('*')
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    return { presets: [], error: 'Erro ao carregar presets' }
+  }
+
+  return { presets: data as PresetTaxas[], error: null }
+}
+
+/**
+ * Cria um novo preset
+ */
+export async function createPreset(preset: Omit<PresetTaxas, 'id'>) {
+  const supabase = await createClient()
+  const validated = presetTaxasSchema.omit({ id: true }).safeParse(preset)
+
+  if (!validated.success) {
+    return { success: false, error: validated.error.issues[0]?.message }
+  }
+
+  // Se for preset padrão, remover is_default dos outros
+  if (validated.data.is_default) {
+    await supabase
+      .from('presets_taxas')
+      .update({ is_default: false })
+  }
+
+  const { data, error } = await supabase
+    .from('presets_taxas')
+    .insert(validated.data)
+    .select()
+    .single()
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/admin/taxas')
+  return { success: true, preset: data }
+}
+
+/**
+ * Aplica um preset às taxas atuais
+ */
+export async function applyPreset(presetId: string) {
+  const supabase = await createClient()
+
+  const { data: preset, error } = await supabase
+    .from('presets_taxas')
+    .select('*')
+    .eq('id', presetId)
+    .single()
+
+  if (error || !preset) {
+    return { success: false, error: 'Preset não encontrado' }
+  }
+
+  const { configuracao } = await getConfiguracaoTaxas()
+
+  return updateConfiguracaoTaxas({
+    ativo: configuracao?.ativo ?? false,
+    taxas: preset.taxas,
+  })
+}
+
+/**
+ * Deleta um preset
+ */
+export async function deletePreset(id: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('presets_taxas').delete().eq('id', id)
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/admin/taxas')
+  return { success: true }
+}
+```
+
+### 3. Interface de Presets na Página Admin
+
+A página `/admin/taxas` agora inclui um card lateral com a gestão de presets:
+
+```typescript
+// Estrutura do Card de Presets
+<Card className="border-zinc-800 bg-zinc-900">
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2 text-white">
+      <Bookmark className="h-5 w-5 text-[var(--brand-yellow)]" />
+      Presets
+    </CardTitle>
+    <CardDescription>Salve e aplique configurações rapidamente</CardDescription>
+  </CardHeader>
+  <CardContent>
+    {/* Formulário para criar novo preset */}
+    <div className="flex gap-2">
+      <Input
+        placeholder="Nome do preset"
+        value={newPresetName}
+        onChange={(e) => setNewPresetName(e.target.value)}
+      />
+      <Button onClick={handleSavePreset}>
+        <Plus className="h-4 w-4" />
+      </Button>
+    </div>
+
+    {/* Lista de presets salvos */}
+    {presets.map((preset) => (
+      <div key={preset.id} className="flex items-center justify-between">
+        <p>{preset.nome}</p>
+        <div className="flex gap-1">
+          <Button onClick={() => handleApplyPreset(preset.id)}>
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button onClick={() => handleDeletePreset(preset.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    ))}
+  </CardContent>
+</Card>
+```
+
+### 4. Funcionalidades do Sistema de Presets
+
+- **Salvar configuração atual**: Permite nomear e salvar as taxas configuradas no momento
+- **Aplicar preset**: Carrega instantaneamente um conjunto de taxas salvo
+- **Deletar preset**: Remove presets que não são mais necessários
+- **Preset padrão**: Marca um preset como configuração padrão (futuro)
+
+### 5. Benefícios
+
+1. **Troca rápida de estratégias**: Alterne entre "Padrão", "Promoção", "Black Friday" etc. em 1 clique
+2. **Backup de configurações**: Mantenha histórico de diferentes configurações
+3. **Redução de erros**: Não precisa digitar 18 valores manualmente toda vez
+4. **Agilidade operacional**: De 8+ minutos para 5 segundos ao trocar taxas
+
+---
+
+## Calculadora de Taxas Pública
+
+Disponível no header do site público, permite aos visitantes calcular parcelas de valores personalizados.
+
+### 1. Componente da Calculadora
+
+```typescript
+// components/public/calculadora-taxas-dialog.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Calculator } from 'lucide-react'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { calcularTodasParcelas, formatarMoeda } from '@/lib/utils/calcular-parcelas'
+import { getConfiguracaoTaxas } from '@/app/admin/taxas/actions'
+
+export function CalculadoraTaxasDialog() {
+  const [valor, setValor] = useState('')
+  const [taxas, setTaxas] = useState(TAXAS_PADRAO)
+
+  useEffect(() => {
+    async function loadTaxas() {
+      const { configuracao } = await getConfiguracaoTaxas()
+      if (configuracao?.taxas) {
+        setTaxas(configuracao.taxas)
+      }
+    }
+    loadTaxas()
+  }, [])
+
+  const valorNumerico = parseFloat(valor.replace(/[^\d,]/g, '').replace(',', '.')) || 0
+  const parcelas = valorNumerico > 0 ? calcularTodasParcelas(valorNumerico, taxas) : []
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <Calculator className="mr-2 h-4 w-4" />
+          Calculadora de Taxas
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent>
+        {/* Input de valor */}
+        <Input
+          type="text"
+          placeholder="R$ 0,00"
+          value={valor}
+          onChange={handleValorChange}
+        />
+
+        {/* Tabela de parcelas */}
+        {parcelas.map((parcela) => (
+          <div key={parcela.numero}>
+            <span>{parcela.numero}x de {formatarMoeda(parcela.valorParcela)}</span>
+            <span className="text-xs">{parcela.taxa.toFixed(2)}% a.m.</span>
+          </div>
+        ))}
+      </DialogContent>
+    </Dialog>
+  )
+}
+```
+
+### 2. Integração no Header
+
+```typescript
+// components/public/header.tsx
+
+export function PublicHeader() {
+  return (
+    <header>
+      {/* Desktop */}
+      <div className="hidden sm:flex items-center gap-3">
+        <WhatsAppContactButton />
+        <CalculadoraTaxasDialog />
+        <Button asChild>
+          <Link href="/admin">Admin</Link>
+        </Button>
+      </div>
+
+      {/* Mobile - Menu Hambúrguer */}
+      <div className="flex sm:hidden">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right">
+            <div className="flex flex-col gap-3">
+              <WhatsAppContactButton className="w-full" />
+              <CalculadoraTaxasDialog triggerClassName="w-full" />
+              <Button asChild className="w-full">
+                <Link href="/admin">Admin</Link>
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </header>
+  )
+}
+```
+
+### 3. Funcionalidades da Calculadora Pública
+
+- **Input com formatação automática**: Valor digitado é formatado em tempo real como moeda
+- **Cálculo instantâneo**: Mostra todas as opções de parcelamento (1x até 18x)
+- **Destaque visual**: Parcela máxima destacada em card especial
+- **Informações completas**: Mostra valor da parcela, taxa e total para cada opção
+- **Responsivo**: Funciona perfeitamente em mobile e desktop
+
+### 4. Menu Mobile
+
+No mobile, todos os botões do header são agrupados em um menu hambúrguer:
+
+- **Ícone de menu**: Botão com ícone de 3 linhas (hambúrguer)
+- **Sheet lateral**: Abre menu deslizante da direita
+- **Opções empilhadas**: WhatsApp, Calculadora e Admin em lista vertical
+- **Touch targets**: Botões com altura mínima de 48px para melhor UX mobile
+
 
 ## Checklist de Implementação para SRiPhone
 

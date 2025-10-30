@@ -142,7 +142,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
   if (view === 'list') {
     return (
       <Link href={productUrl}>
-        <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10 active:scale-[0.98] duration-100">
+        <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-[var(--brand-yellow)] hover:shadow-xl hover:shadow-[var(--brand-yellow)]/20 hover:-translate-y-1 active:scale-[0.98]">
           <div className="flex flex-row">
             {/* Optimization: Fixed dimensions to prevent CLS */}
             <div className="relative h-28 w-28 overflow-hidden bg-zinc-950 flex-shrink-0 hidden sm:block">
@@ -152,9 +152,9 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
                   alt={produto.nome}
                   fill
                   sizes="112px"
-                  className="object-cover transition-transform group-hover:scale-105"
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
                   loading={priority ? 'eager' : 'lazy'}
-                  quality={75}
+                  quality={85}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-zinc-700 text-xs">
@@ -221,7 +221,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
 
   return (
     <Link href={productUrl}>
-      <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10 active:scale-[0.98] duration-100">
+      <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-[var(--brand-yellow)] hover:shadow-xl hover:shadow-[var(--brand-yellow)]/20 hover:-translate-y-1 active:scale-[0.98]">
         {/* Optimization: aspect-square maintains proper spacing, preventing CLS */}
         <div className="relative aspect-square overflow-hidden bg-zinc-950">
           {produto.foto_principal ? (
@@ -230,9 +230,9 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
               alt={produto.nome}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 292px"
-              className="object-cover transition-transform group-hover:scale-105"
+              className="object-cover transition-transform duration-500 group-hover:scale-110"
               loading={priority ? 'eager' : 'lazy'}
-              quality={65}
+              quality={85}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-zinc-700">

@@ -16,18 +16,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import dynamic from 'next/dynamic'
-import { createProduto, getCategorias, getProdutoById, updateProduto } from '@/app/admin/produtos/actions'
+import {
+  createProduto,
+  getCategorias,
+  getProdutoById,
+  updateProduto,
+} from '@/app/admin/produtos/actions'
 
-const ImageUpload = dynamic(() => import('@/components/admin/image-upload').then((mod) => mod.ImageUpload), {
-  ssr: false,
-})
+const ImageUpload = dynamic(
+  () => import('@/components/admin/image-upload').then((mod) => mod.ImageUpload),
+  {
+    ssr: false,
+  }
+)
 import type { ProdutoFormData } from '@/lib/validations/produto'
 import { Plus, Save, Pencil, X } from 'lucide-react'
 import { useIPhoneColors } from '@/hooks/use-iphone-colors'
@@ -169,7 +172,7 @@ export function ProductFormDialog({
   // Memoizar cores disponíveis filtradas (remove já selecionadas)
   const availableColorsFiltered = useMemo(() => {
     if (!availableColors.length) return []
-    return availableColors.filter(color => !selectedColors.includes(color))
+    return availableColors.filter((color) => !selectedColors.includes(color))
   }, [availableColors, selectedColors])
 
   function handleClose() {
@@ -206,12 +209,15 @@ export function ProductFormDialog({
     }
   }, [customColorInput, handleAddColor])
 
-  const handleCustomColorKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleAddCustomColor()
-    }
-  }, [handleAddCustomColor])
+  const handleCustomColorKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        handleAddCustomColor()
+      }
+    },
+    [handleAddCustomColor]
+  )
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -220,7 +226,12 @@ export function ProductFormDialog({
     startSubmit(async () => {
       setIsLoading(true)
       try {
-        if (!formData.nome || !formData.preco || !formData.categoria_id || !formData.fotos?.length) {
+        if (
+          !formData.nome ||
+          !formData.preco ||
+          !formData.categoria_id ||
+          !formData.fotos?.length
+        ) {
           toast.error('Preencha os campos obrigatórios.')
           return
         }
@@ -253,7 +264,7 @@ export function ProductFormDialog({
           console.log('[ProductForm] Salvando produto:', {
             nome: payload.nome,
             cores: payload.cores,
-            mode
+            mode,
           })
         }
 
@@ -310,8 +321,8 @@ export function ProductFormDialog({
       }}
     >
       {open ? (
-        <DialogContent className="!left-[50%] !top-[50%] !h-[95vh] !w-[95vw] !max-w-[1400px] !translate-x-[-50%] !translate-y-[-50%] flex flex-col overflow-hidden border border-zinc-800/80 bg-zinc-950/95 p-0 text-white shadow-[0_28px_120px_-40px_rgba(0,0,0,0.85)] backdrop-blur-sm">
-          <div className="relative flex-shrink-0 border-b border-zinc-800/70 bg-zinc-950/80 px-6 py-6 sm:px-8">
+        <DialogContent className="!top-[50%] !left-[50%] flex !max-w-[1400px] !translate-x-[-50%] !translate-y-[-50%] flex-col overflow-hidden border border-zinc-800/80 bg-zinc-950/95 p-0 text-white shadow-[0_28px_120px_-40px_rgba(0,0,0,0.85)] backdrop-blur-sm sm:!h-[95vh] sm:!w-[95vw]">
+          <div className="relative flex-shrink-0 border-b border-zinc-800/70 bg-zinc-950/80 px-5 py-5 sm:px-6 sm:py-6 md:px-8">
             <div
               className={`pointer-events-none absolute inset-0 opacity-70 blur-3xl ${accentStyles.glow}`}
               aria-hidden
@@ -324,19 +335,15 @@ export function ProductFormDialog({
                   <HeaderIcon className="h-5 w-5" />
                 </span>
                 <div className="space-y-1">
-                  <DialogTitle className="text-2xl font-semibold text-white">{headerTitle}</DialogTitle>
+                  <DialogTitle className="text-2xl font-semibold text-white">
+                    {headerTitle}
+                  </DialogTitle>
                   <DialogDescription className="text-sm text-zinc-400">
                     {headerDescription}
                   </DialogDescription>
                 </div>
               </div>
-              <Badge className={`border ${accentStyles.badge}`}>
-                {modeBadgeText}
-              </Badge>
             </div>
-            <p className="relative z-10 mt-4 text-xs uppercase tracking-[0.22em] text-zinc-500">
-              Campos marcados com <span className="text-yellow-300">*</span> são obrigatórios
-            </p>
           </div>
 
           {isPrefetching || !isInitialised ? (
@@ -355,12 +362,12 @@ export function ProductFormDialog({
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-zinc-900 [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6 md:px-8 md:py-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-700 hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600 [&::-webkit-scrollbar-track]:bg-zinc-900">
                 <div className="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
                   <div className="space-y-6">
                     <section className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
                       <header className="mb-6 flex flex-col gap-1">
-                        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                        <span className="text-xs font-medium tracking-wider text-zinc-500 uppercase">
                           Imagens
                         </span>
                         <h3 className="text-lg font-semibold text-white">Fotos do produto *</h3>
@@ -385,7 +392,7 @@ export function ProductFormDialog({
 
                     <section className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
                       <header className="mb-6 flex flex-col gap-1">
-                        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                        <span className="text-xs font-medium tracking-wider text-zinc-500 uppercase">
                           Informações básicas
                         </span>
                         <h3 className="text-lg font-semibold text-white">Detalhes do produto</h3>
@@ -403,7 +410,10 @@ export function ProductFormDialog({
                             id="codigo_produto"
                             value={formData.codigo_produto ?? ''}
                             onChange={(event) =>
-                              setFormData((prev) => ({ ...prev, codigo_produto: event.target.value }))
+                              setFormData((prev) => ({
+                                ...prev,
+                                codigo_produto: event.target.value,
+                              }))
                             }
                             className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
                           />
@@ -438,7 +448,9 @@ export function ProductFormDialog({
                             onChange={(event) =>
                               setFormData((prev) => ({
                                 ...prev,
-                                preco: event.target.value ? parseFloat(event.target.value) : undefined,
+                                preco: event.target.value
+                                  ? parseFloat(event.target.value)
+                                  : undefined,
                               }))
                             }
                             className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
@@ -503,26 +515,21 @@ export function ProductFormDialog({
                           <p className="text-sm text-zinc-500">
                             Preencha o nome do produto para habilitar este campo
                           </p>
-                        ) : isIPhone && availableColors.length > 0 && availableColorsFiltered.length === 0 ? (
+                        ) : isIPhone &&
+                          availableColors.length > 0 &&
+                          availableColorsFiltered.length === 0 ? (
                           <p className="text-sm text-zinc-400">
                             ✓ Todas as cores oficiais já foram adicionadas
                           </p>
                         ) : isIPhone && availableColorsFiltered.length > 0 ? (
                           // Dropdown para iPhone com cores conhecidas
-                          <Select
-                            value=""
-                            onValueChange={handleAddColor}
-                            disabled={isSaving}
-                          >
+                          <Select value="" onValueChange={handleAddColor} disabled={isSaving}>
                             <SelectTrigger className="border-zinc-800/70 bg-zinc-950 text-white">
                               <SelectValue placeholder="Selecione uma cor oficial" />
                             </SelectTrigger>
                             <SelectContent>
                               {availableColorsFiltered.map((color) => (
-                                <SelectItem
-                                  key={color}
-                                  value={color}
-                                >
+                                <SelectItem key={color} value={color}>
                                   <div className="flex items-center gap-2">
                                     <ColorBadge color={color} size="sm" />
                                   </div>
@@ -648,7 +655,7 @@ export function ProductFormDialog({
                   <div className="space-y-6">
                     <section className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
                       <header className="mb-6 flex flex-col gap-1">
-                        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                        <span className="text-xs font-medium tracking-wider text-zinc-500 uppercase">
                           Inclusos na venda
                         </span>
                         <h3 className="text-lg font-semibold text-white">Acessórios</h3>
@@ -658,41 +665,43 @@ export function ProductFormDialog({
                       </header>
 
                       <div className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-2">
-                        {(['caixa', 'carregador', 'cabo', 'capinha', 'pelicula'] as const).map((item) => (
-                          <label
-                            key={item}
-                            className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-800/70 bg-zinc-950/80 px-3 py-2.5 transition hover:border-zinc-700"
-                          >
-                            <Checkbox
-                              id={item}
-                              checked={!!formData.acessorios?.[item]}
-                              onCheckedChange={(checked) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  acessorios: {
-                                    ...(prev.acessorios ?? getEmptyForm().acessorios!),
-                                    [item]: checked === true,
-                                  },
-                                }))
-                              }
-                            />
-                            <span className="text-sm font-medium capitalize text-zinc-200">
-                              {item}
-                            </span>
-                          </label>
-                        ))}
+                        {(['caixa', 'carregador', 'cabo', 'capinha', 'pelicula'] as const).map(
+                          (item) => (
+                            <label
+                              key={item}
+                              className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-800/70 bg-zinc-950/80 px-3 py-2.5 transition hover:border-zinc-700"
+                            >
+                              <Checkbox
+                                id={item}
+                                checked={!!formData.acessorios?.[item]}
+                                onCheckedChange={(checked) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    acessorios: {
+                                      ...(prev.acessorios ?? getEmptyForm().acessorios!),
+                                      [item]: checked === true,
+                                    },
+                                  }))
+                                }
+                              />
+                              <span className="text-sm font-medium text-zinc-200 capitalize">
+                                {item}
+                              </span>
+                            </label>
+                          )
+                        )}
                       </div>
                     </section>
                   </div>
                 </div>
               </div>
 
-              <div className="flex-shrink-0 border-t border-zinc-800/70 bg-zinc-950/85 px-6 py-4 shadow-[0_-20px_40px_-40px_rgba(0,0,0,0.8)] backdrop-blur sm:px-8">
+              <div className="flex-shrink-0 border-t border-zinc-800/70 bg-zinc-950/85 px-5 py-4 shadow-[0_-20px_40px_-40px_rgba(0,0,0,0.8)] backdrop-blur sm:px-6 md:px-8">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-600 hover:bg-zinc-800 sm:w-auto"
+                    className="min-h-[48px] w-full border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-600 hover:bg-zinc-800 sm:w-auto"
                     onClick={handleClose}
                   >
                     Cancelar
@@ -700,7 +709,7 @@ export function ProductFormDialog({
                   <Button
                     type="submit"
                     disabled={isSaving}
-                    className="w-full sm:w-auto bg-[var(--brand-yellow)] text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90"
+                    className="min-h-[48px] w-full bg-[var(--brand-yellow)] text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90 sm:w-auto"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {isSaving ? 'Salvando...' : 'Salvar Produto'}

@@ -6,7 +6,7 @@ import type { ProdutoComCategoria } from '@/types/produto'
 
 interface UsePollingProdutosOptions {
   enabled?: boolean
-  interval?: number // em milissegundos (padrão: 3000ms = 3s)
+  interval?: number // em milissegundos (padrão: 5000ms = 5s)
   onUpdate?: (produtos: ProdutoComCategoria[]) => void
 }
 
@@ -18,11 +18,11 @@ interface UsePollingProdutosOptions {
  *
  * @param options - Configurações do polling
  * @param options.enabled - Se o polling está ativo (padrão: true)
- * @param options.interval - Intervalo em ms (padrão: 3000ms)
+ * @param options.interval - Intervalo em ms (padrão: 5000ms)
  * @param options.onUpdate - Callback quando detectar mudança
  */
 export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
-  const { enabled = true, interval = 3000, onUpdate } = options
+  const { enabled = true, interval = 5000, onUpdate } = options
   const lastHashRef = useRef<string | null>(null)
   const intervalIdRef = useRef<NodeJS.Timeout | null>(null)
 

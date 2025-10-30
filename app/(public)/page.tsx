@@ -60,7 +60,6 @@ interface ProdutoSecaoRow {
   produto: Produto | null
 }
 
-
 // Função para ordenar produtos por modelo iPhone
 function ordenarProdutosPorModelo(produtos: Produto[]): Produto[] {
   return produtos.sort((a, b) => {
@@ -141,25 +140,27 @@ function HomePageContent() {
   }, [searchParams])
 
   // Polling: sincronização de produtos via verificação periódica
-  const handleProdutosUpdate = useCallback((produtosAtualizados: ProdutoComCategoria[]) => {
-    console.log('[HomePage] Produtos atualizados via polling:', produtosAtualizados.length)
+  const handleProdutosUpdate = useCallback(
+    (produtosAtualizados: ProdutoComCategoria[]) => {
+      console.log('[HomePage] Produtos atualizados via polling:', produtosAtualizados.length)
 
-    // Filtrar produtos em destaque
-    const produtosFiltrados = produtosAtualizados.filter(
-      (p) => !produtosEmDestaqueIds.includes(p.id)
-    )
+      // Filtrar produtos em destaque
+      const produtosFiltrados = produtosAtualizados.filter(
+        (p) => !produtosEmDestaqueIds.includes(p.id)
+      )
 
-    // Atualizar lista completa
-    setProdutos(produtosFiltrados as Produto[])
+      // Atualizar lista completa
+      setProdutos(produtosFiltrados as Produto[])
 
-    // Forçar recarregamento dos produtos agrupados
-    void loadProdutos()
-  }, [produtosEmDestaqueIds])
+      // Forçar recarregamento dos produtos agrupados
+      void loadProdutos()
+    },
+    [produtosEmDestaqueIds]
+  )
 
-  // Ativar polling (verifica a cada 3 segundos)
+  // Ativar polling de produtos
   usePollingProdutos({
     enabled: true,
-    interval: 3000,
     onUpdate: handleProdutosUpdate,
   })
 
@@ -187,7 +188,7 @@ function HomePageContent() {
         const idsDestaque: string[] = []
         const ativos = (bannersAtivos ?? []) as BannerAtivoRow[]
         ativos.forEach((banner) => {
-          (banner.produtos_destaque ?? []).forEach((entry) => {
+          ;(banner.produtos_destaque ?? []).forEach((entry) => {
             const produtoId = entry?.produto_id
             if (produtoId && !idsDestaque.includes(produtoId)) {
               idsDestaque.push(produtoId)
@@ -267,20 +268,6 @@ function HomePageContent() {
     const { data, error } = await query
 
     if (!error && data) {
-      // Debug: verificar se cores estão sendo carregadas
-      if (process.env.NODE_ENV === 'development' && data.length > 0) {
-        const produtoComCor = data.find((p: any) => p.cores && p.cores.length > 0)
-        if (produtoComCor) {
-          console.log('[HomePage] Exemplo de produto com cores:', {
-            nome: produtoComCor.nome,
-            cores: produtoComCor.cores,
-            cor_oficial: produtoComCor.cor_oficial
-          })
-        } else {
-          console.log('[HomePage] Nenhum produto com cores encontrado no banco')
-        }
-      }
-
       // Filtrar produtos em destaque dos banners
       let produtosFiltrados = data.filter((p: any) => !produtosEmDestaqueIds.includes(p.id))
 
@@ -396,11 +383,7 @@ function HomePageContent() {
 
   // Atualizar URL com os filtros atuais
   const updateURLWithFilters = useCallback(
-    (filters: {
-      busca?: string
-      categoria?: string
-      view?: string
-    }) => {
+    (filters: { busca?: string; categoria?: string; view?: string }) => {
       const params = new URLSearchParams()
 
       if (filters.busca && filters.busca.trim()) {
@@ -498,8 +481,8 @@ function HomePageContent() {
     <div className="container mx-auto px-4 py-8">
       {/* Catálogo */}
       <div className="mb-8 text-center">
-        <h1 className="mb-2 text-4xl font-bold text-white text-center">Catálogo Completo</h1>
-        <p className="text-zinc-400 text-center">Explore todos os nossos iPhones disponíveis</p>
+        <h1 className="mb-2 text-center text-4xl font-bold text-white">Catálogo Completo</h1>
+        <p className="text-center text-zinc-400">Explore todos os nossos produtos disponíveis</p>
       </div>
 
       {/* Carrossel de Banners */}
@@ -541,8 +524,10 @@ function HomePageContent() {
 
         {/* Filtro de Categoria em Destaque */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex-1 max-w-md">
-            <Label className="mb-2 block text-sm font-medium text-zinc-300">Filtrar por Categoria</Label>
+          <div className="max-w-md flex-1">
+            <Label className="mb-2 block text-sm font-bold text-zinc-300">
+              Filtrar por Categoria
+            </Label>
             <Select value={categoriaFiltro} onValueChange={handleCategoriaChange}>
               <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
                 <SelectValue />
@@ -631,7 +616,9 @@ function HomePageContent() {
               size="sm"
               onClick={() => handleViewModeChange('grid')}
               className={`h-8 w-8 p-0 ${
-                viewMode === 'grid' ? 'bg-zinc-800 text-[var(--brand-yellow)]' : 'text-zinc-500 hover:text-[var(--brand-yellow)]'
+                viewMode === 'grid'
+                  ? 'bg-zinc-800 text-[var(--brand-yellow)]'
+                  : 'text-zinc-500 hover:text-[var(--brand-yellow)]'
               }`}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -641,7 +628,9 @@ function HomePageContent() {
               size="sm"
               onClick={() => handleViewModeChange('list')}
               className={`h-8 w-8 p-0 ${
-                viewMode === 'list' ? 'bg-zinc-800 text-[var(--brand-yellow)]' : 'text-zinc-500 hover:text-[var(--brand-yellow)]'
+                viewMode === 'list'
+                  ? 'bg-zinc-800 text-[var(--brand-yellow)]'
+                  : 'text-zinc-500 hover:text-[var(--brand-yellow)]'
               }`}
             >
               <List className="h-4 w-4" />
@@ -666,7 +655,9 @@ function HomePageContent() {
             <section key={grupo.categoria.id}>
               {/* Título da Categoria */}
               <div className="mb-6 border-b border-zinc-800 pb-3">
-                <h2 className="text-2xl font-bold text-[var(--brand-yellow)]">{grupo.categoria.nome}</h2>
+                <h2 className="text-2xl font-bold text-[var(--brand-yellow)]">
+                  {grupo.categoria.nome}
+                </h2>
                 <p className="text-sm text-zinc-400">{grupo.produtos.length} produto(s)</p>
               </div>
 

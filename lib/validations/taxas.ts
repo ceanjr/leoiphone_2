@@ -31,9 +31,7 @@ export const taxasSchema = z.object({
 
 // Schema completo para configurações de taxas
 export const configuracaoTaxasSchema = z.object({
-  ativo: z.boolean({
-    required_error: 'Campo ativo é obrigatório',
-  }),
+  ativo: z.boolean(),
   taxas: taxasSchema,
 })
 
@@ -67,6 +65,16 @@ export const TAXAS_PADRAO: TaxasConfig = {
 export function isTaxasConfig(obj: unknown): obj is TaxasConfig {
   return taxasSchema.safeParse(obj).success
 }
+
+// Schema para presets de taxas
+export const presetTaxasSchema = z.object({
+  id: z.string().optional(),
+  nome: z.string().min(1, 'Nome é obrigatório').max(50, 'Nome muito longo'),
+  taxas: taxasSchema,
+  is_default: z.boolean().default(false),
+})
+
+export type PresetTaxas = z.infer<typeof presetTaxasSchema>
 
 // Helper para formatar taxa como porcentagem
 export function formatarTaxa(taxa: number): string {

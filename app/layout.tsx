@@ -1,47 +1,38 @@
-import type { Metadata } from "next";
-import { Toaster } from "@/components/ui/sonner";
-import { Analytics } from "@vercel/analytics/react";
-import { ServiceWorkerManager } from "@/components/service-worker-manager";
-import "./globals.css";
+import type { Metadata } from 'next'
+import { Toaster } from '@/components/ui/sonner'
+import { Analytics } from '@vercel/analytics/react'
+import { ServiceWorkerManager } from '@/components/service-worker-manager'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: "Léo iPhone - Catálogo de iPhones",
+  title: 'Léo iPhone - Catálogo',
   description:
-    "Veja os modelos disponíveis de iPhones com preço, imagens e informações detalhadas.",
-  keywords: [
-    "iPhone",
-    "Apple",
-    "iPhone novo",
-    "iPhone seminovo",
-    "comprar iPhone",
-    "Léo iPhone",
-  ],
-  authors: [{ name: "Léo iPhone" }],
+    'Veja os modelos disponíveis de iPhones com preço, imagens e informações detalhadas.',
+  keywords: ['iPhone', 'Apple', 'iPhone novo', 'iPhone seminovo', 'comprar iPhone', 'Léo iPhone'],
+  authors: [{ name: 'Léo iPhone' }],
   icons: {
-    icon: "/icons/favicon.svg",
+    icon: '/icons/favicon.svg',
   },
   openGraph: {
-    title: "Léo iPhone - Catálogo de iPhones",
+    title: 'Léo iPhone - Catálogo',
     description:
-      "Veja os modelos disponíveis de iPhones com preço, imagens e informações detalhadas.",
-    type: "website",
-    locale: "pt_BR",
+      'Veja os modelos disponíveis de iPhones com preço, imagens e informações detalhadas.',
+    type: 'website',
+    locale: 'pt_BR',
+    // Sem imagem para compartilhamento
   },
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
         {/* Optimization: DNS prefetch and preconnect for faster resource loading */}
-        <link
-          rel="dns-prefetch"
-          href="https://aswejqbtejibrilrblnm.supabase.co"
-        />
+        <link rel="dns-prefetch" href="https://aswejqbtejibrilrblnm.supabase.co" />
         <link
           rel="preconnect"
           href="https://aswejqbtejibrilrblnm.supabase.co"
@@ -66,15 +57,12 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body
-        className="antialiased"
-        suppressHydrationWarning
-      >
+      <body className="antialiased" suppressHydrationWarning>
         <ServiceWorkerManager />
         <div suppressHydrationWarning>{children}</div>
         <Toaster richColors closeButton />
         <Analytics />
       </body>
     </html>
-  );
+  )
 }

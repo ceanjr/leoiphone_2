@@ -9,13 +9,27 @@ import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { Save, RotateCcw, Calculator, AlertCircle, CheckCircle2 } from 'lucide-react'
+import {
+  Save,
+  RotateCcw,
+  Calculator,
+  AlertCircle,
+  CheckCircle2,
+  Bookmark,
+  Plus,
+  Trash2,
+  Check,
+} from 'lucide-react'
 import {
   getConfiguracaoTaxas,
   updateConfiguracaoTaxas,
   restaurarTaxasPadrao,
+  getPresets,
+  createPreset,
+  deletePreset,
+  applyPreset,
 } from './actions'
-import { TAXAS_PADRAO, type TaxasConfig } from '@/lib/validations/taxas'
+import { TAXAS_PADRAO, type TaxasConfig, type PresetTaxas } from '@/lib/validations/taxas'
 import { calcularTodasParcelas, formatarMoeda } from '@/lib/utils/calcular-parcelas'
 
 const EXEMPLO_PRECO = 2800 // Preço exemplo para preview
@@ -26,18 +40,30 @@ export default function TaxasPage() {
   const [ativo, setAtivo] = useState(false)
   const [taxas, setTaxas] = useState<TaxasConfig>(TAXAS_PADRAO)
   const [hasChanges, setHasChanges] = useState(false)
+  const [presets, setPresets] = useState<PresetTaxas[]>([])
+  const [newPresetName, setNewPresetName] = useState('')
+  const [savingPreset, setSavingPreset] = useState(false)
 
-  // Carregar configuração do servidor
+  // Carregar configuração e presets do servidor
   useEffect(() => {
     async function loadConfig() {
       setLoading(true)
-      const { configuracao, error } = await getConfiguracaoTaxas()
+      const [configResult, presetsResult] = await Promise.all([
+        getConfiguracaoTaxas(),
+        getPresets(),
+      ])
 
-      if (error) {
-        toast.error(error)
-      } else if (configuracao) {
-        setAtivo(configuracao.ativo)
-        setTaxas(configuracao.taxas)
+      if (configResult.error) {
+        toast.error(configResult.error)
+      } else if (configResult.configuracao) {
+        setAtivo(configResult.configuracao.ativo)
+        setTaxas(configResult.configuracao.taxas)
+      }
+
+      if (presetsResult.error) {
+        toast.error(presetsResult.error)
+      } else {
+        setPresets(presetsResult.presets)
       }
 
       setLoading(false)
@@ -109,13 +135,89 @@ export default function TaxasPage() {
     }
   }
 
+  const handleSavePreset = async () => {
+    if (!newPresetName.trim()) {
+      toast.error('Digite um nome para o preset')
+      return
+    }
+
+    setSavingPreset(true)
+
+    try {
+      const result = await createPreset({
+        nome: newPresetName.trim(),
+        taxas: taxas,
+        is_default: false,
+      })
+
+      if (result.success && result.preset) {
+        setPresets([...presets, result.preset])
+        setNewPresetName('')
+        toast.success(`Preset "${newPresetName}" criado com sucesso!`)
+      } else {
+        toast.error(result.error || 'Erro ao criar preset')
+      }
+    } catch (error) {
+      console.error('Erro ao criar preset:', error)
+      toast.error('Erro inesperado ao criar preset')
+    } finally {
+      setSavingPreset(false)
+    }
+  }
+
+  const handleApplyPreset = async (presetId: string) => {
+    setSaving(true)
+
+    try {
+      const result = await applyPreset(presetId)
+
+      if (result.success && result.configuracao) {
+        setTaxas(result.configuracao.taxas)
+        setHasChanges(false)
+        const preset = presets.find((p) => p.id === presetId)
+        toast.success(`Preset "${preset?.nome}" aplicado com sucesso!`)
+      } else {
+        toast.error(result.error || 'Erro ao aplicar preset')
+      }
+    } catch (error) {
+      console.error('Erro ao aplicar preset:', error)
+      toast.error('Erro inesperado ao aplicar preset')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeletePreset = async (presetId: string, presetName: string) => {
+    if (!confirm(`Tem certeza que deseja deletar o preset "${presetName}"?`)) {
+      return
+    }
+
+    setSaving(true)
+
+    try {
+      const result = await deletePreset(presetId)
+
+      if (result.success) {
+        setPresets(presets.filter((p) => p.id !== presetId))
+        toast.success(`Preset "${presetName}" deletado com sucesso!`)
+      } else {
+        toast.error(result.error || 'Erro ao deletar preset')
+      }
+    } catch (error) {
+      console.error('Erro ao deletar preset:', error)
+      toast.error('Erro inesperado ao deletar preset')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   // Calcular preview
   const parcelas = calcularTodasParcelas(EXEMPLO_PRECO, taxas)
   const parcelaMaxima = parcelas[parcelas.length - 1]
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto px-4 py-8">
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
             <div className="relative mx-auto h-8 w-8 animate-pulse">
@@ -129,10 +231,10 @@ export default function TaxasPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-7xl">
+    <div className="container mx-auto max-w-7xl px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
+        <div className="mb-2 flex items-center gap-3">
           <Calculator className="h-8 w-8 text-[var(--brand-yellow)]" />
           <h1 className="text-3xl font-bold text-white">Calculadora de Parcelas</h1>
         </div>
@@ -145,7 +247,7 @@ export default function TaxasPage() {
       {hasChanges && (
         <Card className="mb-6 border-yellow-500/30 bg-yellow-500/5">
           <CardContent className="flex items-center gap-3 py-4">
-            <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0" />
+            <AlertCircle className="h-5 w-5 flex-shrink-0 text-yellow-500" />
             <p className="text-sm text-yellow-200">
               Você tem alterações não salvas. Clique em "Salvar Configurações" para aplicar.
             </p>
@@ -153,13 +255,13 @@ export default function TaxasPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Coluna Principal - Editor de Taxas */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           {/* Toggle Ativo/Inativo */}
           <Card className="border-zinc-800 bg-zinc-900">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-white">
                 Status da Calculadora
                 {ativo ? (
                   <Badge className="bg-green-600">Ativa</Badge>
@@ -174,19 +276,14 @@ export default function TaxasPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="ativo" className="text-white font-medium">
+                  <Label htmlFor="ativo" className="font-medium text-white">
                     Exibir calculadora no site
                   </Label>
-                  <p className="text-sm text-zinc-500 mt-1">
+                  <p className="mt-1 text-sm text-zinc-500">
                     Os clientes poderão ver as opções de parcelamento
                   </p>
                 </div>
-                <Switch
-                  id="ativo"
-                  checked={ativo}
-                  onCheckedChange={setAtivo}
-                  disabled={saving}
-                />
+                <Switch id="ativo" checked={ativo} onCheckedChange={setAtivo} disabled={saving} />
               </div>
             </CardContent>
           </Card>
@@ -200,10 +297,10 @@ export default function TaxasPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                 {(Object.keys(taxas) as Array<keyof TaxasConfig>).map((parcela) => (
                   <div key={parcela} className="space-y-2">
-                    <Label htmlFor={parcela} className="text-zinc-300 text-sm">
+                    <Label htmlFor={parcela} className="text-sm text-zinc-300">
                       {parcela}
                     </Label>
                     <div className="relative">
@@ -216,9 +313,9 @@ export default function TaxasPage() {
                         value={taxas[parcela]}
                         onChange={(e) => handleTaxaChange(parcela, e.target.value)}
                         disabled={saving}
-                        className="border-zinc-800 bg-zinc-950 text-white pr-8"
+                        className="border-zinc-800 bg-zinc-950 pr-8 text-white"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">
+                      <span className="absolute top-1/2 right-3 -translate-y-1/2 text-sm text-zinc-500">
                         %
                       </span>
                     </div>
@@ -228,7 +325,7 @@ export default function TaxasPage() {
 
               <Separator className="my-6 bg-zinc-800" />
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Button
                   onClick={handleSave}
                   disabled={saving || !hasChanges}
@@ -252,11 +349,107 @@ export default function TaxasPage() {
           </Card>
         </div>
 
-        {/* Coluna Lateral - Preview */}
-        <div className="lg:col-span-1">
-          <Card className="border-zinc-800 bg-zinc-900 sticky top-4">
+        {/* Coluna Lateral - Presets e Preview */}
+        <div className="space-y-6 lg:col-span-1">
+          {/* Presets */}
+          <Card className="border-zinc-800 bg-zinc-900">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Bookmark className="h-5 w-5 text-[var(--brand-yellow)]" />
+                Presets
+              </CardTitle>
+              <CardDescription>Salve e aplique configurações rapidamente</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Formulário para criar preset */}
+                <div className="space-y-2">
+                  <Label htmlFor="preset-name" className="text-sm text-zinc-300">
+                    Salvar configuração atual
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="preset-name"
+                      placeholder="Nome do preset"
+                      value={newPresetName}
+                      onChange={(e) => setNewPresetName(e.target.value)}
+                      disabled={savingPreset}
+                      className="border-zinc-800 bg-zinc-950 text-white"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSavePreset()
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={handleSavePreset}
+                      disabled={savingPreset || !newPresetName.trim()}
+                      size="sm"
+                      className="bg-[var(--brand-yellow)] text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator className="bg-zinc-800" />
+
+                {/* Lista de presets */}
+                <div className="space-y-2">
+                  {presets.length === 0 ? (
+                    <p className="text-center text-sm text-zinc-500 py-4">
+                      Nenhum preset salvo ainda
+                    </p>
+                  ) : (
+                    presets.map((preset) => (
+                      <div
+                        key={preset.id}
+                        className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-white">
+                            {preset.nome}
+                          </p>
+                          {preset.is_default && (
+                            <Badge variant="secondary" className="mt-1 text-xs">
+                              Padrão
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-shrink-0 gap-1">
+                          <Button
+                            onClick={() => handleApplyPreset(preset.id!)}
+                            disabled={saving}
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0 border-zinc-700"
+                            title="Aplicar preset"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => handleDeletePreset(preset.id!, preset.nome)}
+                            disabled={saving}
+                            size="sm"
+                            variant="outline"
+                            className="h-8 w-8 p-0 border-zinc-700 hover:border-red-500 hover:text-red-500"
+                            title="Deletar preset"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Preview */}
+          <Card className="sticky top-4 border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
                 Preview
               </CardTitle>
@@ -267,12 +460,12 @@ export default function TaxasPage() {
             <CardContent>
               <div className="space-y-3">
                 {/* Destaque da maior parcela */}
-                <div className="rounded-lg bg-zinc-950 border border-zinc-800 p-4">
-                  <p className="text-xs text-zinc-500 mb-1">Parcela máxima</p>
+                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
+                  <p className="mb-1 text-xs text-zinc-500">Parcela máxima</p>
                   <p className="text-lg font-semibold text-[var(--brand-yellow)]">
                     {parcelaMaxima.numero}x de {formatarMoeda(parcelaMaxima.valorParcela)}
                   </p>
-                  <p className="text-xs text-zinc-500 mt-1">
+                  <p className="mt-1 text-xs text-zinc-500">
                     Total: {formatarMoeda(parcelaMaxima.valorTotal)}
                   </p>
                 </div>
@@ -280,11 +473,11 @@ export default function TaxasPage() {
                 <Separator className="bg-zinc-800" />
 
                 {/* Lista de todas as parcelas */}
-                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                <div className="max-h-[400px] space-y-2 overflow-y-auto pr-2">
                   {parcelas.slice(0, 6).map((parcela) => (
                     <div
                       key={parcela.numero}
-                      className="flex justify-between items-center text-sm py-2 px-3 rounded bg-zinc-950"
+                      className="flex items-center justify-between rounded bg-zinc-950 px-3 py-2 text-sm"
                     >
                       <span className="text-zinc-400">
                         {parcela.numero}x
@@ -298,7 +491,7 @@ export default function TaxasPage() {
                     </div>
                   ))}
                   {parcelas.length > 6 && (
-                    <p className="text-xs text-center text-zinc-600 py-2">
+                    <p className="py-2 text-center text-xs text-zinc-600">
                       ... e mais {parcelas.length - 6} opções
                     </p>
                   )}

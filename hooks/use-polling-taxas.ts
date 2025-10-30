@@ -11,7 +11,7 @@ interface ConfiguracaoTaxas {
 
 interface UsePollingTaxasOptions {
   enabled?: boolean
-  interval?: number // em milissegundos (padrão: 2000ms = 2s)
+  interval?: number // em milissegundos (padrão: 10000ms = 10s)
   onUpdate?: (config: ConfiguracaoTaxas) => void
 }
 
@@ -23,11 +23,11 @@ interface UsePollingTaxasOptions {
  *
  * @param options - Configurações do polling
  * @param options.enabled - Se o polling está ativo (padrão: true)
- * @param options.interval - Intervalo em ms (padrão: 2000ms)
+ * @param options.interval - Intervalo em ms (padrão: 10000ms)
  * @param options.onUpdate - Callback quando detectar mudança
  */
 export function usePollingTaxas(options: UsePollingTaxasOptions = {}) {
-  const { enabled = true, interval = 2000, onUpdate } = options
+  const { enabled = true, interval = 10000, onUpdate } = options
   const lastDataRef = useRef<string | null>(null)
   const intervalIdRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -56,24 +56,25 @@ export function usePollingTaxas(options: UsePollingTaxasOptions = {}) {
         }
 
         if (data) {
+          const typedData = data as any
           // Criar hash dos dados para detectar mudanças
           const currentHash = JSON.stringify({
-            ativo: data.ativo,
-            taxas: data.taxas,
-            updated_at: data.updated_at,
+            ativo: typedData.ativo,
+            taxas: typedData.taxas,
+            updated_at: typedData.updated_at,
           })
 
           // Se os dados mudaram desde a última verificação
           if (lastDataRef.current !== null && lastDataRef.current !== currentHash) {
             console.log('[usePollingTaxas] Mudança detectada!', {
-              ativo: data.ativo,
-              taxas: data.taxas,
+              ativo: typedData.ativo,
+              taxas: typedData.taxas,
             })
 
             if (onUpdate) {
               onUpdate({
-                ativo: data.ativo,
-                taxas: data.taxas as TaxasConfig,
+                ativo: typedData.ativo,
+                taxas: typedData.taxas as TaxasConfig,
               })
             }
           }
