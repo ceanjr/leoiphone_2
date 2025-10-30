@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import type { Produto } from '@/types/produto'
 import { getCorOficial, getContrastColor } from '@/lib/iphone-cores'
-import { memo } from 'react'
+import { memo, useCallback } from 'react'
 
 interface ProdutoCardProps {
   produto: Produto
@@ -88,6 +88,21 @@ const BatteryIcon = memo(({ level }: { level: number }) => {
 BatteryIcon.displayName = 'BatteryIcon'
 
 function ProdutoCardComponent({ produto, view = 'grid', priority = false, returnParams }: ProdutoCardProps) {
+  // Prefetch de imagens ao fazer hover
+  const handleMouseEnter = useCallback(() => {
+    // Prefetch da foto principal e primeiras fotos da galeria
+    if (produto.fotos && produto.fotos.length > 0) {
+      // Preload das primeiras 3 imagens (principal + 2 da galeria)
+      produto.fotos.slice(0, 3).forEach((fotoUrl) => {
+        const link = document.createElement('link')
+        link.rel = 'prefetch'
+        link.as = 'image'
+        link.href = fotoUrl
+        document.head.appendChild(link)
+      })
+    }
+  }, [produto.fotos])
+
   // Obter cores do produto (novo array ou legado cor_oficial)
   const getCores = () => {
     // Debug detalhado
@@ -141,8 +156,11 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
 
   if (view === 'list') {
     return (
-      <Link href={productUrl}>
-        <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-[var(--brand-yellow)] hover:shadow-xl hover:shadow-[var(--brand-yellow)]/20 hover:-translate-y-1 active:scale-[0.98]">
+      <Link href={productUrl} prefetch={true}>
+        <div
+          className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-[var(--brand-yellow)] hover:shadow-xl hover:shadow-[var(--brand-yellow)]/20 hover:-translate-y-1 active:scale-[0.98]"
+          onMouseEnter={handleMouseEnter}
+        >
           <div className="flex flex-row">
             {/* Optimization: Fixed dimensions to prevent CLS */}
             <div className="relative h-28 w-28 overflow-hidden bg-zinc-950 flex-shrink-0 hidden sm:block">
@@ -220,8 +238,11 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
   }
 
   return (
-    <Link href={productUrl}>
-      <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-[var(--brand-yellow)] hover:shadow-xl hover:shadow-[var(--brand-yellow)]/20 hover:-translate-y-1 active:scale-[0.98]">
+    <Link href={productUrl} prefetch={true}>
+      <div
+        className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-[var(--brand-yellow)] hover:shadow-xl hover:shadow-[var(--brand-yellow)]/20 hover:-translate-y-1 active:scale-[0.98]"
+        onMouseEnter={handleMouseEnter}
+      >
         {/* Optimization: aspect-square maintains proper spacing, preventing CLS */}
         <div className="relative aspect-square overflow-hidden bg-zinc-950">
           {produto.foto_principal ? (

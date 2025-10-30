@@ -26,6 +26,7 @@ function ProdutoPageContent({ slug }: { slug: string }) {
   const [produto, setProduto] = useState<ProdutoComCategoria | null>(null)
   const [loading, setLoading] = useState(true)
   const [fotoSelecionada, setFotoSelecionada] = useState(0)
+  const [imageLoading, setImageLoading] = useState(false)
   const [calculadoraAtiva, setCalculadoraAtiva] = useState(false)
   const [taxas, setTaxas] = useState<TaxasConfig | null>(null)
 
@@ -134,22 +135,27 @@ function ProdutoPageContent({ slug }: { slug: string }) {
         console.warn('Não foi possível contabilizar a visualização do produto:', incrementError)
       }
 
-      // Preload da primeira imagem (foto principal) - Alta prioridade
+      // Preload de TODAS as imagens para garantir transições instantâneas
       if (produtoData.fotos && produtoData.fotos.length > 0) {
+        // Primeira imagem: preload de alta prioridade
         const link = document.createElement('link')
         link.rel = 'preload'
         link.as = 'image'
         link.href = produtoData.fotos[0]
         document.head.appendChild(link)
 
-        // Prefetch das fotos 2-5 em background - Baixa prioridade
-        // Isso garante que quando o usuário clicar, a imagem já está carregada
+        // Todas as outras imagens: preload em background
+        // Isso garante que ao trocar de foto não há delay
         if (produtoData.fotos.length > 1) {
-          produtoData.fotos.slice(1, 5).forEach((fotoUrl) => {
+          produtoData.fotos.slice(1).forEach((fotoUrl, index) => {
             const img = new Image()
             img.src = fotoUrl
+            // Opcional: adicionar onload para debug
+            if (process.env.NODE_ENV === 'development') {
+              img.onload = () => console.log(`[Performance] Imagem ${index + 2} carregada`)
+            }
           })
-          console.log(`[Performance] Prefetch de ${Math.min(4, produtoData.fotos.length - 1)} fotos adicionais iniciado`)
+          console.log(`[Performance] Preload de ${produtoData.fotos.length - 1} imagens adicionais iniciado`)
         }
       }
 
@@ -232,6 +238,15 @@ Link: ${productUrl}`
 
   const showShareButton = typeof navigator !== 'undefined' && navigator.share
 
+  // Handler otimizado para troca de imagens
+  const handleImageChange = (index: number) => {
+    if (index === fotoSelecionada) return
+    setImageLoading(true)
+    setFotoSelecionada(index)
+    // Remove loading após a transição
+    setTimeout(() => setImageLoading(false), 200)
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb */}
@@ -269,15 +284,22 @@ Link: ${productUrl}`
         <div>
           <div className="relative aspect-square overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
             {produto.fotos[fotoSelecionada] ? (
-              <NextImage
-                src={produto.fotos[fotoSelecionada]}
-                alt={produto.nome}
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 600px"
-                className="object-cover transition-opacity duration-200"
-                priority={fotoSelecionada === 0}
-                quality={95}
-              />
+              <>
+                <NextImage
+                  src={produto.fotos[fotoSelecionada]}
+                  alt={produto.nome}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 600px"
+                  className={`object-cover transition-opacity duration-200 ${imageLoading ? 'opacity-70' : 'opacity-100'}`}
+                  priority={fotoSelecionada === 0}
+                  quality={95}
+                />
+                {imageLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/50">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-700 border-t-[var(--brand-yellow)]" />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex h-full items-center justify-center text-zinc-700">
                 Sem imagem disponível
@@ -291,11 +313,11 @@ Link: ${productUrl}`
               {produto.fotos.map((foto, index) => (
                 <button
                   key={index}
-                  onClick={() => setFotoSelecionada(index)}
-                  className={`relative aspect-square overflow-hidden rounded border-2 bg-zinc-950 transition-all ${
+                  onClick={() => handleImageChange(index)}
+                  className={`relative aspect-square overflow-hidden rounded border-2 bg-zinc-950 transition-all duration-200 ${
                     fotoSelecionada === index
-                      ? 'border-yellow-500 ring-2 ring-yellow-500/50'
-                      : 'border-zinc-800 hover:border-zinc-700'
+                      ? 'border-yellow-500 ring-2 ring-yellow-500/50 scale-105'
+                      : 'border-zinc-800 hover:border-zinc-700 hover:scale-105'
                   }`}
                 >
                   <NextImage
@@ -304,8 +326,8 @@ Link: ${productUrl}`
                     fill
                     sizes="(max-width: 640px) 20vw, (max-width: 1024px) 15vw, 120px"
                     className="object-cover"
-                    loading={index === fotoSelecionada ? 'eager' : 'lazy'}
-                    quality={75}
+                    loading="eager"
+                    quality={80}
                   />
                 </button>
               ))}
