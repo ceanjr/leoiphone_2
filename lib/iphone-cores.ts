@@ -1,5 +1,21 @@
 // Dicionário de cores oficiais da Apple por modelo de iPhone
 export const CORES_IPHONE: Record<string, Record<string, { nome: string; hex: string }>> = {
+  "iphone 7": {
+    "preto": { "nome": "Black", "hex": "#1F2020" },
+    "preto fosco": { "nome": "Jet Black", "hex": "#0D0D0D" },
+    "prata": { "nome": "Silver", "hex": "#E3E4E5" },
+    "dourado": { "nome": "Gold", "hex": "#F9E5C9" },
+    "ouro rosa": { "nome": "Rose Gold", "hex": "#E1CEC1" },
+    "vermelho": { "nome": "(PRODUCT)RED™", "hex": "#C7302A" }
+  },
+  "iphone 7 plus": {
+    "preto": { "nome": "Black", "hex": "#1F2020" },
+    "preto fosco": { "nome": "Jet Black", "hex": "#0D0D0D" },
+    "prata": { "nome": "Silver", "hex": "#E3E4E5" },
+    "dourado": { "nome": "Gold", "hex": "#F9E5C9" },
+    "ouro rosa": { "nome": "Rose Gold", "hex": "#E1CEC1" },
+    "vermelho": { "nome": "(PRODUCT)RED™", "hex": "#C7302A" }
+  },
   "iphone 8": {
     "cinza": { "nome": "Space Gray", "hex": "#53565A" },
     "prata": { "nome": "Silver", "hex": "#E3E4E5" },
@@ -248,6 +264,8 @@ const COR_MAP: Record<string, string> = {
   'Space Gray': 'cinza',
   Silver: 'prata',
   Gold: 'dourado',
+  'Rose Gold': 'ouro rosa',
+  'Jet Black': 'preto fosco',
   '(PRODUCT)RED™': 'vermelho',
   Black: 'preto',
   White: 'branco',

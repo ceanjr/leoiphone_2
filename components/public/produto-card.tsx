@@ -9,6 +9,7 @@ interface ProdutoCardProps {
   produto: Produto
   view?: 'grid' | 'list'
   priority?: boolean
+  returnParams?: string // Query params para retornar ao catálogo
 }
 
 // Optimization: Memoize price formatting
@@ -86,14 +87,61 @@ const BatteryIcon = memo(({ level }: { level: number }) => {
 
 BatteryIcon.displayName = 'BatteryIcon'
 
-function ProdutoCardComponent({ produto, view = 'grid', priority = false }: ProdutoCardProps) {
-  const cor = produto.cor_oficial
-    ? getCorOficial(produto.nome, produto.cor_oficial)
-    : null
+function ProdutoCardComponent({ produto, view = 'grid', priority = false, returnParams }: ProdutoCardProps) {
+  // Obter cores do produto (novo array ou legado cor_oficial)
+  const getCores = () => {
+    // Debug detalhado
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[ProdutoCard] Produto: ${produto.nome}`)
+      console.log(`[ProdutoCard] - cores (array):`, produto.cores)
+      console.log(`[ProdutoCard] - cor_oficial (legado):`, produto.cor_oficial)
+    }
+
+    // Priorizar array de cores (novo sistema)
+    if (produto.cores && produto.cores.length > 0) {
+      const coresMapeadas = produto.cores
+        .map(corNome => {
+          const cor = getCorOficial(produto.nome, corNome)
+          // Debug: ver se a cor está sendo mapeada corretamente
+          if (process.env.NODE_ENV === 'development') {
+            if (cor) {
+              console.log(`[ProdutoCard] - Cor mapeada: "${corNome}" → ${cor.nome} (${cor.hex})`)
+            } else {
+              console.log(`[ProdutoCard] - ❌ Cor NÃO mapeada: "${corNome}"`)
+            }
+          }
+          return cor
+        })
+        .filter(cor => cor !== null)
+
+      return coresMapeadas
+    }
+
+    // Fallback para cor_oficial (produtos antigos)
+    if (produto.cor_oficial) {
+      const cor = getCorOficial(produto.nome, produto.cor_oficial)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[ProdutoCard] - Usando cor_oficial legado: "${produto.cor_oficial}" → ${cor?.nome || 'não mapeada'}`)
+      }
+      return cor ? [cor] : []
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[ProdutoCard] - Nenhuma cor encontrada`)
+    }
+
+    return []
+  }
+
+  const cores = getCores()
+
+  const productUrl = returnParams
+    ? `/produto/${produto.slug}?return=${encodeURIComponent(returnParams)}`
+    : `/produto/${produto.slug}`
 
   if (view === 'list') {
     return (
-      <Link href={`/produto/${produto.slug}`}>
+      <Link href={productUrl}>
         <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10">
           <div className="flex flex-row">
             {/* Optimization: Fixed dimensions to prevent CLS */}
@@ -149,8 +197,9 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
                       <span>{produto.nivel_bateria}%</span>
                     </Badge>
                   )}
-                  {cor && (
+                  {cores.map((cor, index) => (
                     <Badge
+                      key={index}
                       className="text-xs px-2 py-0.5"
                       style={{
                         backgroundColor: cor.hex,
@@ -159,7 +208,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
                     >
                       {cor.nome}
                     </Badge>
-                  )}
+                  ))}
                 </div>
               </div>
 
@@ -176,7 +225,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
   }
 
   return (
-    <Link href={`/produto/${produto.slug}`}>
+    <Link href={productUrl}>
       <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10">
         {/* Optimization: aspect-square maintains proper spacing, preventing CLS */}
         <div className="relative aspect-square overflow-hidden bg-zinc-950">
@@ -197,9 +246,10 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
           )}
 
           <div className="absolute left-2 top-2 flex flex-col gap-1.5">
-            {cor && (
+            {cores.map((cor, index) => (
               <Badge
-                className="text-xs px-2 py-0.5  w-fit"
+                key={index}
+                className="text-xs px-2 py-0.5 w-fit"
                 style={{
                   backgroundColor: cor.hex,
                   color: getContrastColor(cor.hex),
@@ -207,7 +257,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false }: Prod
               >
                 {cor.nome}
               </Badge>
-            )}
+            ))}
             {produto.nivel_bateria && (
               <Badge className="bg-zinc-700 text-white hover:bg-zinc-600 text-xs flex items-center gap-1.5 px-2 py-0.5 w-fit">
                 <BatteryIcon level={produto.nivel_bateria} />

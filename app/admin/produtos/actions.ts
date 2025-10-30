@@ -8,7 +8,7 @@ import { produtoSchema } from '@/lib/validations/produto'
 import type { ProdutoFormData } from '@/types/produto'
 
 function generateSlug(nome: string): string {
-  return nome
+  const baseSlug = nome
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -16,6 +16,10 @@ function generateSlug(nome: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .trim()
+
+  // Adicionar sufixo aleatório para garantir unicidade (importante para rotas)
+  const randomSuffix = Math.random().toString(36).substring(2, 8)
+  return `${baseSlug}-${randomSuffix}`
 }
 
 export async function getProdutos() {
@@ -23,7 +27,7 @@ export async function getProdutos() {
 
   const { data, error } = await supabase
     .from('produtos')
-    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, cor_oficial, categoria:categorias(id, nome, slug, ordem)`)
+    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, cor_oficial, cores, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, categoria:categorias(id, nome, slug, ordem)`)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
@@ -40,7 +44,7 @@ export async function getProdutoById(id: string) {
 
   const { data, error } = await supabase
     .from('produtos')
-    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, cor_oficial, categoria:categorias(id, nome, slug, ordem)`)
+    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, cor_oficial, cores, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, categoria:categorias(id, nome, slug, ordem)`)
     .eq('id', id)
     .is('deleted_at', null)
     .single()
@@ -70,26 +74,57 @@ export async function createProduto(data: ProdutoFormData) {
   // Gerar slug
   const slug = generateSlug(validatedData.data.nome)
 
+  // Preparar dados para inserção
+  const insertData: any = {
+    ...validatedData.data,
+    slug,
+    foto_principal: validatedData.data.fotos[0] || null,
+  }
+
+  // Garantir que cores seja um array (vazio ou com valores)
+  if (!insertData.cores) {
+    insertData.cores = []
+  }
+
+  // Debug: ver o que está sendo inserido
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[createProduto] Inserindo:', {
+      nome: insertData.nome,
+      cores: insertData.cores,
+      cor_oficial: insertData.cor_oficial
+    })
+  }
+
   // Inserir produto
   const { data: produto, error } = await (supabase as any)
     .from('produtos')
-    .insert({
-      ...validatedData.data,
-      slug,
-      foto_principal: validatedData.data.fotos[0] || null,
-    })
+    .insert(insertData)
     .select()
     .single()
 
   if (error) {
-    console.error('Erro ao criar produto:', error)
+    console.error('❌ Erro ao criar produto:', error)
     return {
       success: false,
-      error: 'Erro ao criar produto',
+      error: error.message || 'Erro ao criar produto',
     }
   }
 
+  // Debug: ver o que foi inserido
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[createProduto] Produto criado:', {
+      id: produto.id,
+      nome: produto.nome,
+      cores: produto.cores,
+      cor_oficial: produto.cor_oficial
+    })
+  }
+
+  // Revalidar páginas admin e públicas
   revalidatePath('/admin/produtos')
+  revalidatePath('/', 'page')
+  revalidatePath('/produto/[slug]', 'page')
+
   return {
     success: true,
     produto,
@@ -113,28 +148,61 @@ export async function updateProduto(id: string, data: ProdutoFormData) {
   // Gerar slug
   const slug = generateSlug(validatedData.data.nome)
 
+  // Preparar dados para atualização
+  const updateData: any = {
+    ...validatedData.data,
+    slug,
+    foto_principal: validatedData.data.fotos[0] || null,
+    updated_at: new Date().toISOString(),
+  }
+
+  // Garantir que cores seja um array (vazio ou com valores)
+  // Isso permite remover todas as cores ao editar
+  if (!updateData.cores) {
+    updateData.cores = []
+  }
+
+  // Debug: ver o que está sendo atualizado
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[updateProduto] Atualizando:', {
+      id,
+      nome: updateData.nome,
+      cores: updateData.cores,
+      cor_oficial: updateData.cor_oficial
+    })
+  }
+
   // Atualizar produto
   const { data: produto, error } = await (supabase as any)
     .from('produtos')
-    .update({
-      ...validatedData.data,
-      slug,
-      foto_principal: validatedData.data.fotos[0] || null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq('id', id)
     .select()
     .single()
 
   if (error) {
-    console.error('Erro ao atualizar produto:', error)
+    console.error('❌ Erro ao atualizar produto:', error)
     return {
       success: false,
-      error: 'Erro ao atualizar produto',
+      error: error.message || 'Erro ao atualizar produto',
     }
   }
 
+  // Debug: ver o que foi atualizado
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[updateProduto] Produto atualizado:', {
+      id: produto.id,
+      nome: produto.nome,
+      cores: produto.cores,
+      cor_oficial: produto.cor_oficial
+    })
+  }
+
+  // Revalidar páginas admin e públicas
   revalidatePath('/admin/produtos')
+  revalidatePath('/', 'page')
+  revalidatePath('/produto/[slug]', 'page')
+
   return {
     success: true,
     produto,

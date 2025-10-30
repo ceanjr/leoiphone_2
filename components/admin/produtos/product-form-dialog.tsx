@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -29,7 +29,10 @@ const ImageUpload = dynamic(() => import('@/components/admin/image-upload').then
   ssr: false,
 })
 import type { ProdutoFormData } from '@/lib/validations/produto'
-import { Plus, Save, Pencil } from 'lucide-react'
+import { Plus, Save, Pencil, X } from 'lucide-react'
+import { useIPhoneColors } from '@/hooks/use-iphone-colors'
+import { ColorBadge } from '@/components/shared/color-badge'
+import { useDebounce } from '@/hooks/use-debounce'
 
 interface ProductFormDialogProps {
   open: boolean
@@ -47,9 +50,11 @@ interface Categoria {
 const getEmptyForm = (): Partial<ProdutoFormData> => ({
   condicao: 'seminovo',
   garantia: 'nenhuma',
+  cores: [],
   acessorios: {
     caixa: false,
     carregador: false,
+    cabo: false,
     capinha: false,
     pelicula: false,
   },
@@ -69,8 +74,15 @@ export function ProductFormDialog({
   const [formData, setFormData] = useState<Partial<ProdutoFormData>>(getEmptyForm)
   const [isInitialised, setIsInitialised] = useState(false)
   const [isSubmitting, startSubmit] = useTransition()
+  const [customColorInput, setCustomColorInput] = useState('')
 
   const isSaving = isLoading || isSubmitting
+
+  // Debounce do nome do produto para evitar processamento excessivo
+  const debouncedNome = useDebounce(formData.nome || '', 500)
+
+  // Hook para detectar iPhone e obter cores disponíveis (só executa após debounce)
+  const { isIPhone, detectedModel, availableColors } = useIPhoneColors(debouncedNome)
 
   useEffect(() => {
     if (!open) {
@@ -109,6 +121,14 @@ export function ProductFormDialog({
             return
           }
 
+          // Migrar cor_oficial (legado) para cores (novo array) se necessário
+          let coresMigradas = produto.cores ?? []
+          if ((!coresMigradas || coresMigradas.length === 0) && produto.cor_oficial) {
+            // Produto antigo com cor_oficial, migrar para array cores
+            coresMigradas = [produto.cor_oficial]
+            console.log(`Migrando cor_oficial "${produto.cor_oficial}" para array cores`)
+          }
+
           setFormData({
             codigo_produto: produto.codigo_produto ?? undefined,
             nome: produto.nome,
@@ -118,6 +138,7 @@ export function ProductFormDialog({
             condicao: produto.condicao,
             categoria_id: produto.categoria_id,
             garantia: produto.garantia,
+            cores: coresMigradas,
             acessorios: produto.acessorios ?? getEmptyForm().acessorios,
             fotos: produto.fotos ?? [],
             foto_principal: produto.foto_principal ?? undefined,
@@ -142,10 +163,55 @@ export function ProductFormDialog({
   const categoriasDisponiveis = useMemo(() => categorias ?? [], [categorias])
   const modeBadgeText = mode === 'create' ? 'Novo cadastro' : 'Edição ativa'
 
+  // Memoizar cores selecionadas para evitar recálculos
+  const selectedColors = useMemo(() => formData.cores || [], [formData.cores])
+
+  // Memoizar cores disponíveis filtradas (remove já selecionadas)
+  const availableColorsFiltered = useMemo(() => {
+    if (!availableColors.length) return []
+    return availableColors.filter(color => !selectedColors.includes(color))
+  }, [availableColors, selectedColors])
+
   function handleClose() {
     if (isSaving) return
     onClose()
   }
+
+  // Funções para manipular cores (memoizadas com useCallback)
+  const handleAddColor = useCallback((color: string) => {
+    if (!color.trim()) return
+
+    setFormData((prev) => {
+      const currentColors = prev.cores || []
+      if (currentColors.includes(color.trim())) return prev
+
+      return {
+        ...prev,
+        cores: [...currentColors, color.trim()],
+      }
+    })
+    setCustomColorInput('')
+  }, [])
+
+  const handleRemoveColor = useCallback((colorToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      cores: (prev.cores || []).filter((c) => c !== colorToRemove),
+    }))
+  }, [])
+
+  const handleAddCustomColor = useCallback(() => {
+    if (customColorInput.trim()) {
+      handleAddColor(customColorInput)
+    }
+  }, [customColorInput, handleAddColor])
+
+  const handleCustomColorKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddCustomColor()
+    }
+  }, [handleAddCustomColor])
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -168,9 +234,11 @@ export function ProductFormDialog({
           condicao: formData.condicao || 'seminovo',
           categoria_id: formData.categoria_id,
           garantia: formData.garantia || 'nenhuma',
+          cores: formData.cores && formData.cores.length > 0 ? formData.cores : undefined,
           acessorios: formData.acessorios || {
             caixa: false,
             carregador: false,
+            cabo: false,
             capinha: false,
             pelicula: false,
           },
@@ -178,6 +246,15 @@ export function ProductFormDialog({
           foto_principal: formData.fotos?.[0] || formData.foto_principal || null,
           ativo: true,
           estoque: 1,
+        }
+
+        // Debug: ver o que está sendo enviado
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[ProductForm] Salvando produto:', {
+            nome: payload.nome,
+            cores: payload.cores,
+            mode
+          })
         }
 
         const result =
@@ -233,8 +310,8 @@ export function ProductFormDialog({
       }}
     >
       {open ? (
-        <DialogContent className="flex max-h-[92vh] w-full flex-col overflow-hidden border border-zinc-800/80 bg-zinc-950/95 p-0 text-white shadow-[0_28px_120px_-40px_rgba(0,0,0,0.85)] backdrop-blur-sm sm:max-w-5xl">
-          <div className="relative border-b border-zinc-800/70 bg-zinc-950/80 px-6 py-6 sm:px-8">
+        <DialogContent className="!left-[50%] !top-[50%] !h-[95vh] !w-[95vw] !max-w-[1400px] !translate-x-[-50%] !translate-y-[-50%] flex flex-col overflow-hidden border border-zinc-800/80 bg-zinc-950/95 p-0 text-white shadow-[0_28px_120px_-40px_rgba(0,0,0,0.85)] backdrop-blur-sm">
+          <div className="relative flex-shrink-0 border-b border-zinc-800/70 bg-zinc-950/80 px-6 py-6 sm:px-8">
             <div
               className={`pointer-events-none absolute inset-0 opacity-70 blur-3xl ${accentStyles.glow}`}
               aria-hidden
@@ -263,7 +340,7 @@ export function ProductFormDialog({
           </div>
 
           {isPrefetching || !isInitialised ? (
-            <div className="flex flex-1 items-center justify-center px-8 py-16">
+            <div className="flex flex-1 flex-col items-center justify-center px-8 py-16">
               <div className="text-center">
                 <div className="relative mx-auto h-12 w-12">
                   <div className="absolute inset-0 rounded-full border border-zinc-800" />
@@ -277,9 +354,9 @@ export function ProductFormDialog({
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto">
-                <div className="grid gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:grid-cols-[1.65fr_1fr]">
+            <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-zinc-900 [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-600">
+                <div className="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
                   <div className="space-y-6">
                     <section className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
                       <header className="mb-6 flex flex-col gap-1">
@@ -391,6 +468,93 @@ export function ProductFormDialog({
                         </div>
                       </div>
 
+                      {/* Campo de Cores */}
+                      <div className="mt-4 space-y-2">
+                        <Label htmlFor="cores" className="text-zinc-200">
+                          Cor{formData.cores && formData.cores.length > 1 ? 'es' : ''}
+                          {detectedModel && (
+                            <span className="ml-2 text-xs font-normal text-zinc-500">
+                              {detectedModel} detectado
+                            </span>
+                          )}
+                        </Label>
+
+                        {/* Cores já selecionadas */}
+                        {selectedColors.length > 0 && (
+                          <div className="flex flex-wrap gap-2 rounded-lg border border-zinc-800/70 bg-zinc-950 p-3">
+                            {selectedColors.map((color) => (
+                              <div key={color} className="flex items-center gap-1">
+                                <ColorBadge color={color} size="md" />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveColor(color)}
+                                  disabled={isSaving}
+                                  className="rounded-full p-0.5 text-zinc-400 transition hover:bg-red-500/20 hover:text-red-400"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Input baseado no tipo de produto */}
+                        {!debouncedNome ? (
+                          <p className="text-sm text-zinc-500">
+                            Preencha o nome do produto para habilitar este campo
+                          </p>
+                        ) : isIPhone && availableColors.length > 0 && availableColorsFiltered.length === 0 ? (
+                          <p className="text-sm text-zinc-400">
+                            ✓ Todas as cores oficiais já foram adicionadas
+                          </p>
+                        ) : isIPhone && availableColorsFiltered.length > 0 ? (
+                          // Dropdown para iPhone com cores conhecidas
+                          <Select
+                            value=""
+                            onValueChange={handleAddColor}
+                            disabled={isSaving}
+                          >
+                            <SelectTrigger className="border-zinc-800/70 bg-zinc-950 text-white">
+                              <SelectValue placeholder="Selecione uma cor oficial" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableColorsFiltered.map((color) => (
+                                <SelectItem
+                                  key={color}
+                                  value={color}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <ColorBadge color={color} size="sm" />
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          // Input texto livre para não-iPhone ou iPhone sem cores conhecidas
+                          <div className="flex gap-2">
+                            <Input
+                              id="cores"
+                              value={customColorInput}
+                              onChange={(e) => setCustomColorInput(e.target.value)}
+                              onKeyDown={handleCustomColorKeyDown}
+                              placeholder="Digite a cor e pressione Enter"
+                              disabled={isSaving}
+                              className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleAddCustomColor}
+                              disabled={!customColorInput.trim() || isSaving}
+                              variant="outline"
+                              className="border-zinc-700 bg-zinc-900 text-white hover:border-zinc-600 hover:bg-zinc-800"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="mt-4 space-y-2">
                         <Label htmlFor="descricao" className="text-zinc-200">
                           Descrição
@@ -494,7 +658,7 @@ export function ProductFormDialog({
                       </header>
 
                       <div className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-2">
-                        {(['caixa', 'carregador', 'capinha', 'pelicula'] as const).map((item) => (
+                        {(['caixa', 'carregador', 'cabo', 'capinha', 'pelicula'] as const).map((item) => (
                           <label
                             key={item}
                             className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-800/70 bg-zinc-950/80 px-3 py-2.5 transition hover:border-zinc-700"
@@ -523,7 +687,7 @@ export function ProductFormDialog({
                 </div>
               </div>
 
-              <div className="border-t border-zinc-800/70 bg-zinc-950/85 px-6 py-4 shadow-[0_-20px_40px_-40px_rgba(0,0,0,0.8)] backdrop-blur sm:px-8">
+              <div className="flex-shrink-0 border-t border-zinc-800/70 bg-zinc-950/85 px-6 py-4 shadow-[0_-20px_40px_-40px_rgba(0,0,0,0.8)] backdrop-blur sm:px-8">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                   <Button
                     type="button"

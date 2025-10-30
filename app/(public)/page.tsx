@@ -16,7 +16,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Search, Filter, X, LayoutGrid, List } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { Produto } from '@/types/produto'
+import { useRealtimeProdutos } from '@/hooks/use-realtime-produtos'
+import type { Produto, ProdutoComCategoria } from '@/types/produto'
 
 interface Categoria {
   id: string
@@ -118,19 +119,82 @@ function HomePageContent() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const [busca, setBusca] = useState('')
-  const [categoriaFiltro, setCategoriaFiltro] = useState<string>('todas')
-  const [condicaoFiltro, setCondicaoFiltro] = useState<string>('todas')
-  const [ordenacao, setOrdenacao] = useState('recentes')
-  const [mostrarFiltros, setMostrarFiltros] = useState(false)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  // Inicializar estados diretamente dos searchParams
+  const initialBusca = searchParams?.get('busca') ?? ''
+  const initialCategoria = searchParams?.get('categoria') ?? 'todas'
+  const initialCondicao = searchParams?.get('condicao') ?? 'todas'
+  const initialOrdenacao = searchParams?.get('ordenacao') ?? 'recentes'
+  const initialViewMode = (searchParams?.get('view') ?? 'list') as 'grid' | 'list'
 
-  // Sincronizar busca com searchParams
+  const [busca, setBusca] = useState(initialBusca)
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string>(initialCategoria)
+  const [condicaoFiltro, setCondicaoFiltro] = useState<string>(initialCondicao)
+  const [ordenacao, setOrdenacao] = useState(initialOrdenacao)
+  const [mostrarFiltros, setMostrarFiltros] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(initialViewMode)
+
+  // Sincronizar filtros quando searchParams mudar (para navegação)
   useEffect(() => {
     if (!searchParams) return
     const paramBusca = searchParams.get('busca') ?? ''
+    const paramCategoria = searchParams.get('categoria') ?? 'todas'
+    const paramCondicao = searchParams.get('condicao') ?? 'todas'
+    const paramOrdenacao = searchParams.get('ordenacao') ?? 'recentes'
+    const paramViewMode = searchParams.get('view') ?? 'list'
+
     setBusca(paramBusca)
+    setCategoriaFiltro(paramCategoria)
+    setCondicaoFiltro(paramCondicao)
+    setOrdenacao(paramOrdenacao)
+    setViewMode(paramViewMode as 'grid' | 'list')
   }, [searchParams])
+
+  // Realtime: callbacks para sincronização de produtos
+  const handleProdutoInsert = useCallback((novoProduto: ProdutoComCategoria) => {
+    // Adicionar produto se ele estiver ativo e não deletado
+    if (!novoProduto.ativo || novoProduto.deleted_at) return
+
+    // Não adicionar se estiver em destaque
+    if (produtosEmDestaqueIds.includes(novoProduto.id)) return
+
+    setProdutos((prev) => {
+      // Evitar duplicatas
+      if (prev.some((p) => p.id === novoProduto.id)) return prev
+      return [...prev, novoProduto as Produto]
+    })
+  }, [produtosEmDestaqueIds])
+
+  const handleProdutoUpdate = useCallback((produtoAtualizado: ProdutoComCategoria) => {
+    setProdutos((prev) => {
+      // Se o produto foi desativado ou deletado, removê-lo
+      if (!produtoAtualizado.ativo || produtoAtualizado.deleted_at) {
+        return prev.filter((p) => p.id !== produtoAtualizado.id)
+      }
+
+      // Atualizar produto existente
+      const index = prev.findIndex((p) => p.id === produtoAtualizado.id)
+      if (index !== -1) {
+        const updated = [...prev]
+        updated[index] = produtoAtualizado as Produto
+        return updated
+      }
+
+      // Se não existir e estiver ativo, adicionar
+      return [...prev, produtoAtualizado as Produto]
+    })
+  }, [])
+
+  const handleProdutoDelete = useCallback((id: string) => {
+    setProdutos((prev) => prev.filter((p) => p.id !== id))
+  }, [])
+
+  // Ativar realtime
+  useRealtimeProdutos({
+    enabled: true,
+    onInsert: handleProdutoInsert,
+    onUpdate: handleProdutoUpdate,
+    onDelete: handleProdutoDelete,
+  })
 
   useEffect(() => {
     async function loadData() {
@@ -241,6 +305,20 @@ function HomePageContent() {
     const { data, error } = await query
 
     if (!error && data) {
+      // Debug: verificar se cores estão sendo carregadas
+      if (process.env.NODE_ENV === 'development' && data.length > 0) {
+        const produtoComCor = data.find((p: any) => p.cores && p.cores.length > 0)
+        if (produtoComCor) {
+          console.log('[HomePage] Exemplo de produto com cores:', {
+            nome: produtoComCor.nome,
+            cores: produtoComCor.cores,
+            cor_oficial: produtoComCor.cor_oficial
+          })
+        } else {
+          console.log('[HomePage] Nenhum produto com cores encontrado no banco')
+        }
+      }
+
       // Filtrar produtos em destaque dos banners
       let produtosFiltrados = data.filter((p: any) => !produtosEmDestaqueIds.includes(p.id))
 
@@ -357,19 +435,122 @@ function HomePageContent() {
 
   const temMaisProdutos = categoriasExibidas < todasCategorias.length
 
+  // Criar string de query params para retornar ao catálogo
+  const returnParams = useMemo(() => {
+    const params = new URLSearchParams()
+    if (busca.trim()) params.set('busca', busca.trim())
+    if (categoriaFiltro !== 'todas') params.set('categoria', categoriaFiltro)
+    if (condicaoFiltro !== 'todas') params.set('condicao', condicaoFiltro)
+    if (ordenacao !== 'recentes') params.set('ordenacao', ordenacao)
+    if (viewMode !== 'list') params.set('view', viewMode)
+    return params.toString()
+  }, [busca, categoriaFiltro, condicaoFiltro, ordenacao, viewMode])
+
   // Optimization: Load products efficiently
   useEffect(() => {
     void loadProdutos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoriaFiltro, condicaoFiltro, ordenacao, busca, produtosEmDestaqueIds])
 
+  // Atualizar URL com os filtros atuais
+  const updateURLWithFilters = useCallback(
+    (filters: {
+      busca?: string
+      categoria?: string
+      condicao?: string
+      ordenacao?: string
+      view?: string
+    }) => {
+      const params = new URLSearchParams()
+
+      if (filters.busca && filters.busca.trim()) {
+        params.set('busca', filters.busca.trim())
+      }
+      if (filters.categoria && filters.categoria !== 'todas') {
+        params.set('categoria', filters.categoria)
+      }
+      if (filters.condicao && filters.condicao !== 'todas') {
+        params.set('condicao', filters.condicao)
+      }
+      if (filters.ordenacao && filters.ordenacao !== 'recentes') {
+        params.set('ordenacao', filters.ordenacao)
+      }
+      if (filters.view && filters.view !== 'list') {
+        params.set('view', filters.view)
+      }
+
+      const queryString = params.toString()
+      const newURL = queryString ? `/?${queryString}` : '/'
+      router.replace(newURL, { scroll: false })
+    },
+    [router]
+  )
+
   const limparFiltros = useCallback(() => {
     setBusca('')
     setCategoriaFiltro('todas')
     setCondicaoFiltro('todas')
     setOrdenacao('recentes')
+    setViewMode('list')
     router.replace(pathname)
   }, [pathname, router])
+
+  // Handlers que atualizam estado e URL
+  const handleCategoriaChange = useCallback(
+    (value: string) => {
+      setCategoriaFiltro(value)
+      updateURLWithFilters({
+        busca,
+        categoria: value,
+        condicao: condicaoFiltro,
+        ordenacao,
+        view: viewMode,
+      })
+    },
+    [busca, condicaoFiltro, ordenacao, viewMode, updateURLWithFilters]
+  )
+
+  const handleCondicaoChange = useCallback(
+    (value: string) => {
+      setCondicaoFiltro(value)
+      updateURLWithFilters({
+        busca,
+        categoria: categoriaFiltro,
+        condicao: value,
+        ordenacao,
+        view: viewMode,
+      })
+    },
+    [busca, categoriaFiltro, ordenacao, viewMode, updateURLWithFilters]
+  )
+
+  const handleOrdenacaoChange = useCallback(
+    (value: string) => {
+      setOrdenacao(value)
+      updateURLWithFilters({
+        busca,
+        categoria: categoriaFiltro,
+        condicao: condicaoFiltro,
+        ordenacao: value,
+        view: viewMode,
+      })
+    },
+    [busca, categoriaFiltro, condicaoFiltro, viewMode, updateURLWithFilters]
+  )
+
+  const handleViewModeChange = useCallback(
+    (value: 'grid' | 'list') => {
+      setViewMode(value)
+      updateURLWithFilters({
+        busca,
+        categoria: categoriaFiltro,
+        condicao: condicaoFiltro,
+        ordenacao,
+        view: value,
+      })
+    },
+    [busca, categoriaFiltro, condicaoFiltro, ordenacao, updateURLWithFilters]
+  )
 
   // Optimization: Memoize section config to prevent recalculation
   const getSecaoConfig = useCallback((tipo: Secao['tipo']) => {
@@ -465,7 +646,7 @@ function HomePageContent() {
             Filtros
             {mostrarFiltros && <X className="ml-2 h-4 w-4" />}
           </Button>
-          <Select value={ordenacao} onValueChange={setOrdenacao}>
+          <Select value={ordenacao} onValueChange={handleOrdenacaoChange}>
             <SelectTrigger className="w-48 border-zinc-800 bg-zinc-900 text-white">
               <SelectValue />
             </SelectTrigger>
@@ -486,7 +667,7 @@ function HomePageContent() {
           {/* Categoria */}
           <div>
             <Label className="mb-2 block text-zinc-300">Categoria</Label>
-            <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
+            <Select value={categoriaFiltro} onValueChange={handleCategoriaChange}>
               <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
                 <SelectValue />
               </SelectTrigger>
@@ -504,7 +685,7 @@ function HomePageContent() {
           {/* Condição */}
           <div>
             <Label className="mb-2 block text-zinc-300">Condição</Label>
-            <Select value={condicaoFiltro} onValueChange={setCondicaoFiltro}>
+            <Select value={condicaoFiltro} onValueChange={handleCondicaoChange}>
               <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
                 <SelectValue />
               </SelectTrigger>
@@ -519,7 +700,7 @@ function HomePageContent() {
           {/* Ordenação Desktop */}
           <div className="hidden lg:block">
             <Label className="mb-2 block text-zinc-300">Ordenar por</Label>
-            <Select value={ordenacao} onValueChange={setOrdenacao}>
+            <Select value={ordenacao} onValueChange={handleOrdenacaoChange}>
               <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
                 <SelectValue />
               </SelectTrigger>
@@ -580,6 +761,7 @@ function HomePageContent() {
                   produto={produto}
                   view={viewMode}
                   priority={index < 3}
+                  returnParams={returnParams}
                 />
               ))}
             </div>
@@ -600,7 +782,7 @@ function HomePageContent() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setViewMode('grid')}
+              onClick={() => handleViewModeChange('grid')}
               className={`h-8 w-8 p-0 ${
                 viewMode === 'grid' ? 'bg-zinc-800 text-[var(--brand-yellow)]' : 'text-zinc-500 hover:text-[var(--brand-yellow)]'
               }`}
@@ -610,7 +792,7 @@ function HomePageContent() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setViewMode('list')}
+              onClick={() => handleViewModeChange('list')}
               className={`h-8 w-8 p-0 ${
                 viewMode === 'list' ? 'bg-zinc-800 text-[var(--brand-yellow)]' : 'text-zinc-500 hover:text-[var(--brand-yellow)]'
               }`}
@@ -655,6 +837,7 @@ function HomePageContent() {
                     produto={produto}
                     view={viewMode}
                     priority={index < 4}
+                    returnParams={returnParams}
                   />
                 ))}
               </div>

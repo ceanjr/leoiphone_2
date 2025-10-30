@@ -5,6 +5,7 @@ export type Garantia = 'nenhuma' | '3_meses' | '6_meses' | '1_ano'
 export interface Acessorios {
   caixa: boolean
   carregador: boolean
+  cabo: boolean
   capinha: boolean
   pelicula: boolean
 }
@@ -20,6 +21,8 @@ export interface Produto {
   condicao: Condicao
   categoria_id: string
   garantia: Garantia
+  cor_oficial?: string | null // Campo legado - será migrado para 'cores'
+  cores: string[] | null
   acessorios: Acessorios
   fotos: string[]
   foto_principal: string | null
@@ -29,7 +32,6 @@ export interface Produto {
   created_at: string
   updated_at: string
   deleted_at: string | null
-  cor_oficial: string | null
 }
 
 export interface ProdutoComCategoria extends Produto {
@@ -50,10 +52,10 @@ export interface ProdutoFormData {
   condicao: Condicao
   categoria_id: string
   garantia: Garantia
+  cores?: string[] | null
   acessorios: Acessorios
   fotos: string[]
   foto_principal?: string | null
   ativo: boolean
   estoque: number
-  cor_oficial?: string
 }

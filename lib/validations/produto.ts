@@ -9,9 +9,11 @@ export const produtoSchema = z.object({
   condicao: z.enum(['novo', 'seminovo']),
   categoria_id: z.string().uuid('Selecione uma categoria'),
   garantia: z.enum(['nenhuma', '3_meses', '6_meses', '1_ano']).default('nenhuma'),
+  cores: z.array(z.string()).optional().nullable(),
   acessorios: z.object({
     caixa: z.boolean().default(false),
     carregador: z.boolean().default(false),
+    cabo: z.boolean().default(false),
     capinha: z.boolean().default(false),
     pelicula: z.boolean().default(false),
   }),

@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
+import { ServiceWorkerManager } from "@/components/service-worker-manager";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Léo iPhone - Catálogo de iPhones",
   description:
-    "Catálogo digital profissional para venda de iPhones novos e seminovos. Encontre o iPhone perfeito para você com os melhores preços.",
+    "Veja os modelos disponíveis de iPhones com preço, imagens e informações detalhadas.",
   keywords: [
     "iPhone",
     "Apple",
@@ -18,13 +19,11 @@ export const metadata: Metadata = {
   authors: [{ name: "Léo iPhone" }],
   icons: {
     icon: "/icons/favicon.svg",
-    shortcut: "/icons/favicon.svg",
-    apple: "/icons/favicon.svg",
   },
   openGraph: {
     title: "Léo iPhone - Catálogo de iPhones",
     description:
-      "Catálogo digital profissional para venda de iPhones novos e seminovos",
+      "Veja os modelos disponíveis de iPhones com preço, imagens e informações detalhadas.",
     type: "website",
     locale: "pt_BR",
   },
@@ -71,6 +70,7 @@ export default function RootLayout({
         className="antialiased"
         suppressHydrationWarning
       >
+        <ServiceWorkerManager />
         <div suppressHydrationWarning>{children}</div>
         <Toaster position="top-right" expand={false} richColors closeButton />
         <Analytics />

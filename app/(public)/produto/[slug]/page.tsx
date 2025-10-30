@@ -1,16 +1,20 @@
 'use client'
 
 import { use, useState } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft, Check, Share2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { WhatsAppContactButton } from '@/components/shared/whatsapp-contact-button'
+import { CalculadoraParcelas } from '@/components/public/calculadora-parcelas'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeProdutos } from '@/hooks/use-realtime-produtos'
+import { useRealtimeTaxas } from '@/hooks/use-realtime-taxas'
 import type { ProdutoComCategoria } from '@/types/produto'
-import { useEffect } from 'react'
+import type { TaxasConfig } from '@/lib/validations/taxas'
+import { useEffect, Suspense, useCallback } from 'react'
 
 interface ProdutoPageProps {
   params: Promise<{
@@ -18,11 +22,58 @@ interface ProdutoPageProps {
   }>
 }
 
-export default function ProdutoPage({ params }: ProdutoPageProps) {
-  const { slug } = use(params)
+function ProdutoPageContent({ slug }: { slug: string }) {
+  const searchParams = useSearchParams()
   const [produto, setProduto] = useState<ProdutoComCategoria | null>(null)
   const [loading, setLoading] = useState(true)
   const [fotoSelecionada, setFotoSelecionada] = useState(0)
+  const [calculadoraAtiva, setCalculadoraAtiva] = useState(false)
+  const [taxas, setTaxas] = useState<TaxasConfig | null>(null)
+
+  // Obter parâmetros de retorno
+  const returnParams = searchParams?.get('return') || ''
+  const backUrl = returnParams ? `/?${returnParams}` : '/'
+
+  // Realtime: callback para atualizar produto quando mudar no admin
+  const handleProdutoUpdate = useCallback((produtoAtualizado: ProdutoComCategoria) => {
+    if (produtoAtualizado.slug === slug) {
+      // Se o produto foi desativado ou deletado, redirecionar para catálogo
+      if (!produtoAtualizado.ativo || produtoAtualizado.deleted_at) {
+        window.location.href = backUrl
+        return
+      }
+
+      // Atualizar produto
+      setProduto(produtoAtualizado)
+    }
+  }, [slug, backUrl])
+
+  const handleProdutoDelete = useCallback((id: string) => {
+    if (produto?.id === id) {
+      // Produto foi deletado, redirecionar para catálogo
+      window.location.href = backUrl
+    }
+  }, [produto?.id, backUrl])
+
+  // Realtime: callback para atualizar taxas quando mudar no admin
+  const handleTaxasUpdate = useCallback((config: { ativo: boolean; taxas: TaxasConfig }) => {
+    console.log('[ProdutoPage] Taxas atualizadas via realtime:', config)
+    setCalculadoraAtiva(config.ativo)
+    setTaxas(config.taxas)
+  }, [])
+
+  // Ativar realtime para produtos
+  useRealtimeProdutos({
+    enabled: true,
+    onUpdate: handleProdutoUpdate,
+    onDelete: handleProdutoDelete,
+  })
+
+  // Ativar realtime para taxas
+  useRealtimeTaxas({
+    enabled: true,
+    onUpdate: handleTaxasUpdate,
+  })
 
   useEffect(() => {
     async function loadProduto() {
@@ -58,11 +109,31 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
         console.warn('Não foi possível contabilizar a visualização do produto:', incrementError)
       }
 
-      if (Array.isArray(produtoData.fotos) && produtoData.fotos.length > 0) {
-        produtoData.fotos.forEach((foto) => {
-          const img = new window.Image()
-          img.src = foto
-        })
+      // Preload apenas da primeira imagem (foto principal)
+      // Deixar o Next.js gerenciar o resto para melhor performance
+      if (produtoData.fotos && produtoData.fotos.length > 0) {
+        const link = document.createElement('link')
+        link.rel = 'preload'
+        link.as = 'image'
+        link.href = produtoData.fotos[0]
+        document.head.appendChild(link)
+      }
+
+      // Buscar configuração da calculadora de parcelas
+      try {
+        const { data: configData } = await supabase
+          .from('configuracoes_taxas')
+          .select('ativo, taxas')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (configData && configData.ativo) {
+          setCalculadoraAtiva(true)
+          setTaxas(configData.taxas as TaxasConfig)
+        }
+      } catch (error) {
+        console.warn('Não foi possível carregar configuração de taxas:', error)
       }
     }
 
@@ -128,7 +199,7 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
       {/* Breadcrumb */}
       <div className="mb-6 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm text-zinc-400">
-          <Link href="/" className="hover:text-white">
+          <Link href={backUrl} className="hover:text-white">
             Início
           </Link>
           <span>/</span>
@@ -149,9 +220,9 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
       </div>
 
       {/* Botão Voltar */}
-      <Link href="/" className="mb-6 inline-flex items-center text-zinc-400 hover:text-white">
+      <Link href={backUrl} className="mb-6 inline-flex items-center text-zinc-400 hover:text-white">
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Voltar para início
+        Voltar para catálogo
       </Link>
 
       {/* Conteúdo Principal */}
@@ -167,8 +238,8 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover transition-opacity duration-200"
-                loading="eager"
-                quality={85}
+                priority={fotoSelecionada === 0}
+                quality={75}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-zinc-700">
@@ -194,10 +265,10 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
                     src={foto}
                     alt={`${produto.nome} - Foto ${index + 1}`}
                     fill
-                    sizes="25vw"
+                    sizes="(max-width: 640px) 25vw, (max-width: 1024px) 20vw, 150px"
                     className="object-cover"
-                    loading="eager"
-                    quality={70}
+                    loading={index < 4 ? 'eager' : 'lazy'}
+                    quality={60}
                   />
                 </button>
               ))}
@@ -242,6 +313,13 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
               {formatPreco(produto.preco)}
             </p>
           </div>
+
+          {/* Calculadora de Parcelas */}
+          {calculadoraAtiva && taxas && (
+            <div className="mb-6">
+              <CalculadoraParcelas preco={produto.preco} taxas={taxas} />
+            </div>
+          )}
 
           {/* Descrição */}
           {produto.descricao && (
@@ -335,5 +413,23 @@ export default function ProdutoPage({ params }: ProdutoPageProps) {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ProdutoPage({ params }: ProdutoPageProps) {
+  const { slug } = use(params)
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8">
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-center">
+          <div className="relative mx-auto h-8 w-8 animate-pulse">
+            <div className="h-full w-full rounded-full border-4 border-zinc-700 opacity-40 brightness-150 grayscale" />
+          </div>
+          <p className="mt-4 text-sm text-zinc-400">Carregando produto...</p>
+        </div>
+      </div>
+    </div>}>
+      <ProdutoPageContent slug={slug} />
+    </Suspense>
   )
 }

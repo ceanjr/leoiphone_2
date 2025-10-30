@@ -43,9 +43,16 @@ next-env.d.ts
 
 # claude
 .claude
-# PWA
+
+# PWA / Service Worker
 public/sw.js
 public/sw.js.map
 public/workbox-*.js
 public/workbox-*.js.map
+public/worker-*.js
+public/worker-*.js.map
+**/sw.js
+**/sw.js.map
+**/.next/service-worker.js
+**/.next/workbox-*.js
 

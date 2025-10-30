@@ -12,6 +12,7 @@ import {
   LogOut,
   BarChart3,
   ExternalLink,
+  Calculator,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,11 @@ export const menuItems = [
     title: 'Banners',
     icon: ImageIcon,
     href: '/admin/banners',
+  },
+  {
+    title: 'Taxas',
+    icon: Calculator,
+    href: '/admin/taxas',
   },
   {
     title: 'Analytics',
