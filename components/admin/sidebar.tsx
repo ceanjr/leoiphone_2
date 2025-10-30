@@ -10,7 +10,6 @@ import {
   FolderTree,
   Image as ImageIcon,
   LogOut,
-  BarChart3,
   ExternalLink,
   Calculator,
 } from 'lucide-react'
@@ -44,11 +43,6 @@ export const menuItems = [
     title: 'Taxas',
     icon: Calculator,
     href: '/admin/taxas',
-  },
-  {
-    title: 'Analytics',
-    icon: BarChart3,
-    href: '/admin/analytics',
   },
 ]
 

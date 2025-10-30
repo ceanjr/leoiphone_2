@@ -91,10 +91,50 @@
   * {
     border-color: hsl(var(--border));
   }
+
+  /* === Mobile/PWA Optimizations === */
+  html {
+    /* Smooth scrolling nativo iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Prevenir pull-to-refresh conflito */
+    overscroll-behavior-y: contain;
+    /* Tap highlight transparente (vamos usar nosso próprio) */
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family: var(--font-geist-sans);
+    /* Prevenir text size adjust no iOS */
+    -webkit-text-size-adjust: 100%;
+    /* Suporte para safe area (iOS notch/home bar) */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Touch feedback para elementos interativos */
+  button, a, [role="button"] {
+    /* Prevenir highlight nativo */
+    -webkit-tap-highlight-color: transparent;
+    /* Cursor pointer */
+    cursor: pointer;
+    /* User select none em botões */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Feedback visual touch - escala reduzida ao tocar */
+  button:active:not(:disabled),
+  a:active,
+  [role="button"]:active {
+    transform: scale(0.98);
+    transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Desabilitar zoom em inputs (iOS) */
+  input, select, textarea {
+    font-size: max(16px, 1rem);
   }
 
   button,
@@ -156,4 +196,67 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:active {
   background: #fbbf24;
+}
+
+/* Toaster Mobile Optimization */
+[data-sonner-toaster] {
+  /* Safe area support for mobile toasts */
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+[data-sonner-toaster][data-position="bottom-center"] {
+  bottom: 0;
+}
+
+/* Mobile toast styling */
+@media (max-width: 768px) {
+  [data-sonner-toast] {
+    /* Larger touch targets for mobile */
+    min-height: 52px;
+    /* Better spacing on mobile */
+    margin: 8px 16px;
+    /* Smooth animations */
+    transition: transform 200ms ease, opacity 200ms ease;
+  }
+
+  [data-sonner-toast]:active {
+    /* Touch feedback */
+    transform: scale(0.98);
+  }
+}
+
+/* Card Ripple Effect for Mobile */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Ripple on touch - applies to cards/clickable elements */
+@media (max-width: 768px) {
+  .group {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Ripple overlay */
+  .group::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(234, 179, 8, 0.15) 0%, transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms ease;
+  }
+
+  .group:active::after {
+    opacity: 1;
+    animation: ripple 600ms ease-out;
+  }
 }

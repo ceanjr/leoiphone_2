@@ -142,7 +142,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
   if (view === 'list') {
     return (
       <Link href={productUrl}>
-        <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10">
+        <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10 active:scale-[0.98] duration-100">
           <div className="flex flex-row">
             {/* Optimization: Fixed dimensions to prevent CLS */}
             <div className="relative h-28 w-28 overflow-hidden bg-zinc-950 flex-shrink-0 hidden sm:block">
@@ -186,11 +186,6 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
                       Seminovo
                     </Badge>
                   )}
-                  {produto.garantia !== 'nenhuma' && (
-                    <Badge className="bg-purple-600 text-white hover:bg-purple-700 text-xs px-2 py-0">
-                      Garantia
-                    </Badge>
-                  )}
                   {produto.nivel_bateria && (
                     <Badge className="bg-zinc-700 text-white hover:bg-zinc-600 text-xs px-2 py-0.5 flex items-center gap-1.5">
                       <BatteryIcon level={produto.nivel_bateria} />
@@ -226,7 +221,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
 
   return (
     <Link href={productUrl}>
-      <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10">
+      <div className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10 active:scale-[0.98] duration-100">
         {/* Optimization: aspect-square maintains proper spacing, preventing CLS */}
         <div className="relative aspect-square overflow-hidden bg-zinc-950">
           {produto.foto_principal ? (
@@ -272,11 +267,6 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
             {produto.condicao === 'seminovo' && produto.nivel_bateria == null && (
               <Badge className="bg-amber-600 text-white hover:bg-amber-700 text-xs px-2 py-0.5 w-fit">
                 Seminovo
-              </Badge>
-            )}
-            {produto.garantia !== 'nenhuma' && (
-              <Badge className="bg-purple-600 text-white hover:bg-purple-700 text-xs px-2 py-0.5 w-fit">
-                Garantia
               </Badge>
             )}
           </div>

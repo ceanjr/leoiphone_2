@@ -10,11 +10,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { WhatsAppContactButton } from '@/components/shared/whatsapp-contact-button'
 import { CalculadoraParcelas } from '@/components/public/calculadora-parcelas'
 import { createClient } from '@/lib/supabase/client'
-import { useRealtimeProdutos } from '@/hooks/use-realtime-produtos'
-import { useRealtimeTaxas } from '@/hooks/use-realtime-taxas'
+import { usePollingTaxas } from '@/hooks/use-polling-taxas'
 import type { ProdutoComCategoria } from '@/types/produto'
 import type { TaxasConfig } from '@/lib/validations/taxas'
-import { useEffect, Suspense, useCallback } from 'react'
+import { useEffect, Suspense, useCallback, useRef } from 'react'
 
 interface ProdutoPageProps {
   params: Promise<{
@@ -33,47 +32,74 @@ function ProdutoPageContent({ slug }: { slug: string }) {
   // Obter parâmetros de retorno
   const returnParams = searchParams?.get('return') || ''
   const backUrl = returnParams ? `/?${returnParams}` : '/'
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Realtime: callback para atualizar produto quando mudar no admin
-  const handleProdutoUpdate = useCallback((produtoAtualizado: ProdutoComCategoria) => {
-    if (produtoAtualizado.slug === slug) {
-      // Se o produto foi desativado ou deletado, redirecionar para catálogo
-      if (!produtoAtualizado.ativo || produtoAtualizado.deleted_at) {
-        window.location.href = backUrl
-        return
-      }
-
-      // Atualizar produto
-      setProduto(produtoAtualizado)
-    }
-  }, [slug, backUrl])
-
-  const handleProdutoDelete = useCallback((id: string) => {
-    if (produto?.id === id) {
-      // Produto foi deletado, redirecionar para catálogo
-      window.location.href = backUrl
-    }
-  }, [produto?.id, backUrl])
-
-  // Realtime: callback para atualizar taxas quando mudar no admin
+  // Polling: callback para atualizar taxas quando mudar no admin
   const handleTaxasUpdate = useCallback((config: { ativo: boolean; taxas: TaxasConfig }) => {
-    console.log('[ProdutoPage] Taxas atualizadas via realtime:', config)
+    console.log('[ProdutoPage] Taxas atualizadas via polling:', config)
     setCalculadoraAtiva(config.ativo)
     setTaxas(config.taxas)
   }, [])
 
-  // Ativar realtime para produtos
-  useRealtimeProdutos({
+  // Ativar polling para taxas (verifica a cada 2 segundos)
+  usePollingTaxas({
     enabled: true,
-    onUpdate: handleProdutoUpdate,
-    onDelete: handleProdutoDelete,
-  })
-
-  // Ativar realtime para taxas
-  useRealtimeTaxas({
-    enabled: true,
+    interval: 2000,
     onUpdate: handleTaxasUpdate,
   })
+
+  // Polling manual para o produto atual
+  useEffect(() => {
+    if (!produto?.id) return
+
+    const supabase = createClient()
+
+    const checkProdutoUpdate = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('produtos')
+          .select(`
+            *,
+            categoria:categorias(id, nome, slug)
+          `)
+          .eq('slug', slug)
+          .single()
+
+        if (error || !data) {
+          // Produto não encontrado ou erro, redirecionar
+          console.log('[ProdutoPage] Produto não encontrado, redirecionando...')
+          window.location.href = backUrl
+          return
+        }
+
+        const produtoAtualizado = data as ProdutoComCategoria
+
+        // Se foi desativado ou deletado, redirecionar
+        if (!produtoAtualizado.ativo || produtoAtualizado.deleted_at) {
+          console.log('[ProdutoPage] Produto desativado/deletado, redirecionando...')
+          window.location.href = backUrl
+          return
+        }
+
+        // Verificar se houve mudança (comparar updated_at)
+        if (produto.updated_at !== produtoAtualizado.updated_at) {
+          console.log('[ProdutoPage] Produto atualizado via polling')
+          setProduto(produtoAtualizado)
+        }
+      } catch (error) {
+        console.error('[ProdutoPage] Erro no polling do produto:', error)
+      }
+    }
+
+    // Verificar a cada 3 segundos
+    pollingIntervalRef.current = setInterval(checkProdutoUpdate, 3000)
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+      }
+    }
+  }, [produto?.id, produto?.updated_at, slug, backUrl])
 
   useEffect(() => {
     async function loadProduto() {
@@ -109,14 +135,23 @@ function ProdutoPageContent({ slug }: { slug: string }) {
         console.warn('Não foi possível contabilizar a visualização do produto:', incrementError)
       }
 
-      // Preload apenas da primeira imagem (foto principal)
-      // Deixar o Next.js gerenciar o resto para melhor performance
+      // Preload da primeira imagem (foto principal) - Alta prioridade
       if (produtoData.fotos && produtoData.fotos.length > 0) {
         const link = document.createElement('link')
         link.rel = 'preload'
         link.as = 'image'
         link.href = produtoData.fotos[0]
         document.head.appendChild(link)
+
+        // Prefetch das fotos 2-5 em background - Baixa prioridade
+        // Isso garante que quando o usuário clicar, a imagem já está carregada
+        if (produtoData.fotos.length > 1) {
+          produtoData.fotos.slice(1, 5).forEach((fotoUrl) => {
+            const img = new Image()
+            img.src = fotoUrl
+          })
+          console.log(`[Performance] Prefetch de ${Math.min(4, produtoData.fotos.length - 1)} fotos adicionais iniciado`)
+        }
       }
 
       // Buscar configuração da calculadora de parcelas
@@ -232,14 +267,13 @@ function ProdutoPageContent({ slug }: { slug: string }) {
           <div className="relative aspect-square overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
             {produto.fotos[fotoSelecionada] ? (
               <Image
-                key={fotoSelecionada}
                 src={produto.fotos[fotoSelecionada]}
                 alt={produto.nome}
                 fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 600px"
                 className="object-cover transition-opacity duration-200"
                 priority={fotoSelecionada === 0}
-                quality={75}
+                quality={70}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-zinc-700">
@@ -265,10 +299,10 @@ function ProdutoPageContent({ slug }: { slug: string }) {
                     src={foto}
                     alt={`${produto.nome} - Foto ${index + 1}`}
                     fill
-                    sizes="(max-width: 640px) 25vw, (max-width: 1024px) 20vw, 150px"
+                    sizes="(max-width: 640px) 20vw, (max-width: 1024px) 15vw, 120px"
                     className="object-cover"
-                    loading={index < 4 ? 'eager' : 'lazy'}
-                    quality={60}
+                    loading={index === fotoSelecionada ? 'eager' : 'lazy'}
+                    quality={50}
                   />
                 </button>
               ))}
@@ -409,6 +443,8 @@ function ProdutoPageContent({ slug }: { slug: string }) {
             className="w-full bg-[var(--brand-yellow)] text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90"
             message={whatsappMessage}
             label="Comprar pelo WhatsApp"
+            produtoId={produto.id}
+            produtoNome={produto.nome}
           />
         </div>
       </div>

@@ -72,7 +72,7 @@ export default function RootLayout({
       >
         <ServiceWorkerManager />
         <div suppressHydrationWarning>{children}</div>
-        <Toaster position="top-right" expand={false} richColors closeButton />
+        <Toaster richColors closeButton />
         <Analytics />
       </body>
     </html>

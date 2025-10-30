@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense, memo, useMemo } from 'react'
+import { useState, useEffect, useCallback, Suspense, useMemo } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ProdutoCard } from '@/components/public/produto-card'
 import { BannerCarousel } from '@/components/public/banner-carousel'
@@ -14,9 +14,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Search, Filter, X, LayoutGrid, List } from 'lucide-react'
+import { Search, X, LayoutGrid, List } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { useRealtimeProdutos } from '@/hooks/use-realtime-produtos'
+import { usePollingProdutos } from '@/hooks/use-polling-produtos'
 import type { Produto, ProdutoComCategoria } from '@/types/produto'
 
 interface Categoria {
@@ -122,15 +122,10 @@ function HomePageContent() {
   // Inicializar estados diretamente dos searchParams
   const initialBusca = searchParams?.get('busca') ?? ''
   const initialCategoria = searchParams?.get('categoria') ?? 'todas'
-  const initialCondicao = searchParams?.get('condicao') ?? 'todas'
-  const initialOrdenacao = searchParams?.get('ordenacao') ?? 'recentes'
   const initialViewMode = (searchParams?.get('view') ?? 'list') as 'grid' | 'list'
 
   const [busca, setBusca] = useState(initialBusca)
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>(initialCategoria)
-  const [condicaoFiltro, setCondicaoFiltro] = useState<string>(initialCondicao)
-  const [ordenacao, setOrdenacao] = useState(initialOrdenacao)
-  const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(initialViewMode)
 
   // Sincronizar filtros quando searchParams mudar (para navegação)
@@ -138,62 +133,34 @@ function HomePageContent() {
     if (!searchParams) return
     const paramBusca = searchParams.get('busca') ?? ''
     const paramCategoria = searchParams.get('categoria') ?? 'todas'
-    const paramCondicao = searchParams.get('condicao') ?? 'todas'
-    const paramOrdenacao = searchParams.get('ordenacao') ?? 'recentes'
     const paramViewMode = searchParams.get('view') ?? 'list'
 
     setBusca(paramBusca)
     setCategoriaFiltro(paramCategoria)
-    setCondicaoFiltro(paramCondicao)
-    setOrdenacao(paramOrdenacao)
     setViewMode(paramViewMode as 'grid' | 'list')
   }, [searchParams])
 
-  // Realtime: callbacks para sincronização de produtos
-  const handleProdutoInsert = useCallback((novoProduto: ProdutoComCategoria) => {
-    // Adicionar produto se ele estiver ativo e não deletado
-    if (!novoProduto.ativo || novoProduto.deleted_at) return
+  // Polling: sincronização de produtos via verificação periódica
+  const handleProdutosUpdate = useCallback((produtosAtualizados: ProdutoComCategoria[]) => {
+    console.log('[HomePage] Produtos atualizados via polling:', produtosAtualizados.length)
 
-    // Não adicionar se estiver em destaque
-    if (produtosEmDestaqueIds.includes(novoProduto.id)) return
+    // Filtrar produtos em destaque
+    const produtosFiltrados = produtosAtualizados.filter(
+      (p) => !produtosEmDestaqueIds.includes(p.id)
+    )
 
-    setProdutos((prev) => {
-      // Evitar duplicatas
-      if (prev.some((p) => p.id === novoProduto.id)) return prev
-      return [...prev, novoProduto as Produto]
-    })
+    // Atualizar lista completa
+    setProdutos(produtosFiltrados as Produto[])
+
+    // Forçar recarregamento dos produtos agrupados
+    void loadProdutos()
   }, [produtosEmDestaqueIds])
 
-  const handleProdutoUpdate = useCallback((produtoAtualizado: ProdutoComCategoria) => {
-    setProdutos((prev) => {
-      // Se o produto foi desativado ou deletado, removê-lo
-      if (!produtoAtualizado.ativo || produtoAtualizado.deleted_at) {
-        return prev.filter((p) => p.id !== produtoAtualizado.id)
-      }
-
-      // Atualizar produto existente
-      const index = prev.findIndex((p) => p.id === produtoAtualizado.id)
-      if (index !== -1) {
-        const updated = [...prev]
-        updated[index] = produtoAtualizado as Produto
-        return updated
-      }
-
-      // Se não existir e estiver ativo, adicionar
-      return [...prev, produtoAtualizado as Produto]
-    })
-  }, [])
-
-  const handleProdutoDelete = useCallback((id: string) => {
-    setProdutos((prev) => prev.filter((p) => p.id !== id))
-  }, [])
-
-  // Ativar realtime
-  useRealtimeProdutos({
+  // Ativar polling (verifica a cada 3 segundos)
+  usePollingProdutos({
     enabled: true,
-    onInsert: handleProdutoInsert,
-    onUpdate: handleProdutoUpdate,
-    onDelete: handleProdutoDelete,
+    interval: 3000,
+    onUpdate: handleProdutosUpdate,
   })
 
   useEffect(() => {
@@ -297,11 +264,6 @@ function HomePageContent() {
       query = query.eq('categoria_id', categoriaFiltro)
     }
 
-    // Filtrar por condição
-    if (condicaoFiltro !== 'todas') {
-      query = query.eq('condicao', condicaoFiltro)
-    }
-
     const { data, error } = await query
 
     if (!error && data) {
@@ -333,26 +295,8 @@ function HomePageContent() {
         )
       }
 
-      // Aplicar ordenação customizada baseada no filtro
-      let produtosOrdenados: any[] = [...produtosFiltrados]
-
-      switch (ordenacao) {
-        case 'menor_preco':
-          produtosOrdenados.sort((a: any, b: any) => a.preco - b.preco)
-          break
-        case 'maior_preco':
-          produtosOrdenados.sort((a: any, b: any) => b.preco - a.preco)
-          break
-        case 'recentes':
-          produtosOrdenados.sort(
-            (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          )
-          break
-        default:
-          // Ordenação padrão: por modelo iPhone
-          produtosOrdenados = ordenarProdutosPorModelo(produtosOrdenados as Produto[])
-          break
-      }
+      // Ordenar por modelo iPhone
+      let produtosOrdenados: any[] = ordenarProdutosPorModelo(produtosFiltrados as Produto[])
 
       // Agrupar por categoria
       const grupos: { [key: string]: ProdutosAgrupados } = {}
@@ -440,25 +384,21 @@ function HomePageContent() {
     const params = new URLSearchParams()
     if (busca.trim()) params.set('busca', busca.trim())
     if (categoriaFiltro !== 'todas') params.set('categoria', categoriaFiltro)
-    if (condicaoFiltro !== 'todas') params.set('condicao', condicaoFiltro)
-    if (ordenacao !== 'recentes') params.set('ordenacao', ordenacao)
     if (viewMode !== 'list') params.set('view', viewMode)
     return params.toString()
-  }, [busca, categoriaFiltro, condicaoFiltro, ordenacao, viewMode])
+  }, [busca, categoriaFiltro, viewMode])
 
   // Optimization: Load products efficiently
   useEffect(() => {
     void loadProdutos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoriaFiltro, condicaoFiltro, ordenacao, busca, produtosEmDestaqueIds])
+  }, [categoriaFiltro, busca, produtosEmDestaqueIds])
 
   // Atualizar URL com os filtros atuais
   const updateURLWithFilters = useCallback(
     (filters: {
       busca?: string
       categoria?: string
-      condicao?: string
-      ordenacao?: string
       view?: string
     }) => {
       const params = new URLSearchParams()
@@ -468,12 +408,6 @@ function HomePageContent() {
       }
       if (filters.categoria && filters.categoria !== 'todas') {
         params.set('categoria', filters.categoria)
-      }
-      if (filters.condicao && filters.condicao !== 'todas') {
-        params.set('condicao', filters.condicao)
-      }
-      if (filters.ordenacao && filters.ordenacao !== 'recentes') {
-        params.set('ordenacao', filters.ordenacao)
       }
       if (filters.view && filters.view !== 'list') {
         params.set('view', filters.view)
@@ -489,8 +423,6 @@ function HomePageContent() {
   const limparFiltros = useCallback(() => {
     setBusca('')
     setCategoriaFiltro('todas')
-    setCondicaoFiltro('todas')
-    setOrdenacao('recentes')
     setViewMode('list')
     router.replace(pathname)
   }, [pathname, router])
@@ -502,40 +434,10 @@ function HomePageContent() {
       updateURLWithFilters({
         busca,
         categoria: value,
-        condicao: condicaoFiltro,
-        ordenacao,
         view: viewMode,
       })
     },
-    [busca, condicaoFiltro, ordenacao, viewMode, updateURLWithFilters]
-  )
-
-  const handleCondicaoChange = useCallback(
-    (value: string) => {
-      setCondicaoFiltro(value)
-      updateURLWithFilters({
-        busca,
-        categoria: categoriaFiltro,
-        condicao: value,
-        ordenacao,
-        view: viewMode,
-      })
-    },
-    [busca, categoriaFiltro, ordenacao, viewMode, updateURLWithFilters]
-  )
-
-  const handleOrdenacaoChange = useCallback(
-    (value: string) => {
-      setOrdenacao(value)
-      updateURLWithFilters({
-        busca,
-        categoria: categoriaFiltro,
-        condicao: condicaoFiltro,
-        ordenacao: value,
-        view: viewMode,
-      })
-    },
-    [busca, categoriaFiltro, condicaoFiltro, viewMode, updateURLWithFilters]
+    [busca, viewMode, updateURLWithFilters]
   )
 
   const handleViewModeChange = useCallback(
@@ -544,12 +446,10 @@ function HomePageContent() {
       updateURLWithFilters({
         busca,
         categoria: categoriaFiltro,
-        condicao: condicaoFiltro,
-        ordenacao,
         view: value,
       })
     },
-    [busca, categoriaFiltro, condicaoFiltro, ordenacao, updateURLWithFilters]
+    [busca, categoriaFiltro, updateURLWithFilters]
   )
 
   // Optimization: Memoize section config to prevent recalculation
@@ -602,7 +502,7 @@ function HomePageContent() {
         <p className="text-zinc-400 text-center">Explore todos os nossos iPhones disponíveis</p>
       </div>
 
-      {/* Carrossel de Banners - ACIMA DOS FILTROS */}
+      {/* Carrossel de Banners */}
       <BannerCarousel />
 
       {/* Barra de Busca e Filtros */}
@@ -639,34 +539,10 @@ function HomePageContent() {
           </button>
         </form>
 
-        {/* Botão Filtros Mobile */}
-        <div className="flex items-center justify-between lg:hidden">
-          <Button variant="outline" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
-            <Filter className="mr-2 h-4 w-4" />
-            Filtros
-            {mostrarFiltros && <X className="ml-2 h-4 w-4" />}
-          </Button>
-          <Select value={ordenacao} onValueChange={handleOrdenacaoChange}>
-            <SelectTrigger className="w-48 border-zinc-800 bg-zinc-900 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="border-zinc-800 bg-zinc-900">
-              <SelectItem value="recentes">Mais Recentes</SelectItem>
-              <SelectItem value="menor_preco">Menor Preço</SelectItem>
-              <SelectItem value="maior_preco">Maior Preço</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Filtros Desktop e Mobile Expandido */}
-        <div
-          className={`grid gap-4 ${
-            mostrarFiltros ? 'grid-cols-1' : 'hidden'
-          } lg:grid lg:grid-cols-4`}
-        >
-          {/* Categoria */}
-          <div>
-            <Label className="mb-2 block text-zinc-300">Categoria</Label>
+        {/* Filtro de Categoria em Destaque */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex-1 max-w-md">
+            <Label className="mb-2 block text-sm font-medium text-zinc-300">Filtrar por Categoria</Label>
             <Select value={categoriaFiltro} onValueChange={handleCategoriaChange}>
               <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
                 <SelectValue />
@@ -682,46 +558,17 @@ function HomePageContent() {
             </Select>
           </div>
 
-          {/* Condição */}
-          <div>
-            <Label className="mb-2 block text-zinc-300">Condição</Label>
-            <Select value={condicaoFiltro} onValueChange={handleCondicaoChange}>
-              <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border-zinc-800 bg-zinc-900">
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="novo">Novo</SelectItem>
-                <SelectItem value="seminovo">Seminovo</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Ordenação Desktop */}
-          <div className="hidden lg:block">
-            <Label className="mb-2 block text-zinc-300">Ordenar por</Label>
-            <Select value={ordenacao} onValueChange={handleOrdenacaoChange}>
-              <SelectTrigger className="border-zinc-800 bg-zinc-900 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border-zinc-800 bg-zinc-900">
-                <SelectItem value="recentes">Mais Recentes</SelectItem>
-                <SelectItem value="menor_preco">Menor Preço</SelectItem>
-                <SelectItem value="maior_preco">Maior Preço</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Limpar Filtros */}
-          <div className="flex items-end">
-            <Button variant="outline" onClick={limparFiltros} className="w-full">
+          {(busca.trim() || categoriaFiltro !== 'todas') && (
+            <Button variant="outline" onClick={limparFiltros} className="sm:w-auto">
+              <X className="mr-2 h-4 w-4" />
               Limpar Filtros
             </Button>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Seções de Destaque (Promoções, Lançamentos, etc) - ABAIXO DOS FILTROS */}
+      {/* Seções de Destaque (Promoções, Lançamentos, etc) */}
       {secoes.map((secao) => {
         const config = getSecaoConfig(secao.tipo)
 

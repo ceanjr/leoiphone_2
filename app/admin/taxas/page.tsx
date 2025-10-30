@@ -228,7 +228,7 @@ export default function TaxasPage() {
 
               <Separator className="my-6 bg-zinc-800" />
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   onClick={handleSave}
                   disabled={saving || !hasChanges}

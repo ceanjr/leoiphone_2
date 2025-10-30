@@ -6,16 +6,32 @@ import { cn } from '@/lib/utils'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { createClient } from '@/lib/supabase/client'
 
 const CONTACTS = [
   { label: 'Léo iPhone (Léo)', number: '77988343473' },
   { label: 'Léo iPhone (Júnior)', number: '77981341126' },
 ] as const
 
+// Função para pegar visitor_id
+function getVisitorId(): string {
+  if (typeof window === 'undefined') return ''
+  return localStorage.getItem('visitor_id') || ''
+}
+
+// Verificar se está em produção
+function isProduction(): boolean {
+  if (typeof window === 'undefined') return false
+  const hostname = window.location.hostname
+  return hostname.includes('leoiphone.com.br') || hostname.includes('vercel.app')
+}
+
 interface WhatsAppContactButtonProps extends ButtonProps {
   message?: string
   triggerIcon?: boolean
   label?: string
+  produtoId?: string
+  produtoNome?: string
 }
 
 export function WhatsAppContactButton({
@@ -23,6 +39,8 @@ export function WhatsAppContactButton({
   triggerIcon = false,
   className,
   label,
+  produtoId,
+  produtoNome,
   ...buttonProps
 }: WhatsAppContactButtonProps) {
   const [open, setOpen] = useState(false)
@@ -32,7 +50,25 @@ export function WhatsAppContactButton({
     return encodeURIComponent(message)
   }, [message])
 
-  function handleContact(number: string) {
+  async function handleContact(number: string) {
+    // Rastrear conversão apenas em produção
+    if (isProduction()) {
+      const visitorId = getVisitorId()
+      if (visitorId) {
+        const supabase = createClient()
+        try {
+          await supabase.from('conversions').insert({
+            visitor_id: visitorId,
+            produto_id: produtoId || null,
+            produto_nome: produtoNome || null,
+          })
+          console.log('[Conversion] Rastreada:', { produtoId, produtoNome })
+        } catch (error) {
+          console.error('[Conversion] Erro ao rastrear:', error)
+        }
+      }
+    }
+
     const url = baseMessage ? `https://wa.me/${number}?text=${baseMessage}` : `https://wa.me/${number}`
     window.open(url, '_blank', 'noopener,noreferrer')
     setOpen(false)
