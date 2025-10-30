@@ -104,10 +104,11 @@ const nextConfig: NextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-    formats: ['image/webp'], // Optimization LCP: Only WebP for faster processing
-    minimumCacheTTL: 86400, // Optimization LCP: 24 hours cache
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    formats: ['image/avif', 'image/webp'], // Suporte a AVIF (melhor qualidade) + WebP (fallback)
+    minimumCacheTTL: 86400, // 24 hours cache
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // Adicionado 2K e 4K
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 512, 768], // Adicionado tamanhos maiores
+    unoptimized: false, // Garantir que otimização está ativa
     dangerouslyAllowSVG: true,
     contentDispositionType: 'inline',
   },

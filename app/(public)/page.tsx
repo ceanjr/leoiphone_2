@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense, useMemo } from 'react'
+import { useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ProdutoCard } from '@/components/public/produto-card'
 import { BannerCarousel } from '@/components/public/banner-carousel'
@@ -118,6 +118,9 @@ function HomePageContent() {
   const router = useRouter()
   const pathname = usePathname()
 
+  // Ref para o input de busca
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
   // Inicializar estados diretamente dos searchParams
   const initialBusca = searchParams?.get('busca') ?? ''
   const initialCategoria = searchParams?.get('categoria') ?? 'todas'
@@ -138,6 +141,23 @@ function HomePageContent() {
     setCategoriaFiltro(paramCategoria)
     setViewMode(paramViewMode as 'grid' | 'list')
   }, [searchParams])
+
+  // Prevenir autofocus no input de busca (mobile)
+  useEffect(() => {
+    // Forçar blur no input de busca após mount
+    if (searchInputRef.current && document.activeElement === searchInputRef.current) {
+      searchInputRef.current.blur()
+    }
+
+    // Prevenir restauração de foco pelo navegador
+    const timer = setTimeout(() => {
+      if (searchInputRef.current && document.activeElement === searchInputRef.current) {
+        searchInputRef.current.blur()
+      }
+    }, 100)
+
+    return () => clearTimeout(timer)
+  }, [])
 
   // Polling: sincronização de produtos via verificação periódica
   const handleProdutosUpdate = useCallback(
@@ -565,7 +585,9 @@ function HomePageContent() {
         >
           <Search className="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-zinc-500" />
           <Input
-            type="search"
+            ref={searchInputRef}
+            type="text"
+            inputMode="search"
             placeholder="Buscar por nome, modelo ou código..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}

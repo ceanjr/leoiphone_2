@@ -51,25 +51,33 @@ export function ImageUpload({ images, onChange, maxImages = 5, disabled = false 
       for (let i = 0; i < validFiles.length; i++) {
         const file = validFiles[i]
 
-        // Comprimir imagem antes do upload
+        // Comprimir imagem antes do upload com qualidade alta
         const options = {
-          maxSizeMB: 0.5, // 500KB máximo
-          maxWidthOrHeight: 1024, // Largura/altura máxima
+          maxSizeMB: 2, // 2MB máximo (aumentado para melhor qualidade)
+          maxWidthOrHeight: 1920, // Full HD (aumentado de 1024 para 1920)
           useWebWorker: true,
-          fileType: 'image/webp', // Converter para WebP
+          initialQuality: 0.9, // Qualidade inicial alta (90%)
+          alwaysKeepResolution: false, // Permite redimensionar se necessário
         }
 
         let fileToUpload: File
         try {
-          const compressedFile = await imageCompression(file, options)
-          fileToUpload = compressedFile
+          // Só comprimir se a imagem for maior que 2MB ou muito grande
+          if (file.size > 2 * 1024 * 1024) {
+            const compressedFile = await imageCompression(file, options)
+            fileToUpload = compressedFile
 
-          // Calcular redução de tamanho
-          const originalSizeKB = (file.size / 1024).toFixed(0)
-          const compressedSizeKB = (compressedFile.size / 1024).toFixed(0)
-          console.log(`Imagem comprimida: ${originalSizeKB}KB → ${compressedSizeKB}KB`)
+            // Calcular redução de tamanho
+            const originalSizeMB = (file.size / 1024 / 1024).toFixed(2)
+            const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2)
+            console.log(`[Upload] Imagem otimizada: ${originalSizeMB}MB → ${compressedSizeMB}MB`)
+          } else {
+            // Imagem já está em tamanho bom, usar original
+            fileToUpload = file
+            console.log(`[Upload] Imagem já otimizada: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
+          }
         } catch (compressionError) {
-          console.warn('Erro ao comprimir imagem, usando original:', compressionError)
+          console.warn('[Upload] Erro ao comprimir imagem, usando original:', compressionError)
           fileToUpload = file
         }
 
@@ -231,7 +239,7 @@ export function ImageUpload({ images, onChange, maxImages = 5, disabled = false 
                       Clique para adicionar fotos
                     </p>
                     <p className="text-xs text-zinc-500">
-                      PNG, JPG, WEBP • Máximo {maxImages} fotos
+                      PNG, JPG, WEBP • Máximo {maxImages} fotos • Até 10MB por foto
                     </p>
                   </div>
                 </div>

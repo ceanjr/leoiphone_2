@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'O arquivo deve ser uma imagem' }, { status: 400 })
     }
 
-    // Validar tamanho (5MB)
-    const maxSize = 5 * 1024 * 1024
+    // Validar tamanho (10MB) - aumentado para aceitar imagens de alta qualidade
+    const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
-      return NextResponse.json({ error: 'A imagem deve ter no máximo 5MB' }, { status: 400 })
+      return NextResponse.json({ error: 'A imagem deve ter no máximo 10MB' }, { status: 400 })
     }
 
     // Gerar nome único para o arquivo
