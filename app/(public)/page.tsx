@@ -17,7 +17,8 @@ import { Button } from '@/components/ui/button'
 import { Search, X, LayoutGrid, List } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { usePollingProdutos } from '@/hooks/use-polling-produtos'
-import type { Produto, ProdutoComCategoria } from '@/types/produto'
+import { useAuth } from '@/hooks/use-auth'
+import type { Produto, ProdutoComCategoria, ProdutoCusto } from '@/types/produto'
 
 interface Categoria {
   id: string
@@ -72,41 +73,103 @@ function extrairArmazenamento(nome: string): number {
   return 0 // Sem armazenamento especificado
 }
 
+// Ordem de modelos baseada no arquivo filtros.txt
+const ORDEM_MODELOS = [
+  'iPhone 7',
+  'iPhone 7 Plus',
+  'iPhone 8',
+  'iPhone 8 Plus',
+  'iPhone X',
+  'iPhone XR',
+  'iPhone XS',
+  'iPhone XS Max',
+  'iPhone 11',
+  'iPhone 11 Pro',
+  'iPhone 11 Pro Max',
+  'iPhone 12',
+  'iPhone 12 Mini',
+  'iPhone 12 Pro',
+  'iPhone 12 Pro Max',
+  'iPhone 13',
+  'iPhone 13 Mini',
+  'iPhone 13 Pro',
+  'iPhone 13 Pro Max',
+  'iPhone 14',
+  'iPhone 14 Plus',
+  'iPhone 14 Pro',
+  'iPhone 14 Pro Max',
+  'iPhone 15',
+  'iPhone 15 Plus',
+  'iPhone 15 Pro',
+  'iPhone 15 Pro Max',
+  'iPhone 16',
+  'iPhone 16 Plus',
+  'iPhone 16 Pro',
+  'iPhone 16 Pro Max',
+  'iPhone 17',
+  'iPhone 17 Air',
+  'iPhone 17 Pro',
+  'iPhone 17 Pro Max',
+]
+
+// Ordem de capacidades
+const ORDEM_CAPACIDADES = ['64GB', '128GB', '256GB', '512GB', '1TB', '2TB']
+
+// Função para extrair modelo e capacidade do nome
+function extrairModeloECapacidade(nome: string): { modelo: string; capacidade: string } {
+  // Normalizar o nome
+  const nomeNorm = nome.trim()
+
+  // Extrair capacidade
+  let capacidade = ''
+  const matchCapacidade = nomeNorm.match(/(\d+\s*(GB|TB))/i)
+  if (matchCapacidade) {
+    capacidade = matchCapacidade[1].replace(/\s+/g, '').toUpperCase()
+  }
+
+  // Extrair modelo (remover capacidade e extras)
+  let modelo = nomeNorm
+    .replace(/\s*-?\s*\d+\s*(GB|TB)/gi, '') // Remove capacidade
+    .replace(/\s*-\s*.*$/, '') // Remove tudo após o primeiro hífen
+    .trim()
+
+  return { modelo, capacidade }
+}
+
 // Função para ordenar produtos por modelo iPhone
 function ordenarProdutosPorModelo(produtos: Produto[]): Produto[] {
   return produtos.sort((a, b) => {
-    // Extrair número do modelo do nome (ex: "iPhone 11 Pro" -> 11)
-    const extrairNumero = (nome: string): number => {
-      // Casos especiais
-      if (
-        nome.toLowerCase().includes('iphone x') &&
-        !nome.toLowerCase().includes('xr') &&
-        !nome.toLowerCase().includes('xs')
-      )
-        return 10 // iPhone X = 10
-      if (nome.toLowerCase().includes('iphone xr')) return 10.3 // iPhone XR entre X e 11
-      if (nome.toLowerCase().includes('iphone xs')) return 10.5 // iPhone XS
+    const { modelo: modeloA, capacidade: capacidadeA } = extrairModeloECapacidade(a.nome)
+    const { modelo: modeloB, capacidade: capacidadeB } = extrairModeloECapacidade(b.nome)
 
-      // Extrair número padrão (8, 11, 12, 13, 14, 15, 16)
-      const match = nome.match(/iphone\s+(\d+)/i)
-      if (match) return parseInt(match[1])
+    // Buscar índice na ordem de modelos
+    const indexA = ORDEM_MODELOS.findIndex(m => modeloA.toLowerCase().startsWith(m.toLowerCase()))
+    const indexB = ORDEM_MODELOS.findIndex(m => modeloB.toLowerCase().startsWith(m.toLowerCase()))
 
-      // Se não for iPhone, colocar no final
-      return 9999
+    // Se um dos modelos não está na lista, colocar no final
+    if (indexA === -1 && indexB === -1) {
+      // Ambos não estão na lista, ordenar alfabeticamente
+      return a.nome.localeCompare(b.nome)
+    }
+    if (indexA === -1) return 1 // A vai para o final
+    if (indexB === -1) return -1 // B vai para o final
+
+    // Se os modelos forem diferentes, ordenar pela ordem definida
+    if (indexA !== indexB) {
+      return indexA - indexB
     }
 
-    const numA = extrairNumero(a.nome)
-    const numB = extrairNumero(b.nome)
+    // Mesmo modelo, ordenar por capacidade
+    const capIndexA = ORDEM_CAPACIDADES.indexOf(capacidadeA)
+    const capIndexB = ORDEM_CAPACIDADES.indexOf(capacidadeB)
 
-    // Ordenar por número (crescente)
-    if (numA !== numB) return numA - numB
+    if (capIndexA !== -1 && capIndexB !== -1) {
+      if (capIndexA !== capIndexB) {
+        return capIndexA - capIndexB
+      }
+    }
 
-    // Se forem do mesmo modelo, ordenar por armazenamento (crescente)
-    const armazenamentoA = extrairArmazenamento(a.nome)
-    const armazenamentoB = extrairArmazenamento(b.nome)
-    if (armazenamentoA !== armazenamentoB) return armazenamentoA - armazenamentoB
-
-    // Se tiverem mesmo modelo e armazenamento, ordenar por nome (alfabético)
+    // Se não conseguiu ordenar por capacidade ou são iguais, ordenar alfabeticamente
     return a.nome.localeCompare(b.nome)
   })
 }
@@ -129,6 +192,10 @@ function HomePageContent() {
   const [categoriasExibidas, setCategoriasExibidas] = useState(1) // Quantas categorias mostrar
   const [todasCategorias, setTodasCategorias] = useState<ProdutosAgrupados[]>([]) // Todos os produtos agrupados
   const [produtosEmDestaqueIds, setProdutosEmDestaqueIds] = useState<string[]>([]) // IDs dos produtos em destaque nos banners
+  const [custosPorProduto, setCustosPorProduto] = useState<Record<string, ProdutoCusto[]>>({}) // Custos indexados por produto_id
+
+  // Hook de autenticação
+  const { isAuthenticated } = useAuth()
 
   // Filtros
   const searchParams = useSearchParams()
@@ -355,6 +422,40 @@ function HomePageContent() {
     loadData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Buscar custos quando o usuário estiver autenticado
+  useEffect(() => {
+    async function loadCustos() {
+      if (!isAuthenticated) {
+        setCustosPorProduto({})
+        return
+      }
+
+      const supabase = createClient()
+
+      // Buscar todos os custos de uma vez
+      const { data: custosData, error } = await supabase
+        .from('produtos_custos')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      if (!error && custosData) {
+        // Agrupar custos por produto_id
+        const custosAgrupados: Record<string, ProdutoCusto[]> = {}
+
+        ;(custosData as ProdutoCusto[]).forEach((custo) => {
+          if (!custosAgrupados[custo.produto_id]) {
+            custosAgrupados[custo.produto_id] = []
+          }
+          custosAgrupados[custo.produto_id].push(custo)
+        })
+
+        setCustosPorProduto(custosAgrupados)
+      }
+    }
+
+    loadCustos()
+  }, [isAuthenticated])
 
   async function loadProdutos() {
     setLoading(true)
@@ -711,6 +812,8 @@ function HomePageContent() {
                   view={viewMode}
                   priority={index < 3}
                   returnParams={returnParams}
+                  custos={custosPorProduto[produto.id] || []}
+                  isAuthenticated={isAuthenticated}
                 />
               ))}
             </div>
@@ -793,6 +896,8 @@ function HomePageContent() {
                     view={viewMode}
                     priority={index < 4}
                     returnParams={returnParams}
+                    custos={custosPorProduto[produto.id] || []}
+                    isAuthenticated={isAuthenticated}
                   />
                 ))}
               </div>

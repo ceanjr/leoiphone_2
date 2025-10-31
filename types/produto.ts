@@ -10,6 +10,16 @@ export interface Acessorios {
   pelicula: boolean
 }
 
+export interface ProdutoCusto {
+  id: string
+  produto_id: string
+  custo: number
+  estoque: number
+  codigo: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Produto {
   id: string
   codigo_produto: string | null
@@ -43,6 +53,14 @@ export interface ProdutoComCategoria extends Produto {
   } | null
 }
 
+export interface ProdutoComCustos extends Produto {
+  custos: ProdutoCusto[]
+}
+
+export interface ProdutoComCategoriaCustos extends ProdutoComCategoria {
+  custos: ProdutoCusto[]
+}
+
 export interface ProdutoFormData {
   codigo_produto?: string | null
   nome: string
@@ -58,4 +76,10 @@ export interface ProdutoFormData {
   foto_principal?: string | null
   ativo: boolean
   estoque: number
+}
+
+export interface ProdutoCustoFormData {
+  custo: number
+  estoque: number
+  codigo?: string | null
 }

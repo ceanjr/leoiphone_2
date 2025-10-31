@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+export const produtoCustoSchema = z.object({
+  custo: z.number().min(0, 'O custo não pode ser negativo'),
+  estoque: z.number().int().min(1, 'O estoque deve ser no mínimo 1'),
+  codigo: z.string().optional().nullable().transform(val => val || null),
+})
+
 export const produtoSchema = z.object({
   codigo_produto: z.string().optional().nullable().transform(val => val || undefined),
   nome: z.string().min(3, 'O nome deve ter no mínimo 3 caracteres'),
@@ -24,3 +30,4 @@ export const produtoSchema = z.object({
 })
 
 export type ProdutoFormData = z.infer<typeof produtoSchema>
+export type ProdutoCustoFormData = z.infer<typeof produtoCustoSchema>

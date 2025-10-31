@@ -121,9 +121,9 @@ export async function createProduto(data: ProdutoFormData) {
   }
 
   // Revalidar páginas admin e públicas
-  revalidatePath('/admin/produtos')
-  revalidatePath('/', 'page')
-  revalidatePath('/produto/[slug]', 'page')
+  revalidatePath('/admin/produtos', 'page')
+  revalidatePath('/', 'layout') // Revalidar layout inteiro para pegar mudanças em todos os lugares
+  revalidatePath(`/produto/${slug}`, 'page') // Revalidar página específica do produto
 
   return {
     success: true,
@@ -145,8 +145,15 @@ export async function updateProduto(id: string, data: ProdutoFormData) {
     }
   }
 
-  // Gerar slug
-  const slug = generateSlug(validatedData.data.nome)
+  // Buscar produto existente para manter o slug
+  const { data: produtoExistente } = await (supabase as any)
+    .from('produtos')
+    .select('slug')
+    .eq('id', id)
+    .single()
+
+  // Manter slug existente ou gerar novo se não existir
+  const slug = produtoExistente?.slug || generateSlug(validatedData.data.nome)
 
   // Preparar dados para atualização
   const updateData: any = {
@@ -164,11 +171,15 @@ export async function updateProduto(id: string, data: ProdutoFormData) {
 
   // Debug: ver o que está sendo atualizado
   if (process.env.NODE_ENV === 'development') {
-    console.log('[updateProduto] Atualizando:', {
+    console.log('[updateProduto] Atualizando produto:', {
       id,
       nome: updateData.nome,
+      slug: updateData.slug,
       cores: updateData.cores,
-      cor_oficial: updateData.cor_oficial
+      ativo: updateData.ativo,
+      estoque: updateData.estoque,
+      preco: updateData.preco,
+      fotos_count: updateData.fotos?.length || 0,
     })
   }
 
@@ -181,7 +192,18 @@ export async function updateProduto(id: string, data: ProdutoFormData) {
     .single()
 
   if (error) {
-    console.error('❌ Erro ao atualizar produto:', error)
+    console.error('❌ Erro ao atualizar produto:', {
+      error: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      id,
+      updateData: {
+        nome: updateData.nome,
+        ativo: updateData.ativo,
+        estoque: updateData.estoque,
+      }
+    })
     return {
       success: false,
       error: error.message || 'Erro ao atualizar produto',
@@ -199,9 +221,9 @@ export async function updateProduto(id: string, data: ProdutoFormData) {
   }
 
   // Revalidar páginas admin e públicas
-  revalidatePath('/admin/produtos')
-  revalidatePath('/', 'page')
-  revalidatePath('/produto/[slug]', 'page')
+  revalidatePath('/admin/produtos', 'page')
+  revalidatePath('/', 'layout') // Revalidar layout inteiro para pegar mudanças em todos os lugares
+  revalidatePath(`/produto/${slug}`, 'page') // Revalidar página específica do produto
 
   return {
     success: true,

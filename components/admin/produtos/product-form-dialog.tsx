@@ -23,6 +23,10 @@ import {
   getProdutoById,
   updateProduto,
 } from '@/app/admin/produtos/actions'
+import {
+  getProdutoCustos,
+  substituirProdutoCustos,
+} from '@/app/admin/produtos/custos-actions'
 
 const ImageUpload = dynamic(
   () => import('@/components/admin/image-upload').then((mod) => mod.ImageUpload),
@@ -30,11 +34,12 @@ const ImageUpload = dynamic(
     ssr: false,
   }
 )
-import type { ProdutoFormData } from '@/lib/validations/produto'
+import type { ProdutoFormData, ProdutoCustoFormData } from '@/lib/validations/produto'
 import { Plus, Save, Pencil, X } from 'lucide-react'
 import { useIPhoneColors } from '@/hooks/use-iphone-colors'
 import { ColorBadge } from '@/components/shared/color-badge'
 import { useDebounce } from '@/hooks/use-debounce'
+import { CustosManager } from './custos-manager'
 
 interface ProductFormDialogProps {
   open: boolean
@@ -61,6 +66,8 @@ const getEmptyForm = (): Partial<ProdutoFormData> => ({
     pelicula: false,
   },
   fotos: [],
+  ativo: true,
+  estoque: 1,
 })
 
 export function ProductFormDialog({
@@ -76,6 +83,7 @@ export function ProductFormDialog({
   const [formData, setFormData] = useState<Partial<ProdutoFormData>>(getEmptyForm)
   const [isInitialised, setIsInitialised] = useState(false)
   const [customColorInput, setCustomColorInput] = useState('')
+  const [custos, setCustos] = useState<{ custo: number; estoque: number; codigo: string | null }[]>([])
 
   const isSaving = isLoading
 
@@ -89,6 +97,7 @@ export function ProductFormDialog({
     if (!open) {
       setIsInitialised(false)
       setFormData(getEmptyForm())
+      setCustos([])
       setIsLoading(false)
       setIsPrefetching(false)
       return
@@ -145,9 +154,26 @@ export function ProductFormDialog({
             acessorios: produto.acessorios ?? getEmptyForm().acessorios,
             fotos: produto.fotos ?? [],
             foto_principal: produto.foto_principal ?? undefined,
+            ativo: produto.ativo ?? true,
+            estoque: produto.estoque ?? 1,
           })
+
+          // Buscar custos do produto
+          const { data: custosData } = await getProdutoCustos(productId)
+          if (custosData && custosData.length > 0) {
+            setCustos(
+              custosData.map((c) => ({
+                custo: c.custo,
+                estoque: c.estoque,
+                codigo: c.codigo,
+              }))
+            )
+          } else {
+            setCustos([])
+          }
         } else {
           setFormData(getEmptyForm())
+          setCustos([])
         }
 
         setIsInitialised(true)
@@ -256,8 +282,8 @@ export function ProductFormDialog({
         },
         fotos: formData.fotos || [],
         foto_principal: formData.fotos?.[0] || formData.foto_principal || undefined,
-        ativo: true,
-        estoque: 1,
+        ativo: formData.ativo ?? true,
+        estoque: formData.estoque ?? 1,
       }
 
       // Debug: ver o que está sendo enviado
@@ -279,6 +305,42 @@ export function ProductFormDialog({
         toast.error(result?.error || 'Não foi possível salvar o produto')
         setIsLoading(false)
         return
+      }
+
+      // Salvar custos do produto
+      const produtoIdFinal = mode === 'create' ? result.produto?.id : productId
+      if (produtoIdFinal) {
+        // Filtrar custos válidos (custo >= 0 e estoque > 0)
+        const custosValidos = custos.filter(
+          (c) => c.custo >= 0 && c.estoque > 0
+        )
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[ProductForm] Salvando custos:', {
+            produtoId: produtoIdFinal,
+            totalCustos: custos.length,
+            custosValidos: custosValidos.length,
+            custos: custosValidos,
+          })
+        }
+
+        // Sempre chamar substituirProdutoCustos, mesmo com array vazio
+        // Isso garante que custos removidos sejam deletados
+        const { error: custosError, data: custosSalvos } = await substituirProdutoCustos(
+          produtoIdFinal,
+          custosValidos
+        )
+
+        if (custosError) {
+          console.error('❌ Erro ao salvar custos:', custosError)
+          toast.error(`Produto salvo, mas erro ao salvar custos: ${custosError}`)
+          setIsLoading(false)
+          return
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Custos salvos com sucesso:', custosSalvos)
+        }
       }
 
       toast.success(mode === 'create' ? 'Produto cadastrado!' : 'Produto atualizado!')
@@ -633,7 +695,32 @@ export function ProductFormDialog({
                           </Select>
                         </div>
 
-                        <div className="space-y-2 sm:col-span-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="estoque" className="text-zinc-200">
+                            Estoque Total (un.)
+                          </Label>
+                          <Input
+                            id="estoque"
+                            type="number"
+                            min="0"
+                            value={formData.estoque ?? 1}
+                            onChange={(event) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                estoque: event.target.value
+                                  ? parseInt(event.target.value, 10)
+                                  : 1,
+                              }))
+                            }
+                            disabled={isSaving}
+                            className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
+                          />
+                          <p className="text-xs text-zinc-500">
+                            Estoque geral do produto (independente dos custos)
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
                           <Label className="text-zinc-200">Garantia</Label>
                           <Select
                             value={formData.garantia ?? 'nenhuma'}
@@ -660,6 +747,13 @@ export function ProductFormDialog({
                   </div>
 
                   <div className="space-y-6">
+                    {/* Seção de Custos */}
+                    <CustosManager
+                      custos={custos}
+                      onChange={setCustos}
+                      disabled={isSaving}
+                    />
+
                     <section className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
                       <header className="mb-6 flex flex-col gap-1">
                         <span className="text-xs font-medium tracking-wider text-zinc-500 uppercase">
