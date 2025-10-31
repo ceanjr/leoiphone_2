@@ -2,24 +2,25 @@
 
 @layer base {
   :root {
-    /* === Cores da Marca === */
-    --brand-yellow: #eab308;
-    --brand-black: #000000;
-    --brand-white: #ffffff;
+    /* === Cores da Marca (Nova Paleta Preta Absoluta) === */
+    --brand-yellow: #ffcc00; /* Amarelo dourado minimalista */
+    --brand-black: #000000; /* Preto absoluto */
+    --brand-white: #ffffff; /* Branco puro */
 
     /* === Cores de Fundo === */
-    --bg-primary: #000000; /* Fundo principal (preto) */
-    --bg-secondary: #09090b; /* Fundo secundário (zinc-950) */
-    --bg-card: #18181b; /* Fundo de cards (zinc-900) */
+    --bg-primary: #000000; /* Fundo principal - Preto absoluto */
+    --bg-secondary: #000000; /* Fundo secundário - Preto absoluto */
+    --bg-card: #0d0d0d; /* Fundo de cards - Levemente mais claro */
+    --bg-card-elevated: #111111; /* Cards com destaque */
 
     /* === Cores de Texto === */
-    --text-primary: #fafafa; /* Texto principal (zinc-50) */
-    --text-secondary: #a1a1aa; /* Texto secundário (zinc-400) */
-    --text-muted: #71717a; /* Texto discreto (zinc-500) */
+    --text-primary: #ffffff; /* Texto principal - Branco puro */
+    --text-secondary: #a0a0a0; /* Texto secundário - Cinza médio */
+    --text-muted: #666666; /* Texto discreto */
 
     /* === Cores de Borda === */
-    --border-primary: #27272a; /* Borda principal (zinc-800) */
-    --border-secondary: #3f3f46; /* Borda secundária (zinc-700) */
+    --border-primary: #1f1f1f; /* Borda sutil */
+    --border-secondary: #2a2a2a; /* Borda secundária */
 
     /* === Cores de Estado === */
     --color-success: #22c55e; /* Verde */
@@ -37,26 +38,29 @@
     --radius-lg: 0.75rem; /* 12px */
     --radius-xl: 1rem; /* 16px */
 
+    /* === Sombras === */
+    --shadow-card: 0 0 20px rgba(255, 255, 255, 0.03); /* Sombra sutil para profundidade */
+
     /* === Compatibilidade shadcn/ui === */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
-    --primary: 45 93% 47%;
-    --primary-foreground: 0 0% 0%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 45 93% 47%;
+    --background: 0 0% 0%; /* Preto absoluto */
+    --foreground: 0 0% 100%; /* Branco puro */
+    --primary: 48 100% 50%; /* Amarelo dourado #ffcc00 */
+    --primary-foreground: 0 0% 0%; /* Texto preto em amarelo */
+    --border: 0 0% 12%; /* #1f1f1f */
+    --input: 0 0% 5%; /* #0d0d0d */
+    --ring: 48 100% 50%; /* Amarelo dourado */
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --card: 0 0% 9.8%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
+    --muted: 0 0% 5%; /* #0d0d0d */
+    --muted-foreground: 0 0% 63%; /* #a0a0a0 */
+    --card: 0 0% 5%; /* #0d0d0d */
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 7%; /* #111111 */
+    --popover-foreground: 0 0% 100%;
+    --secondary: 0 0% 7%; /* #111111 */
+    --secondary-foreground: 0 0% 100%;
+    --accent: 0 0% 7%; /* #111111 */
+    --accent-foreground: 0 0% 100%;
     --radius: 0.5rem;
     --font-geist-sans: 'Inter', 'SF Pro Text', 'Helvetica Neue', Arial, system-ui, sans-serif;
     --font-geist-mono: 'Roboto Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', Courier, monospace;
@@ -169,10 +173,10 @@
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Nova Paleta Preta */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgb(113 113 122) rgb(39 39 42);
+  scrollbar-color: #2a2a2a #0d0d0d;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -180,22 +184,22 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgb(39 39 42);
+  background: #0d0d0d;
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgb(113 113 122);
+  background: #2a2a2a;
   border-radius: 4px;
   transition: background 0.2s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgb(161 161 170);
+  background: #3a3a3a;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:active {
-  background: #fbbf24;
+  background: #ffcc00;
 }
 
 /* Toaster Mobile Optimization */

@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useTransition } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -76,10 +75,9 @@ export function ProductFormDialog({
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [formData, setFormData] = useState<Partial<ProdutoFormData>>(getEmptyForm)
   const [isInitialised, setIsInitialised] = useState(false)
-  const [isSubmitting, startSubmit] = useTransition()
   const [customColorInput, setCustomColorInput] = useState('')
 
-  const isSaving = isLoading || isSubmitting
+  const isSaving = isLoading
 
   // Debounce do nome do produto para evitar processamento excessivo
   const debouncedNome = useDebounce(formData.nome || '', 500)
@@ -91,6 +89,8 @@ export function ProductFormDialog({
     if (!open) {
       setIsInitialised(false)
       setFormData(getEmptyForm())
+      setIsLoading(false)
+      setIsPrefetching(false)
       return
     }
 
@@ -161,7 +161,8 @@ export function ProductFormDialog({
     }
 
     prepareForm()
-  }, [open, mode, productId, onClose])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, productId])
 
   const categoriasDisponiveis = useMemo(() => categorias ?? [], [categorias])
   const modeBadgeText = mode === 'create' ? 'Novo cadastro' : 'Edição ativa'
@@ -219,75 +220,76 @@ export function ProductFormDialog({
     [handleAddCustomColor]
   )
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (isSaving) return
 
-    startSubmit(async () => {
-      setIsLoading(true)
-      try {
-        if (
-          !formData.nome ||
-          !formData.preco ||
-          !formData.categoria_id ||
-          !formData.fotos?.length
-        ) {
-          toast.error('Preencha os campos obrigatórios.')
-          return
-        }
-
-        const payload: ProdutoFormData = {
-          codigo_produto: formData.codigo_produto?.trim() || undefined,
-          nome: formData.nome,
-          descricao: formData.descricao?.trim() || undefined,
-          preco: formData.preco,
-          nivel_bateria: formData.nivel_bateria || undefined,
-          condicao: formData.condicao || 'seminovo',
-          categoria_id: formData.categoria_id,
-          garantia: formData.garantia || 'nenhuma',
-          cores: formData.cores && formData.cores.length > 0 ? formData.cores : undefined,
-          acessorios: formData.acessorios || {
-            caixa: false,
-            carregador: false,
-            cabo: false,
-            capinha: false,
-            pelicula: false,
-          },
-          fotos: formData.fotos || [],
-          foto_principal: formData.fotos?.[0] || formData.foto_principal || null,
-          ativo: true,
-          estoque: 1,
-        }
-
-        // Debug: ver o que está sendo enviado
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[ProductForm] Salvando produto:', {
-            nome: payload.nome,
-            cores: payload.cores,
-            mode,
-          })
-        }
-
-        const result =
-          mode === 'create'
-            ? await createProduto(payload)
-            : await updateProduto(productId as string, payload)
-
-        if (!result?.success) {
-          toast.error(result?.error || 'Não foi possível salvar o produto')
-          return
-        }
-
-        toast.success(mode === 'create' ? 'Produto cadastrado!' : 'Produto atualizado!')
-        onCompleted?.()
-        onClose()
-      } catch (error) {
-        console.error(error)
-        toast.error('Erro inesperado ao salvar o produto')
-      } finally {
+    setIsLoading(true)
+    try {
+      if (
+        !formData.nome ||
+        !formData.preco ||
+        !formData.categoria_id ||
+        !formData.fotos?.length
+      ) {
+        toast.error('Preencha os campos obrigatórios.')
         setIsLoading(false)
+        return
       }
-    })
+
+      const payload: ProdutoFormData = {
+        codigo_produto: formData.codigo_produto?.trim() || undefined,
+        nome: formData.nome,
+        descricao: formData.descricao?.trim() || undefined,
+        preco: formData.preco,
+        nivel_bateria: formData.nivel_bateria || undefined,
+        condicao: formData.condicao || 'seminovo',
+        categoria_id: formData.categoria_id,
+        garantia: formData.garantia || 'nenhuma',
+        cores: formData.cores && formData.cores.length > 0 ? formData.cores : undefined,
+        acessorios: formData.acessorios || {
+          caixa: false,
+          carregador: false,
+          cabo: false,
+          capinha: false,
+          pelicula: false,
+        },
+        fotos: formData.fotos || [],
+        foto_principal: formData.fotos?.[0] || formData.foto_principal || undefined,
+        ativo: true,
+        estoque: 1,
+      }
+
+      // Debug: ver o que está sendo enviado
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[ProductForm] Salvando produto:', {
+          nome: payload.nome,
+          descricao: payload.descricao,
+          cores: payload.cores,
+          mode,
+        })
+      }
+
+      const result =
+        mode === 'create'
+          ? await createProduto(payload)
+          : await updateProduto(productId as string, payload)
+
+      if (!result?.success) {
+        toast.error(result?.error || 'Não foi possível salvar o produto')
+        setIsLoading(false)
+        return
+      }
+
+      toast.success(mode === 'create' ? 'Produto cadastrado!' : 'Produto atualizado!')
+      setIsLoading(false)
+      onCompleted?.()
+      onClose()
+    } catch (error) {
+      console.error(error)
+      toast.error('Erro inesperado ao salvar o produto')
+      setIsLoading(false)
+    }
   }
 
   const accentStyles =
@@ -415,6 +417,7 @@ export function ProductFormDialog({
                                 codigo_produto: event.target.value,
                               }))
                             }
+                            disabled={isSaving}
                             className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
                           />
                         </div>
@@ -430,6 +433,7 @@ export function ProductFormDialog({
                             onChange={(event) =>
                               setFormData((prev) => ({ ...prev, nome: event.target.value }))
                             }
+                            disabled={isSaving}
                             className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
                           />
                         </div>
@@ -453,6 +457,7 @@ export function ProductFormDialog({
                                   : undefined,
                               }))
                             }
+                            disabled={isSaving}
                             className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
                           />
                         </div>
@@ -475,6 +480,7 @@ export function ProductFormDialog({
                                   : undefined,
                               }))
                             }
+                            disabled={isSaving}
                             className="border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
                           />
                         </div>
@@ -572,6 +578,7 @@ export function ProductFormDialog({
                           onChange={(event) =>
                             setFormData((prev) => ({ ...prev, descricao: event.target.value }))
                           }
+                          disabled={isSaving}
                           className="min-h-[120px] border-zinc-800/70 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
                           rows={4}
                         />

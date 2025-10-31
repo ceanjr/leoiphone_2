@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Calculator, Share2, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +17,6 @@ import { calcularTodasParcelas, formatarMoeda } from '@/lib/utils/calcular-parce
 import { getConfiguracaoTaxas } from '@/app/admin/taxas/actions'
 import type { TaxasConfig } from '@/lib/validations/taxas'
 import { TAXAS_PADRAO } from '@/lib/validations/taxas'
-import html2canvas from 'html2canvas'
 import { toast } from 'sonner'
 
 interface CalculadoraTaxasDialogProps {
@@ -39,7 +38,6 @@ export function CalculadoraTaxasDialog({
   const [taxas, setTaxas] = useState<TaxasConfig>(TAXAS_PADRAO)
   const [loading, setLoading] = useState(true)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
-  const simulacaoRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function loadTaxas() {
@@ -57,7 +55,6 @@ export function CalculadoraTaxasDialog({
   const valorNumerico = parseFloat(valor.replace(/[^\d,]/g, '').replace(',', '.')) || 0
 
   const parcelas = valorNumerico > 0 ? calcularTodasParcelas(valorNumerico, taxas) : []
-  const parcelaMaxima = parcelas.length > 0 ? parcelas[parcelas.length - 1] : null
 
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value.replace(/\D/g, '')
@@ -77,73 +74,149 @@ export function CalculadoraTaxasDialog({
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
 
   const handleGerarImagem = async () => {
-    if (!simulacaoRef.current || valorNumerico === 0) {
-      toast.error('Nenhum conteúdo para exportar')
+    if (valorNumerico === 0 || parcelas.length === 0) {
+      toast.error('Digite um valor para gerar a simulação')
       return
     }
 
     setIsGeneratingImage(true)
 
     try {
-      console.log('[Export] Iniciando captura da simulação...')
-      console.log('[Export] Elemento ref:', simulacaoRef.current)
+      const canvas = document.createElement('canvas')
+      const width = 800 // Largura adequada para WhatsApp
+      const padding = 30
+      const headerHeight = 120
+      const itemHeight = 42
+      const footerHeight = 80
+      const spacing = 2
 
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      // Calcular altura total baseada no número de parcelas
+      const contentHeight =
+        parcelas.length * itemHeight + (parcelas.length - 1) * spacing + padding * 2
+      const height = headerHeight + contentHeight + footerHeight
 
-      // Encontrar todos os elementos com scroll e salvá-los
-      const allDivs = simulacaoRef.current.querySelectorAll('div')
-      const scrollData: Array<{ element: HTMLElement; maxHeight: string; overflowY: string }> = []
+      canvas.width = width
+      canvas.height = height
 
-      allDivs.forEach((div) => {
-        const style = (div as HTMLElement).style
-        if (style.maxHeight || style.overflowY === 'auto') {
-          scrollData.push({
-            element: div as HTMLElement,
-            maxHeight: style.maxHeight,
-            overflowY: style.overflowY,
-          })
-          style.maxHeight = 'none'
-          style.overflowY = 'visible'
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Não foi possível criar contexto do canvas')
+
+      // Background simples
+      ctx.fillStyle = '#000000'
+      ctx.fillRect(0, 0, width, height)
+
+      // Header
+      let yPos = 50
+
+      // Logo
+      ctx.fillStyle = '#ffcc00'
+      ctx.font = 'bold 42px system-ui, -apple-system, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('Léo iPhone', width / 2, yPos)
+
+      yPos += 35
+
+      // Subtítulo com valor
+      ctx.fillStyle = '#ffffff'
+      ctx.font = '24px system-ui, -apple-system, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(`Parcelamento de R$ ${valor}`, width / 2, yPos)
+
+      yPos += 50
+
+      // Linha separadora
+      ctx.strokeStyle = '#333333'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(padding, yPos)
+      ctx.lineTo(width - padding, yPos)
+      ctx.stroke()
+
+      yPos += padding
+
+      // Tabela de parcelas - TODAS as 18 parcelas
+      parcelas.forEach((parcela, index) => {
+        // Background alternado para melhor leitura
+        if (index % 2 === 0) {
+          ctx.fillStyle = '#0a0a0a'
+          ctx.fillRect(padding, yPos, width - padding * 2, itemHeight)
         }
+
+        // Destaque para parcelas sem juros
+        if (parcela.semJuros) {
+          ctx.fillStyle = 'rgba(34, 197, 94, 0.1)'
+          ctx.fillRect(padding, yPos, width - padding * 2, itemHeight)
+        }
+
+        // Número de parcelas
+        ctx.textAlign = 'left'
+        ctx.fillStyle = parcela.semJuros ? '#4ade80' : '#bbbbbb'
+        ctx.font = 'bold 20px system-ui, -apple-system, sans-serif'
+        ctx.fillText(`${parcela.numero}x`, padding + 15, yPos + 27)
+
+        // Valor da parcela
+        ctx.fillStyle = parcela.semJuros ? '#86efac' : '#ffffff'
+        ctx.font = 'bold 22px system-ui, -apple-system, sans-serif'
+        ctx.fillText(formatarMoeda(parcela.valorParcela), padding + 80, yPos + 27)
+
+        // Informação adicional (sem juros ou taxa)
+        ctx.textAlign = 'right'
+        if (parcela.semJuros) {
+          ctx.fillStyle = '#4ade80'
+          ctx.font = '14px system-ui, -apple-system, sans-serif'
+          ctx.fillText('SEM JUROS', width - padding - 15, yPos + 27)
+        } else {
+          ctx.fillStyle = '#888888'
+          ctx.font = '14px system-ui, -apple-system, sans-serif'
+          ctx.fillText(
+            `Total: ${formatarMoeda(parcela.valorTotal)}`,
+            width - padding - 15,
+            yPos + 27
+          )
+        }
+
+        yPos += itemHeight + spacing
       })
 
-      // Aguardar renderização
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      yPos += padding - spacing
 
-      const canvas = await html2canvas(simulacaoRef.current, {
-        backgroundColor: '#09090b',
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        foreignObjectRendering: false,
-        removeContainer: true,
-        imageTimeout: 15000,
-        scrollY: -window.scrollY,
-        scrollX: -window.scrollX,
-        windowHeight: simulacaoRef.current.scrollHeight,
+      // Linha separadora
+      ctx.strokeStyle = '#333333'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(padding, yPos)
+      ctx.lineTo(width - padding, yPos)
+      ctx.stroke()
+
+      yPos += 35
+
+      // Footer
+      ctx.fillStyle = '#888888'
+      ctx.font = '13px system-ui, -apple-system, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText('💳 Valores calculados com taxas de cartão de crédito', width / 2, yPos)
+
+      yPos += 20
+
+      const dataAtual = new Date().toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
       })
+      ctx.fillText(`Gerado em ${dataAtual}`, width / 2, yPos)
 
-      // Restaurar os estilos originais
-      scrollData.forEach(({ element, maxHeight, overflowY }) => {
-        element.style.maxHeight = maxHeight
-        element.style.overflowY = overflowY
-      })
-
-      console.log('[Export] Canvas gerado:', canvas.width, 'x', canvas.height)
-
+      // Converter para blob
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob(
           (blob) => {
             if (blob) {
-              console.log('[Export] Blob gerado:', blob.size, 'bytes')
               resolve(blob)
             } else {
               reject(new Error('Falha ao gerar blob da imagem'))
             }
           },
           'image/png',
-          1.0
+          0.95
         )
       })
 
@@ -155,13 +228,12 @@ export function CalculadoraTaxasDialog({
 
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
-              title: 'Simulação de Parcelamento',
+              title: 'Simulação de Parcelamento - Léo iPhone',
               text: `Simulação de parcelamento para R$ ${valor}`,
               files: [file],
             })
             toast.success('Simulação compartilhada!')
           } else {
-            console.log('[Export] Web Share API não suporta arquivos, usando download')
             downloadImage(blob)
           }
         } catch (shareError) {
@@ -169,7 +241,6 @@ export function CalculadoraTaxasDialog({
           downloadImage(blob)
         }
       } else {
-        console.log('[Export] Desktop mode, fazendo download')
         downloadImage(blob)
       }
     } catch (error) {
@@ -201,402 +272,138 @@ export function CalculadoraTaxasDialog({
       {triggerClassName !== 'hidden' && (
         <BottomSheetTrigger asChild>
           <Button variant="outline" className={triggerClassName}>
-            <Calculator style={{ marginRight: '0.5rem', height: '1rem', width: '1rem' }} />
+            <Calculator className="mr-2 h-4 w-4" />
             Calculadora de Taxas
           </Button>
         </BottomSheetTrigger>
       )}
 
-      <BottomSheetContent
-        style={{
-          borderColor: '#27272a',
-          backgroundColor: 'rgba(9, 9, 11, 0.95)',
-          color: 'white',
-          boxShadow: '0 24px 80px -35px rgba(0,0,0,0.85)',
-          maxWidth: '72rem',
-        }}
-      >
+      <BottomSheetContent className="max-w-6xl border-[#1f1f1f] bg-[#000000]">
         <BottomSheetHeader>
-          <BottomSheetTitle style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white' }}>
+          <BottomSheetTitle className="text-xl font-semibold text-white">
             Calculadora de Parcelamento
           </BottomSheetTitle>
-          <BottomSheetDescription style={{ color: '#a1a1aa' }}>
+          <BottomSheetDescription className="text-[#a0a0a0]">
             Digite um valor e veja as opções de parcelamento disponíveis
           </BottomSheetDescription>
         </BottomSheetHeader>
 
-        <div
-          style={{
-            overflowX: 'hidden',
-            overflowY: 'auto',
-            paddingLeft: '1.5rem',
-            paddingRight: '1.5rem',
-            paddingBottom: '1.5rem',
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gap: '1.5rem',
-              gridTemplateColumns: window.innerWidth >= 640 ? 'repeat(2, 1fr)' : '1fr',
-            }}
-          >
-            {/* Coluna Esquerda */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {/* Input de Valor */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <Label htmlFor="valor" style={{ fontSize: '0.875rem', color: '#d4d4d8' }}>
-                  Valor da Simulação
-                </Label>
-                <div style={{ position: 'relative' }}>
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '0.75rem',
-                      transform: 'translateY(-50%)',
-                      color: '#a1a1aa',
-                      transition: 'color 0.2s',
-                    }}
-                  >
-                    R$
-                  </span>
-                  <Input
-                    id="valor"
-                    type="text"
-                    placeholder="0,00"
-                    value={valor}
-                    onChange={handleValorChange}
-                    style={{
-                      borderColor: '#27272a',
-                      backgroundColor: '#18181b',
-                      paddingLeft: '2.5rem',
-                      fontSize: '1.125rem',
-                      color: 'white',
-                      transition: 'all 0.2s',
-                    }}
-                  />
-                </div>
-              </div>
+        <div className="flex flex-col gap-6 px-6 pb-6">
+          {/* Input de Valor */}
+          <div className="space-y-2">
+            <Label htmlFor="valor" className="text-sm text-white">
+              Valor da Simulação
+            </Label>
+            <div className="relative">
+              <span className="absolute top-1/2 left-3 -translate-y-1/2 text-[#a0a0a0]">R$</span>
+              <Input
+                id="valor"
+                type="text"
+                placeholder="0,00"
+                value={valor}
+                onChange={handleValorChange}
+                className="border-[#1f1f1f] bg-[#0d0d0d] pl-10 text-lg text-white shadow-[0_0_20px_rgba(255,255,255,0.03)] placeholder:text-[#666666]"
+              />
+            </div>
+          </div>
 
-              {/* Destaque */}
-              {valorNumerico > 0 && parcelaMaxima && (
-                <>
-                  <div
-                    style={{
-                      animation: 'zoomIn 0.3s ease-out',
-                      borderRadius: '0.5rem',
-                      border: '1px solid rgba(251, 191, 36, 0.3)',
-                      backgroundColor: 'rgba(251, 191, 36, 0.1)',
-                      padding: '1rem',
-                    }}
-                  >
-                    <p
-                      style={{
-                        marginBottom: '0.25rem',
-                        fontSize: '0.75rem',
-                        color: '#a1a1aa',
-                        margin: 0,
-                      }}
-                    >
-                      Parcele em até
-                    </p>
-                    <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fbbf24', margin: 0 }}>
-                      {parcelaMaxima.numero}x de {formatarMoeda(parcelaMaxima.valorParcela)}
-                    </p>
-                    <p
-                      style={{
-                        marginTop: '0.25rem',
-                        fontSize: '0.75rem',
-                        color: '#a1a1aa',
-                        margin: '0.25rem 0 0 0',
-                      }}
-                    >
-                      Total: {formatarMoeda(parcelaMaxima.valorTotal)}
-                    </p>
-                  </div>
-
-                  {/* Nota */}
-                  <p
-                    style={{
-                      animation: 'fadeIn 0.3s ease-out',
-                      fontSize: '0.75rem',
-                      color: '#52525b',
-                      margin: 0,
-                    }}
-                  >
-                    💳 Valores calculados com base nas taxas de parcelamento no cartão de crédito.
-                  </p>
-
-                  {/* Botão Enviar Simulação */}
-                  <Button
-                    onClick={handleGerarImagem}
-                    disabled={isGeneratingImage}
-                    style={{
-                      animation: 'slideUp 0.3s ease-out',
-                      width: '100%',
-                      backgroundColor: 'var(--brand-yellow)',
-                      color: 'var(--brand-black)',
-                    }}
-                  >
-                    {isGeneratingImage ? (
-                      <>Gerando imagem...</>
+          {/* Tabela de Parcelas */}
+          {valorNumerico > 0 && parcelas.length > 0 ? (
+            <div className="space-y-4">
+              {/* Botão Enviar Simulação - ACIMA da tabela */}
+              <Button
+                onClick={handleGerarImagem}
+                disabled={isGeneratingImage}
+                className="w-full bg-[#ffcc00] font-bold text-black shadow-[0_0_20px_rgba(255,204,0,0.1)] hover:bg-[#ffcc00]/90"
+              >
+                {isGeneratingImage ? (
+                  <>Gerando imagem...</>
+                ) : (
+                  <>
+                    {isMobile ? (
+                      <>
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Enviar Simulação
+                      </>
                     ) : (
                       <>
-                        {isMobile ? (
-                          <>
-                            <Share2
-                              style={{ marginRight: '0.5rem', height: '1rem', width: '1rem' }}
-                            />
-                            Enviar Simulação
-                          </>
-                        ) : (
-                          <>
-                            <Download
-                              style={{ marginRight: '0.5rem', height: '1rem', width: '1rem' }}
-                            />
-                            Baixar Simulação
-                          </>
-                        )}
+                        <Download className="mr-2 h-4 w-4" />
+                        Baixar Simulação
                       </>
                     )}
-                  </Button>
-                </>
-              )}
+                  </>
+                )}
+              </Button>
 
-              {/* Mensagem quando não há valor */}
-              {valorNumerico === 0 && (
-                <div
-                  style={{
-                    animation: 'fadeIn 0.3s ease-out',
-                    display: 'flex',
-                    height: '8rem',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '0.5rem',
-                    border: '1px solid #27272a',
-                    backgroundColor: 'rgba(24, 24, 27, 0.5)',
-                  }}
-                >
-                  <p
-                    style={{
-                      animation: 'slideUp 0.5s ease-out',
-                      textAlign: 'center',
-                      fontSize: '0.875rem',
-                      color: '#71717a',
-                      margin: 0,
-                    }}
-                  >
-                    Digite um valor acima para ver as opções de parcelamento
-                  </p>
-                </div>
-              )}
-            </div>
+              <div className="rounded-lg border border-[#1f1f1f] bg-[#0d0d0d] p-4 shadow-[0_0_20px_rgba(255,255,255,0.03)]">
+                <h3 className="mb-3 text-sm font-semibold text-white">Opções de Parcelamento</h3>
 
-            {/* Coluna Direita */}
-            {valorNumerico > 0 && parcelaMaxima && (
-              <div
-                ref={simulacaoRef}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: window.innerWidth >= 640 ? '1rem' : '0.75rem',
-                  borderRadius: '0.5rem',
-                  backgroundColor: '#09090b',
-                  padding: window.innerWidth >= 640 ? '1rem' : '0',
-                  color: '#ffffff',
-                }}
-              >
-                {/* Header para imagem exportada */}
+                {/* Tabela com scroll - visual semelhante à página do produto */}
                 <div
-                  style={{
-                    borderRadius: '0.5rem',
-                    border: '1px solid #27272a',
-                    backgroundColor: '#18181b',
-                    padding: window.innerWidth >= 640 ? '1rem' : '0.75rem',
-                  }}
+                  className="scrollbar-thin scrollbar-thumb-[#2a2a2a] scrollbar-track-[#0d0d0d] space-y-1.5 overflow-y-auto pr-2"
+                  style={{ maxHeight: '300px' }}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: window.innerWidth >= 640 ? '0' : '0.75rem',
-                      alignItems: window.innerWidth >= 640 ? 'center' : 'flex-start',
-                    }}
-                  >
-                    <div>
-                      <h3
-                        style={{
-                          margin: 0,
-                          fontSize: window.innerWidth >= 640 ? '1.125rem' : '1rem',
-                          fontWeight: 700,
-                          color: '#fbbf24',
-                        }}
-                      >
-                        Léo iPhone
-                      </h3>
-                      <p
-                        style={{
-                          marginTop: '0.25rem',
-                          fontSize: '0.75rem',
-                          color: '#a1a1aa',
-                          margin: '0.25rem 0 0 0',
-                        }}
-                      >
-                        Simulação de Parcelamento
-                      </p>
-                    </div>
-                    <div style={{ textAlign: window.innerWidth >= 640 ? 'right' : 'left' }}>
-                      <p style={{ margin: 0, fontSize: '0.75rem', color: '#71717a' }}>
-                        Valor simulado
-                      </p>
-                      <p
-                        style={{
-                          marginTop: '0.25rem',
-                          fontSize: window.innerWidth >= 640 ? '1.25rem' : '1.125rem',
-                          fontWeight: 700,
-                          color: '#fbbf24',
-                          margin: '0.25rem 0 0 0',
-                        }}
-                      >
-                        R$ {valor}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tabela de Parcelas */}
-                <div
-                  style={{
-                    borderRadius: '0.5rem',
-                    border: '1px solid #27272a',
-                    backgroundColor: '#18181b',
-                    padding: window.innerWidth >= 640 ? '1rem' : '0.75rem',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: window.innerWidth >= 640 ? 'repeat(2, 1fr)' : '1fr',
-                      gap: '0.5rem',
-                      maxHeight: window.innerWidth >= 640 ? '400px' : '350px',
-                      overflowY: 'auto',
-                      paddingRight: window.innerWidth >= 640 ? '0.5rem' : '0.25rem',
-                      scrollbarWidth: 'thin',
-                      scrollbarColor: '#27272a #18181b',
-                    }}
-                  >
-                    {parcelas.map((parcela) => (
-                      <div
-                        key={parcela.numero}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '0.5rem',
-                          borderRadius: '0.5rem',
-                          backgroundColor: '#09090b',
-                          padding: window.innerWidth >= 640 ? '0.625rem' : '0.5rem',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span
-                            style={{
-                              minWidth: '24px',
-                              fontSize: window.innerWidth >= 640 ? '0.875rem' : '0.75rem',
-                              fontWeight: 600,
-                              color: '#a1a1aa',
-                            }}
+                  {parcelas.map((parcela) => (
+                    <div
+                      key={parcela.numero}
+                      className={`flex items-center justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors ${
+                        parcela.semJuros
+                          ? 'border border-green-500/20 bg-green-500/10'
+                          : 'bg-[#111111] hover:bg-[#1a1a1a]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`min-w-[32px] text-sm font-semibold ${
+                            parcela.semJuros ? 'text-green-400' : 'text-[#a0a0a0]'
+                          }`}
+                        >
+                          {parcela.numero}x
+                        </span>
+                        <div>
+                          <p
+                            className={`text-sm font-medium ${
+                              parcela.semJuros ? 'text-green-400' : 'text-white'
+                            }`}
                           >
-                            {parcela.numero}x
-                          </span>
-                          <div>
-                            <p
-                              style={{
-                                margin: 0,
-                                fontSize: window.innerWidth >= 640 ? '1rem' : '0.875rem',
-                                fontWeight: 500,
-                                color: 'white',
-                              }}
-                            >
-                              {formatarMoeda(parcela.valorParcela)}
-                            </p>
-                            <p
-                              style={{
-                                marginTop: '0.125rem',
-                                fontSize: window.innerWidth >= 640 ? '0.75rem' : '0.6875rem',
-                                color: '#71717a',
-                                margin: '0.125rem 0 0 0',
-                              }}
-                            >
+                            {formatarMoeda(parcela.valorParcela)}
+                          </p>
+                          {parcela.semJuros ? (
+                            <p className="text-xs text-green-500">sem juros</p>
+                          ) : (
+                            <p className="text-xs text-[#666666]">
                               {parcela.taxa.toFixed(2)}% a.m.
                             </p>
-                          </div>
+                          )}
                         </div>
+                      </div>
 
-                        <div style={{ textAlign: 'right' }}>
-                          <p
-                            style={{
-                              margin: 0,
-                              fontSize: '0.6875rem',
-                              color: '#71717a',
-                            }}
-                          >
-                            Total
-                          </p>
-                          <p
-                            style={{
-                              marginTop: '0.125rem',
-                              fontSize: window.innerWidth >= 640 ? '0.875rem' : '0.75rem',
-                              fontWeight: 500,
-                              color: '#a1a1aa',
-                              margin: '0.125rem 0 0 0',
-                            }}
-                          >
+                      {!parcela.semJuros && (
+                        <div className="text-right">
+                          <p className="text-xs text-[#666666]">Total</p>
+                          <p className="text-xs font-medium text-[#a0a0a0]">
                             {formatarMoeda(parcela.valorTotal)}
                           </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Nota */}
+              <p className="text-xs text-[#666666]">
+                💳 Valores calculados com base nas taxas de parcelamento no cartão de crédito.
+              </p>
+            </div>
+          ) : (
+            <div className="flex h-64 items-center justify-center rounded-lg border border-[#1f1f1f] bg-[#0d0d0d] shadow-[0_0_20px_rgba(255,255,255,0.03)]">
+              <p className="text-center text-sm text-[#666666]">
+                Digite um valor acima para ver as opções de parcelamento
+              </p>
+            </div>
+          )}
         </div>
-
-        <style jsx>{`
-          @keyframes zoomIn {
-            from {
-              opacity: 0;
-              transform: scale(0.95);
-            }
-            to {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-
-          @keyframes fadeIn {
-            from {
-              opacity: 0;
-            }
-            to {
-              opacity: 1;
-            }
-          }
-
-          @keyframes slideUp {
-            from {
-              opacity: 0;
-              transform: translateY(0.5rem);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}</style>
       </BottomSheetContent>
     </BottomSheet>
   )

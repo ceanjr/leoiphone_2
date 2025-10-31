@@ -14,6 +14,9 @@ interface ProdutoDestaque {
   preco_promocional: number
   foto_principal: string
   condicao: string
+  nivel_bateria: number | null
+  cores: string[] | null
+  garantia: string | null
 }
 
 interface ProdutosDestaqueProps {
@@ -46,7 +49,7 @@ export function ProdutosDestaque({ titulo, subtitulo, produtos }: ProdutosDestaq
           return (
             <Link
               key={produto.id}
-              href={`/produto/${produto.slug}`}
+              href={`/produto/${produto.slug}?preco_promo=${produto.preco_promocional}`}
               className="group min-w-[240px] flex-shrink-0 rounded-lg border border-zinc-800 bg-zinc-950 p-3 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10 md:min-w-0 md:p-4"
             >
               {/* Badge de Desconto */}
@@ -81,14 +84,20 @@ export function ProdutosDestaque({ titulo, subtitulo, produtos }: ProdutosDestaq
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 text-xs">
-                  {produto.condicao.toLowerCase() === 'novo' ? (
-                    <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs px-2 py-0.5">
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  {produto.condicao === 'novo' && (
+                    <Badge className="bg-green-600 text-white hover:bg-green-700 text-[10px] px-1.5 py-0.5">
                       Novo
                     </Badge>
-                  ) : (
-                    <Badge className="bg-amber-600 text-white hover:bg-amber-700 text-xs px-2 py-0.5">
+                  )}
+                  {produto.condicao === 'seminovo' && (
+                    <Badge className="bg-amber-600 text-white hover:bg-amber-700 text-[10px] px-1.5 py-0.5">
                       Seminovo
+                    </Badge>
+                  )}
+                  {produto.garantia !== 'nenhuma' && (
+                    <Badge className="bg-purple-600 text-white hover:bg-purple-700 text-[10px] px-1.5 py-0.5">
+                      Com Garantia
                     </Badge>
                   )}
                 </div>

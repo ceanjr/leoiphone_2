@@ -462,16 +462,36 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                           Cód: {produto.codigo_produto}
                         </p>
                       )}
-                      <div className="mt-2 flex items-center gap-2">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium border ${
-                            produto.condicao === 'novo'
-                              ? 'bg-green-600 text-white border-green-600'
-                              : 'bg-amber-600 text-white border-amber-600'
-                          }`}
-                        >
-                          {produto.condicao === 'novo' ? 'Novo' : 'Seminovo'}
-                        </span>
+                      {produto.descricao && (
+                        <p className="mt-1 line-clamp-2 text-xs text-zinc-400">
+                          {produto.descricao}
+                        </p>
+                      )}
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        {/* Só mostrar badge seminovo se NÃO tiver bateria */}
+                        {!produto.nivel_bateria && (
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium border ${
+                              produto.condicao === 'novo'
+                                ? 'bg-green-600 text-white border-green-600'
+                                : 'bg-amber-600 text-white border-amber-600'
+                            }`}
+                          >
+                            {produto.condicao === 'novo' ? 'Novo' : 'Seminovo'}
+                          </span>
+                        )}
+                        {/* Badge de bateria */}
+                        {produto.nivel_bateria && (
+                          <span className="inline-flex rounded-full bg-green-600 px-2 py-0.5 text-xs font-medium text-white border border-green-600">
+                            🔋 {produto.nivel_bateria}%
+                          </span>
+                        )}
+                        {/* Badge de cores */}
+                        {produto.cores && produto.cores.length > 0 && (
+                          <span className="inline-flex rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white border border-blue-600">
+                            {produto.cores.join(', ')}
+                          </span>
+                        )}
                         {produto.categoria && (
                           <span className="inline-flex rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
                             {produto.categoria.nome}
@@ -625,7 +645,7 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="min-w-[200px] font-medium text-white">
+                  <TableCell className="min-w-[250px] font-medium text-white">
                     <div>
                       <Link href={`/produto/${produto.slug}`} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--brand-yellow)] transition-colors">
                         {produto.nome}
@@ -635,6 +655,24 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                           ({produto.codigo_produto})
                         </span>
                       )}
+                      {produto.descricao && (
+                        <p className="mt-1 line-clamp-1 text-xs text-zinc-400">
+                          {produto.descricao}
+                        </p>
+                      )}
+                      {/* Badges de cor e bateria */}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        {produto.nivel_bateria && (
+                          <span className="inline-flex rounded-full bg-green-600 px-1.5 py-0.5 text-xs font-medium text-white border border-green-600">
+                            🔋 {produto.nivel_bateria}%
+                          </span>
+                        )}
+                        {produto.cores && produto.cores.length > 0 && (
+                          <span className="inline-flex rounded-full bg-blue-600 px-1.5 py-0.5 text-xs font-medium text-white border border-blue-600">
+                            {produto.cores.join(', ')}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-zinc-300">
@@ -651,15 +689,18 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                     />
                   </TableCell>
                   <TableCell className="text-zinc-300">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold border ${
-                        produto.condicao === 'novo'
-                          ? 'bg-green-600 text-white border-green-600'
-                          : 'bg-amber-600 text-white border-amber-600'
-                      }`}
-                    >
-                      {produto.condicao === 'novo' ? 'Novo' : 'Seminovo'}
-                    </span>
+                    {/* Só mostrar badge seminovo se NÃO tiver bateria */}
+                    {!produto.nivel_bateria && (
+                      <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold border ${
+                          produto.condicao === 'novo'
+                            ? 'bg-green-600 text-white border-green-600'
+                            : 'bg-amber-600 text-white border-amber-600'
+                        }`}
+                      >
+                        {produto.condicao === 'novo' ? 'Novo' : 'Seminovo'}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">

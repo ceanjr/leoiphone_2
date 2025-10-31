@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0 -p 3000",
     "dev:turbo": "next dev --turbo",
     "dev:clean": "npm run clean:sw && next dev",
+    "tunnel": "ngrok http 3000",
     "build": "next build --webpack",
     "build:analyze": "ANALYZE=true next build --webpack",
     "start": "next start",

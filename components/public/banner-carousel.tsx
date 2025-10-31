@@ -26,6 +26,9 @@ interface Produto {
   preco: number
   foto_principal: string
   condicao: string
+  nivel_bateria: number | null
+  cores: string[] | null
+  garantia: string | null
 }
 
 export function BannerCarousel() {
@@ -60,7 +63,7 @@ export function BannerCarousel() {
           const produtoIds = banner.produtos_destaque.map((p: { produto_id: string }) => p.produto_id)
           const { data: produtos } = await supabase
             .from('produtos')
-            .select('id, nome, slug, codigo_produto, preco, foto_principal, condicao')
+            .select('id, nome, slug, codigo_produto, preco, foto_principal, condicao, nivel_bateria, cores, garantia')
             .in('id', produtoIds)
             .is('deleted_at', null)
 

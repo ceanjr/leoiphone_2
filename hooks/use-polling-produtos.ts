@@ -22,7 +22,7 @@ interface UsePollingProdutosOptions {
  * @param options.onUpdate - Callback quando detectar mudança
  */
 export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
-  const { enabled = true, interval = 5000, onUpdate } = options
+  const { enabled = true, interval = 2000, onUpdate } = options // Reduzido para 2s
   const lastHashRef = useRef<string | null>(null)
   const intervalIdRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -60,14 +60,17 @@ export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
         }
 
         if (data) {
-          // Criar hash dos IDs e timestamps para detectar mudanças
+          // Criar hash mais completo para detectar mudanças
           const currentHash = data
-            .map((p: any) => `${p.id}:${p.updated_at}`)
+            .map((p: any) => `${p.id}:${p.updated_at}:${p.preco}:${p.ativo}`)
             .join('|')
 
           // Se os dados mudaram desde a última verificação
           if (lastHashRef.current !== null && lastHashRef.current !== currentHash) {
-            console.log('[usePollingProdutos] Mudança detectada nos produtos!')
+            console.log('[usePollingProdutos] Mudança detectada nos produtos!', {
+              antes: lastHashRef.current?.slice(0, 100),
+              depois: currentHash.slice(0, 100),
+            })
 
             // Buscar produtos completos
             const { data: produtosCompletos } = await supabase

@@ -488,7 +488,7 @@ export default function BannersPage() {
               }}
               className="flex flex-1 min-h-0 flex-col overflow-hidden"
             >
-              <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6 md:px-8 md:py-8">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-6 sm:py-6 md:px-8 md:py-8">
                 <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
                   <section className="space-y-6">
                     <div className="rounded-xl border border-zinc-800/70 bg-zinc-950/75 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6">
@@ -714,13 +714,13 @@ export default function BannersPage() {
                                       </div>
                                     )}
                                   </div>
-                                  <div className="flex-1 space-y-2">
+                                  <div className="flex-1 min-w-0 space-y-2">
                                     <div>
-                                      <div className="text-sm font-medium text-white">{produto.nome}</div>
-                                      <div className="text-xs text-zinc-500">{produto.codigo_produto}</div>
+                                      <div className="text-sm font-medium text-white truncate">{produto.nome}</div>
+                                      <div className="text-xs text-zinc-500 truncate">{produto.codigo_produto}</div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      <Label htmlFor={`preco-${produto.id}`} className="text-xs text-zinc-400">
+                                      <Label htmlFor={`preco-${produto.id}`} className="text-xs text-zinc-400 whitespace-nowrap">
                                         Preço promocional:
                                       </Label>
                                       <Input
@@ -735,7 +735,7 @@ export default function BannersPage() {
                                             parseFloat(event.target.value) || 0
                                           )
                                         }
-                                        className="h-8 w-28 border-zinc-800 bg-zinc-900 text-right text-sm text-white"
+                                        className="h-8 w-20 sm:w-28 border-zinc-800 bg-zinc-900 text-right text-sm text-white"
                                       />
                                     </div>
                                   </div>
