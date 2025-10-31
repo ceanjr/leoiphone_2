@@ -64,12 +64,22 @@ export function usePollingTaxas(options: UsePollingTaxasOptions = {}) {
             updated_at: typedData.updated_at,
           })
 
-          // Se os dados mudaram desde a última verificação
-          if (lastDataRef.current !== null && lastDataRef.current !== currentHash) {
-            console.log('[usePollingTaxas] Mudança detectada!', {
-              ativo: typedData.ativo,
-              taxas: typedData.taxas,
-            })
+          // Se é a primeira verificação (load inicial) OU se os dados mudaram
+          const isFirstLoad = lastDataRef.current === null
+          const hasChanged = lastDataRef.current !== currentHash
+
+          if (isFirstLoad || hasChanged) {
+            if (isFirstLoad) {
+              console.log('[usePollingTaxas] Carga inicial:', {
+                ativo: typedData.ativo,
+                taxas: typedData.taxas,
+              })
+            } else {
+              console.log('[usePollingTaxas] Mudança detectada!', {
+                ativo: typedData.ativo,
+                taxas: typedData.taxas,
+              })
+            }
 
             if (onUpdate) {
               onUpdate({

@@ -321,7 +321,7 @@ export function ProductFormDialog({
       }}
     >
       {open ? (
-        <DialogContent className="!top-[50%] !left-[50%] flex !max-w-[1400px] !translate-x-[-50%] !translate-y-[-50%] flex-col overflow-hidden border border-zinc-800/80 bg-zinc-950/95 p-0 text-white shadow-[0_28px_120px_-40px_rgba(0,0,0,0.85)] backdrop-blur-sm sm:!h-[95vh] sm:!w-[95vw]">
+        <DialogContent className="flex flex-col overflow-hidden border border-zinc-800/80 bg-zinc-950/95 p-0 text-white shadow-[0_28px_120px_-40px_rgba(0,0,0,0.85)] backdrop-blur-sm sm:max-w-[1400px] sm:h-[95vh] sm:w-[95vw]">
           <div className="relative flex-shrink-0 border-b border-zinc-800/70 bg-zinc-950/80 px-5 py-5 sm:px-6 sm:py-6 md:px-8">
             <div
               className={`pointer-events-none absolute inset-0 opacity-70 blur-3xl ${accentStyles.glow}`}

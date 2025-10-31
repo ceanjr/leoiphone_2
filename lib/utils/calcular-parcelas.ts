@@ -54,7 +54,7 @@ export function calcularTodasParcelas(
       taxa,
       valorParcela,
       valorTotal,
-      semJuros: i === 1,
+      semJuros: false, // Todas as parcelas têm juros
     })
   }
 

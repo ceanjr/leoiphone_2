@@ -99,7 +99,7 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col p-0">
+      <DialogContent className="flex flex-col p-0 sm:max-w-5xl sm:max-h-[85vh]">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800">
           <DialogTitle className="flex items-center gap-3 text-xl">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-yellow)]/10">

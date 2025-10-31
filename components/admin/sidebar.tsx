@@ -12,6 +12,7 @@ import {
   LogOut,
   ExternalLink,
   Calculator,
+  Store,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -43,6 +44,11 @@ export const menuItems = [
     title: 'Taxas',
     icon: Calculator,
     href: '/admin/taxas',
+  },
+  {
+    title: 'Anúncios Facebook',
+    icon: Store,
+    href: '/admin/anuncios',
   },
 ]
 

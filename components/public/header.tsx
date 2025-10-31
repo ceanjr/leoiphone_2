@@ -23,7 +23,7 @@ export function PublicHeader() {
   const { isAuthenticated, loading } = useAuth()
   const [calculadoraOpen, setCalculadoraOpen] = useState(false)
   const [whatsappOpen, setWhatsappOpen] = useState(false)
-  const [calculadoraAtiva, setCalculadoraAtiva] = useState(false)
+  const [calculadoraAtiva, setCalculadoraAtiva] = useState(true) // Assume ativo por padrão
   const [menuOpen, setMenuOpen] = useState(false)
 
   // Polling: verificar se calculadora está ativa
