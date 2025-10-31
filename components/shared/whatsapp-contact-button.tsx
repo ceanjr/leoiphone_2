@@ -107,7 +107,7 @@ export function WhatsAppContactButton({
         <BottomSheetContent className="max-w-md border-zinc-800 bg-zinc-950/95 text-white shadow-[0_24px_80px_-35px_rgba(0,0,0,0.85)]">
           <div className="flex flex-col overflow-hidden">
             {/* Header com badge */}
-            <div className="relative border-b border-zinc-800 bg-zinc-950 px-5 py-5 sm:px-6 sm:py-6 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="animate-in fade-in slide-in-from-top-2 relative border-b border-zinc-800 bg-zinc-950 px-5 py-5 duration-300 sm:px-6 sm:py-6">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.12),transparent_55%)] opacity-60 blur-2xl" />
               <div className="relative flex flex-col items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -118,7 +118,7 @@ export function WhatsAppContactButton({
                     Atendimento das 09h às 19h.
                   </BottomSheetDescription>
                 </div>
-                <Badge className="shrink-0 border-yellow-500/30 bg-yellow-500/15 text-xs text-yellow-200 animate-in zoom-in-95 duration-300 delay-100">
+                <Badge className="animate-in zoom-in-95 shrink-0 border-yellow-500/30 bg-yellow-500/15 text-xs text-yellow-200 delay-100 duration-300">
                   WhatsApp
                 </Badge>
               </div>
@@ -133,7 +133,7 @@ export function WhatsAppContactButton({
                       key={contact.number}
                       type="button"
                       onClick={() => handleContact(contact.number)}
-                      className="flex min-h-[60px] w-full items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/80 px-4 py-4 text-left transition-all duration-200 hover:border-yellow-500/40 hover:bg-yellow-500/10 hover:scale-[1.02] hover:shadow-lg hover:shadow-yellow-500/10 active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2"
+                      className="animate-in fade-in slide-in-from-bottom-2 flex min-h-[60px] w-full items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/80 px-4 py-4 text-left transition-all duration-200 hover:scale-[1.02] hover:border-yellow-500/40 hover:bg-yellow-500/10 hover:shadow-lg hover:shadow-yellow-500/10 active:scale-[0.98]"
                       style={{ animationDelay: `${150 + index * 100}ms` }}
                     >
                       <div className="min-w-0 flex-1 pr-3">
@@ -148,9 +148,9 @@ export function WhatsAppContactButton({
                     </button>
                   ))}
                 </div>
-                <p className="px-2 text-[12px] leading-relaxed text-zinc-400 animate-in fade-in duration-500 delay-300">
-                  *Se um número estiver indisponível no momento, chame outro número para garantir o
-                  retorno.
+                <p className="animate-in fade-in px-2 text-[12px] leading-relaxed text-zinc-400 delay-300 duration-500">
+                  *Se um contato estiver indisponível no momento, chame o outro número para garantir
+                  o retorno.
                 </p>
               </div>
             </div>
