@@ -77,15 +77,19 @@ export function WhatsAppContactButton({
       const visitorId = getVisitorId()
       if (visitorId) {
         const supabase = createClient()
-        ;(supabase as any).from('conversions').insert({
-          visitor_id: visitorId,
-          produto_id: produtoId || null,
-          produto_nome: produtoNome || null,
-        }).then(() => {
-          console.log('[Conversion] Rastreada:', { produtoId, produtoNome })
-        }).catch((error: any) => {
-          console.error('[Conversion] Erro ao rastrear:', error)
-        })
+        ;(supabase as any)
+          .from('conversions')
+          .insert({
+            visitor_id: visitorId,
+            produto_id: produtoId || null,
+            produto_nome: produtoNome || null,
+          })
+          .then(() => {
+            console.log('[Conversion] Rastreada:', { produtoId, produtoNome })
+          })
+          .catch((error: any) => {
+            console.error('[Conversion] Erro ao rastrear:', error)
+          })
       }
     }
   }
@@ -108,7 +112,7 @@ export function WhatsAppContactButton({
         <BottomSheetContent className="max-w-md border-[#1f1f1f] bg-[#000000] text-white shadow-[0_0_20px_rgba(255,255,255,0.03)]">
           <div className="flex flex-col overflow-hidden">
             {/* Header com badge */}
-            <div className="animate-in fade-in slide-in-from-top-2 relative border-b border-[#1f1f1f] bg-[#0d0d0d] px-5 py-5 duration-300 sm:px-6 sm:py-6">
+            <div className="animate-in fade-in slide-in-from-top-2 relative border-b border-[#1f1f1f] bg-(--brand-black) px-5 py-5 duration-300 sm:px-6 sm:py-6">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,204,0,0.12),transparent_55%)] opacity-60 blur-2xl" />
               <div className="relative flex flex-col items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">

@@ -371,9 +371,7 @@ export function CalculadoraTaxasDialog({
                           {parcela.semJuros ? (
                             <p className="text-xs text-green-500">sem juros</p>
                           ) : (
-                            <p className="text-xs text-[#666666]">
-                              {parcela.taxa.toFixed(2)}% a.m.
-                            </p>
+                            <p className="text-xs text-[#666666]">Por mês</p>
                           )}
                         </div>
                       </div>

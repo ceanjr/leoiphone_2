@@ -23,7 +23,7 @@ export function CalculadoraParcelas({ preco, taxas }: CalculadoraParcelasProps) 
   return (
     <div className="w-full">
       {/* Mini-tabela Colapsada */}
-      <Card className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 transition-colors">
+      <Card className="border-zinc-800 bg-zinc-900/50 transition-colors hover:bg-zinc-900">
         <CardContent className="p-4">
           <button
             onClick={() => setExpandido(!expandido)}
@@ -31,11 +31,11 @@ export function CalculadoraParcelas({ preco, taxas }: CalculadoraParcelasProps) 
             aria-expanded={expandido}
           >
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <CreditCard className="h-5 w-5 text-[var(--brand-yellow)] flex-shrink-0" />
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <CreditCard className="h-5 w-5 flex-shrink-0 text-[var(--brand-yellow)]" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-white">
-                    em até {parcelaMaxima.numero}x de{' '}
+                    Em até {parcelaMaxima.numero}x de{' '}
                     <span className="text-[var(--brand-yellow)]">
                       {formatarMoeda(parcelaMaxima.valorParcela)}
                     </span>
@@ -48,7 +48,7 @@ export function CalculadoraParcelas({ preco, taxas }: CalculadoraParcelasProps) 
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex-shrink-0 h-8 w-8 p-0 hover:bg-zinc-800"
+                className="h-8 w-8 flex-shrink-0 p-0 hover:bg-zinc-800"
               >
                 {expandido ? (
                   <ChevronUp className="h-4 w-4 text-zinc-400" />
@@ -62,12 +62,12 @@ export function CalculadoraParcelas({ preco, taxas }: CalculadoraParcelasProps) 
           {/* Tabela Expandida */}
           {expandido && (
             <div
-              className="mt-4 pt-4 border-t border-zinc-800 space-y-2 animate-in fade-in-0 slide-in-from-top-2 duration-200"
+              className="animate-in fade-in-0 slide-in-from-top-2 mt-4 space-y-2 border-t border-zinc-800 pt-4 duration-200"
               role="region"
               aria-label="Opções de parcelamento"
             >
               {/* Título */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-white">Opções de Parcelamento</h3>
                 <Badge variant="secondary" className="text-xs">
                   {parcelas.length} opções
@@ -75,19 +75,19 @@ export function CalculadoraParcelas({ preco, taxas }: CalculadoraParcelasProps) 
               </div>
 
               {/* Lista de Parcelas */}
-              <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
+              <div className="scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 max-h-[300px] space-y-1.5 overflow-y-auto pr-2">
                 {parcelas.map((parcela) => (
                   <div
                     key={parcela.numero}
-                    className={`flex items-center justify-between gap-4 py-2.5 px-3 rounded-lg transition-colors ${
+                    className={`flex items-center justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors ${
                       parcela.semJuros
-                        ? 'bg-green-500/10 border border-green-500/20'
+                        ? 'border border-green-500/20 bg-green-500/10'
                         : 'bg-zinc-950 hover:bg-zinc-900'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <span
-                        className={`text-sm font-semibold min-w-[32px] ${
+                        className={`min-w-[32px] text-sm font-semibold ${
                           parcela.semJuros ? 'text-green-400' : 'text-zinc-400'
                         }`}
                       >
@@ -104,9 +104,7 @@ export function CalculadoraParcelas({ preco, taxas }: CalculadoraParcelasProps) 
                         {parcela.semJuros ? (
                           <p className="text-xs text-green-500">sem juros</p>
                         ) : (
-                          <p className="text-xs text-zinc-500">
-                            {parcela.taxa.toFixed(2)}% a.m.
-                          </p>
+                          <p className="text-xs text-zinc-500">Por mês</p>
                         )}
                       </div>
                     </div>
@@ -124,7 +122,7 @@ export function CalculadoraParcelas({ preco, taxas }: CalculadoraParcelasProps) 
               </div>
 
               {/* Nota de Rodapé */}
-              <p className="text-xs text-zinc-600 mt-3 pt-3 border-t border-zinc-800">
+              <p className="mt-3 border-t border-zinc-800 pt-3 text-xs text-zinc-600">
                 💳 Valores calculados com base nas taxas de parcelamento no cartão de crédito.
               </p>
             </div>

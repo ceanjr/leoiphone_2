@@ -60,6 +60,18 @@ interface ProdutoSecaoRow {
   produto: Produto | null
 }
 
+// Função para extrair capacidade de armazenamento em GB
+function extrairArmazenamento(nome: string): number {
+  // Procurar por padrões como "64GB", "128GB", "256GB", "512GB", "1TB", "2TB"
+  const matchGB = nome.match(/(\d+)\s*GB/i)
+  if (matchGB) return parseInt(matchGB[1])
+
+  const matchTB = nome.match(/(\d+)\s*TB/i)
+  if (matchTB) return parseInt(matchTB[1]) * 1024 // Converter TB para GB
+
+  return 0 // Sem armazenamento especificado
+}
+
 // Função para ordenar produtos por modelo iPhone
 function ordenarProdutosPorModelo(produtos: Produto[]): Produto[] {
   return produtos.sort((a, b) => {
@@ -89,7 +101,12 @@ function ordenarProdutosPorModelo(produtos: Produto[]): Produto[] {
     // Ordenar por número (crescente)
     if (numA !== numB) return numA - numB
 
-    // Se forem do mesmo modelo, ordenar por nome (alfabético)
+    // Se forem do mesmo modelo, ordenar por armazenamento (crescente)
+    const armazenamentoA = extrairArmazenamento(a.nome)
+    const armazenamentoB = extrairArmazenamento(b.nome)
+    if (armazenamentoA !== armazenamentoB) return armazenamentoA - armazenamentoB
+
+    // Se tiverem mesmo modelo e armazenamento, ordenar por nome (alfabético)
     return a.nome.localeCompare(b.nome)
   })
 }

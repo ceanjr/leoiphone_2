@@ -26,17 +26,17 @@ const BatteryIcon = memo(({ level }: { level: number }) => {
     if (level >= 80) {
       return {
         color: '#22c55e',
-        bars: 4
+        bars: 4,
       }
     } else if (level >= 70) {
       return {
         color: '#facc15',
-        bars: 3
+        bars: 3,
       }
     } else {
       return {
         color: '#ef4444',
-        bars: 2
+        bars: 2,
       }
     }
   }
@@ -62,14 +62,7 @@ const BatteryIcon = memo(({ level }: { level: number }) => {
         strokeWidth="1"
         fill="none"
       />
-      <rect
-        x="17"
-        y="3.5"
-        width="2.5"
-        height="5"
-        rx="1"
-        fill="white"
-      />
+      <rect x="17" y="3.5" width="2.5" height="5" rx="1" fill="white" />
       {[...Array(4)].map((_, index) => (
         <rect
           key={index}
@@ -87,7 +80,12 @@ const BatteryIcon = memo(({ level }: { level: number }) => {
 
 BatteryIcon.displayName = 'BatteryIcon'
 
-function ProdutoCardComponent({ produto, view = 'grid', priority = false, returnParams }: ProdutoCardProps) {
+function ProdutoCardComponent({
+  produto,
+  view = 'grid',
+  priority = false,
+  returnParams,
+}: ProdutoCardProps) {
   // Prefetch de imagens ao fazer hover
   const handleMouseEnter = useCallback(() => {
     // Prefetch da foto principal e primeiras fotos da galeria
@@ -115,7 +113,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
     // Priorizar array de cores (novo sistema)
     if (produto.cores && produto.cores.length > 0) {
       const coresMapeadas = produto.cores
-        .map(corNome => {
+        .map((corNome) => {
           const cor = getCorOficial(produto.nome, corNome)
           // Debug: ver se a cor está sendo mapeada corretamente
           if (process.env.NODE_ENV === 'development') {
@@ -127,7 +125,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
           }
           return cor
         })
-        .filter(cor => cor !== null)
+        .filter((cor) => cor !== null)
 
       return coresMapeadas
     }
@@ -136,7 +134,9 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
     if (produto.cor_oficial) {
       const cor = getCorOficial(produto.nome, produto.cor_oficial)
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[ProdutoCard] - Usando cor_oficial legado: "${produto.cor_oficial}" → ${cor?.nome || 'não mapeada'}`)
+        console.log(
+          `[ProdutoCard] - Usando cor_oficial legado: "${produto.cor_oficial}" → ${cor?.nome || 'não mapeada'}`
+        )
       }
       return cor ? [cor] : []
     }
@@ -158,12 +158,12 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
     return (
       <Link href={productUrl} prefetch={true}>
         <div
-          className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-[var(--brand-yellow)] hover:shadow-xl hover:shadow-[var(--brand-yellow)]/20 hover:-translate-y-1 active:scale-[0.98]"
+          className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-yellow)] hover:shadow-[var(--brand-yellow)]/20 hover:shadow-xl active:scale-[0.98]"
           onMouseEnter={handleMouseEnter}
         >
           <div className="flex flex-row">
             {/* Optimization: Fixed dimensions to prevent CLS */}
-            <div className="relative h-28 w-28 overflow-hidden bg-zinc-950 flex-shrink-0 hidden sm:block">
+            <div className="relative hidden h-28 w-28 flex-shrink-0 overflow-hidden bg-zinc-950 sm:block">
               {produto.foto_principal ? (
                 <Image
                   src={produto.foto_principal}
@@ -175,37 +175,37 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
                   quality={85}
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-zinc-700 text-xs">
+                <div className="flex h-full items-center justify-center text-xs text-zinc-700">
                   Sem imagem
                 </div>
               )}
             </div>
 
             <div className="flex flex-1 flex-row items-center justify-between gap-3 p-3 sm:p-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="mb-1 line-clamp-1 text-base sm:text-lg font-semibold text-white group-hover:text-[var(--brand-yellow)] transition-colors">
+              <div className="min-w-0 flex-1">
+                <h3 className="mb-1 line-clamp-1 text-base font-semibold text-white transition-colors group-hover:text-[var(--brand-yellow)] sm:text-lg">
                   {produto.nome}
                 </h3>
 
                 {produto.descricao && (
-                  <p className="mb-2 line-clamp-1 text-xs sm:text-sm text-zinc-400">
+                  <p className="mb-2 line-clamp-1 text-xs text-zinc-400 sm:text-sm">
                     {produto.descricao}
                   </p>
                 )}
 
                 <div className="flex flex-wrap items-center gap-2">
                   {produto.condicao === 'novo' && produto.nivel_bateria == null && (
-                    <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs px-2 py-0">
+                    <Badge className="bg-green-600 px-2 py-0 text-xs text-white hover:bg-green-700">
                       Novo
                     </Badge>
                   )}
                   {produto.condicao === 'seminovo' && produto.nivel_bateria == null && (
-                    <Badge className="bg-amber-600 text-white hover:bg-amber-700 text-xs px-2 py-0">
+                    <Badge className="bg-amber-600 px-2 py-0 text-xs text-white hover:bg-amber-700">
                       Seminovo
                     </Badge>
                   )}
                   {produto.nivel_bateria && (
-                    <Badge className="bg-zinc-700 text-white hover:bg-zinc-600 text-xs px-2 py-0.5 flex items-center gap-1.5">
+                    <Badge className="flex items-center gap-1.5 bg-zinc-700 px-2 py-0.5 text-xs text-white hover:bg-zinc-600">
                       <BatteryIcon level={produto.nivel_bateria} />
                       <span>{produto.nivel_bateria}%</span>
                     </Badge>
@@ -213,7 +213,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
                   {cores.map((cor, index) => (
                     <Badge
                       key={index}
-                      className="text-xs px-2 py-0.5"
+                      className="px-2 py-0.5 text-xs"
                       style={{
                         backgroundColor: cor.hex,
                         color: getContrastColor(cor.hex),
@@ -225,8 +225,8 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
                 </div>
               </div>
 
-              <div className="flex-shrink-0 flex items-center">
-                <p className="text-lg sm:text-xl font-bold text-[var(--brand-yellow)] whitespace-nowrap">
+              <div className="flex flex-shrink-0 items-center">
+                <p className="text-lg font-bold whitespace-nowrap text-[var(--brand-yellow)] sm:text-xl">
                   {formatPreco(produto.preco)}
                 </p>
               </div>
@@ -240,7 +240,7 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
   return (
     <Link href={productUrl} prefetch={true}>
       <div
-        className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:border-[var(--brand-yellow)] hover:shadow-xl hover:shadow-[var(--brand-yellow)]/20 hover:-translate-y-1 active:scale-[0.98]"
+        className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-yellow)] hover:shadow-[var(--brand-yellow)]/20 hover:shadow-xl active:scale-[0.98]"
         onMouseEnter={handleMouseEnter}
       >
         {/* Optimization: aspect-square maintains proper spacing, preventing CLS */}
@@ -256,16 +256,14 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
               quality={85}
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-zinc-700">
-              Sem imagem
-            </div>
+            <div className="flex h-full items-center justify-center text-zinc-700">Sem imagem</div>
           )}
 
-          <div className="absolute left-2 top-2 flex flex-col gap-1.5">
+          <div className="absolute top-2 left-2 flex flex-col gap-1.5">
             {cores.map((cor, index) => (
               <Badge
                 key={index}
-                className="text-xs px-2 py-0.5 w-fit"
+                className="w-fit px-2 py-0.5 text-xs"
                 style={{
                   backgroundColor: cor.hex,
                   color: getContrastColor(cor.hex),
@@ -275,18 +273,18 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
               </Badge>
             ))}
             {produto.nivel_bateria && (
-              <Badge className="bg-zinc-700 text-white hover:bg-zinc-600 text-xs flex items-center gap-1.5 px-2 py-0.5 w-fit">
+              <Badge className="flex w-fit items-center gap-1.5 bg-zinc-700 px-2 py-0.5 text-xs text-white hover:bg-zinc-600">
                 <BatteryIcon level={produto.nivel_bateria} />
                 <span>{produto.nivel_bateria}%</span>
               </Badge>
             )}
             {produto.condicao === 'novo' && produto.nivel_bateria == null && (
-              <Badge className="bg-green-600 text-white hover:bg-green-700 text-xs px-2 py-0.5 w-fit">
+              <Badge className="w-fit bg-green-600 px-2 py-0.5 text-xs text-white hover:bg-green-700">
                 Novo
               </Badge>
             )}
             {produto.condicao === 'seminovo' && produto.nivel_bateria == null && (
-              <Badge className="bg-amber-600 text-white hover:bg-amber-700 text-xs px-2 py-0.5 w-fit">
+              <Badge className="w-fit bg-amber-600 px-2 py-0.5 text-xs text-white hover:bg-amber-700">
                 Seminovo
               </Badge>
             )}
@@ -294,14 +292,12 @@ function ProdutoCardComponent({ produto, view = 'grid', priority = false, return
         </div>
 
         <div className="p-4">
-          <h3 className="mb-2 line-clamp-2 text-lg font-semibold text-white group-hover:text-[var(--brand-yellow)] transition-colors">
+          <h3 className="mb-2 line-clamp-2 text-lg font-semibold text-white transition-colors group-hover:text-[var(--brand-yellow)]">
             {produto.nome}
           </h3>
 
           {produto.descricao && (
-            <p className="mb-3 line-clamp-2 text-sm text-zinc-400">
-              {produto.descricao}
-            </p>
+            <p className="mb-3 line-clamp-2 text-sm text-zinc-400">{produto.descricao}</p>
           )}
 
           <div>

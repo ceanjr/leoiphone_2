@@ -502,7 +502,7 @@ export function ProductFormDialog({
                           <div className="flex flex-wrap gap-2 rounded-lg border border-zinc-800/70 bg-zinc-950 p-3">
                             {selectedColors.map((color) => (
                               <div key={color} className="flex items-center gap-1">
-                                <ColorBadge color={color} size="md" />
+                                <ColorBadge color={color} productName={formData.nome} size="md" />
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveColor(color)}
@@ -537,7 +537,7 @@ export function ProductFormDialog({
                               {availableColorsFiltered.map((color) => (
                                 <SelectItem key={color} value={color}>
                                   <div className="flex items-center gap-2">
-                                    <ColorBadge color={color} size="sm" />
+                                    <ColorBadge color={color} productName={formData.nome} size="sm" />
                                   </div>
                                 </SelectItem>
                               ))}

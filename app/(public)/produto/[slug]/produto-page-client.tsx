@@ -370,7 +370,7 @@ Link: ${productUrl}`
           {/* Preço */}
           <div className="mb-6">
             {precoPromocional && precoPromocional < produto.preco ? (
-              <div className="flex gap-12">
+              <div>
                 <p className="mb-1 text-sm text-zinc-500 line-through">
                   {formatPreco(produto.preco)}
                 </p>
@@ -384,26 +384,50 @@ Link: ${productUrl}`
                   Oferta Especial - Economize {formatPreco(produto.preco - precoPromocional)}!
                 </p>
                 <WhatsAppContactButton
-                  size="sm"
-                  className="h-2 border border-[var(--brand-yellow)] bg-transparent text-[var(--brand-yellow)] hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] active:bg-[var(--brand-yellow)]/90 active:text-[var(--brand-black)]"
                   message={whatsappMessage}
                   label="Tenho Interesse"
                   produtoId={produto.id}
                   produtoNome={produto.nome}
+                  style={{
+                    background: 'transparent',
+                    border: '1.5px solid var(--brand-yellow)',
+                    padding: '10px 24px',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    letterSpacing: '0.01em',
+                    color: 'var(--brand-yellow)',
+                    borderRadius: '6px',
+                    boxShadow: '0 0 0 0 rgba(255, 204, 0, 0.3)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                  }}
+                  className="hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] hover:shadow-[0_0_20px_rgba(255,204,0,0.4)] hover:scale-[1.02] active:scale-[0.98]"
                 />
               </div>
             ) : (
-              <div className="flex gap-12">
-                <p className="mb-3 text-4xl font-bold" style={{ color: 'var(--brand-yellow)' }}>
+              <div className="flex items-center gap-12">
+                <p className="text-4xl font-bold" style={{ color: 'var(--brand-yellow)' }}>
                   {formatPreco(produto.preco)}
                 </p>
                 <WhatsAppContactButton
-                  size="sm"
-                  className="h-2 border border-[var(--brand-yellow)] bg-transparent text-[var(--brand-yellow)] hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] active:bg-[var(--brand-yellow)]/90 active:text-[var(--brand-black)]"
                   message={whatsappMessage}
                   label="Tenho Interesse"
                   produtoId={produto.id}
                   produtoNome={produto.nome}
+                  style={{
+                    background: 'transparent',
+                    border: '1.5px solid var(--brand-yellow)',
+                    padding: '10px 24px',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    letterSpacing: '0.01em',
+                    color: 'var(--brand-yellow)',
+                    borderRadius: '6px',
+                    boxShadow: '0 0 0 0 rgba(255, 204, 0, 0.3)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                  }}
+                  className="hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] hover:shadow-[0_0_20px_rgba(255,204,0,0.4)] hover:scale-[1.02] active:scale-[0.98]"
                 />
               </div>
             )}

@@ -19,6 +19,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ExportImagesDialog } from '@/components/admin/produtos/export-images-dialog'
+import { Badge } from '@/components/ui/badge'
+import { getCorOficial, getContrastColor } from '@/lib/iphone-cores'
 
 function parsePriceInput(value: string): number | null {
   const trimmed = value.trim()
@@ -205,6 +207,18 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
     return Array.from(cats.values()).sort((a, b) => a.ordem - b.ordem)
   }, [produtos])
 
+  // Função para extrair capacidade de armazenamento em GB
+  const extrairArmazenamento = (nome: string): number => {
+    // Procurar por padrões como "64GB", "128GB", "256GB", "512GB", "1TB", "2TB"
+    const matchGB = nome.match(/(\d+)\s*GB/i)
+    if (matchGB) return parseInt(matchGB[1])
+
+    const matchTB = nome.match(/(\d+)\s*TB/i)
+    if (matchTB) return parseInt(matchTB[1]) * 1024 // Converter TB para GB
+
+    return 0 // Sem armazenamento especificado
+  }
+
   // Função para extrair número do modelo iPhone
   const extrairNumeroModelo = (nome: string): number => {
     // Casos especiais
@@ -255,7 +269,15 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
         if (numA !== numB) {
           return numA - numB
         }
-        // Mesmo modelo, ordenar alfabeticamente
+
+        // Mesmo modelo, ordenar por armazenamento (crescente)
+        const armazenamentoA = extrairArmazenamento(a.nome)
+        const armazenamentoB = extrairArmazenamento(b.nome)
+        if (armazenamentoA !== armazenamentoB) {
+          return armazenamentoA - armazenamentoB
+        }
+
+        // Mesmo modelo e armazenamento, ordenar alfabeticamente
         return a.nome.localeCompare(b.nome)
       }
 
@@ -487,11 +509,42 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                           </span>
                         )}
                         {/* Badge de cores */}
-                        {produto.cores && produto.cores.length > 0 && (
-                          <span className="inline-flex rounded-full bg-blue-600 px-2 py-0.5 text-xs font-medium text-white border border-blue-600">
-                            {produto.cores.join(', ')}
-                          </span>
-                        )}
+                        {(() => {
+                          // Obter cores (novo array ou legado cor_oficial)
+                          const cores: string[] = produto.cores && produto.cores.length > 0
+                            ? produto.cores
+                            : produto.cor_oficial
+                              ? [produto.cor_oficial]
+                              : []
+
+                          return cores.map((corNome, idx) => {
+                            const cor = getCorOficial(produto.nome, corNome)
+                            if (cor) {
+                              return (
+                                <Badge
+                                  key={idx}
+                                  className="px-2 py-0.5 text-xs"
+                                  style={{
+                                    backgroundColor: cor.hex,
+                                    color: getContrastColor(cor.hex),
+                                    border: 'none',
+                                  }}
+                                >
+                                  {cor.nome}
+                                </Badge>
+                              )
+                            }
+                            // Fallback: mostrar badge padrão se cor não for mapeada
+                            return (
+                              <Badge
+                                key={idx}
+                                className="bg-blue-600 px-2 py-0.5 text-xs text-white"
+                              >
+                                {corNome}
+                              </Badge>
+                            )
+                          })
+                        })()}
                         {produto.categoria && (
                           <span className="inline-flex rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
                             {produto.categoria.nome}
@@ -667,11 +720,42 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                             🔋 {produto.nivel_bateria}%
                           </span>
                         )}
-                        {produto.cores && produto.cores.length > 0 && (
-                          <span className="inline-flex rounded-full bg-blue-600 px-1.5 py-0.5 text-xs font-medium text-white border border-blue-600">
-                            {produto.cores.join(', ')}
-                          </span>
-                        )}
+                        {(() => {
+                          // Obter cores (novo array ou legado cor_oficial)
+                          const cores: string[] = produto.cores && produto.cores.length > 0
+                            ? produto.cores
+                            : produto.cor_oficial
+                              ? [produto.cor_oficial]
+                              : []
+
+                          return cores.map((corNome, idx) => {
+                            const cor = getCorOficial(produto.nome, corNome)
+                            if (cor) {
+                              return (
+                                <Badge
+                                  key={idx}
+                                  className="px-1.5 py-0.5 text-xs"
+                                  style={{
+                                    backgroundColor: cor.hex,
+                                    color: getContrastColor(cor.hex),
+                                    border: 'none',
+                                  }}
+                                >
+                                  {cor.nome}
+                                </Badge>
+                              )
+                            }
+                            // Fallback: mostrar badge padrão se cor não for mapeada
+                            return (
+                              <Badge
+                                key={idx}
+                                className="bg-blue-600 px-1.5 py-0.5 text-xs text-white"
+                              >
+                                {corNome}
+                              </Badge>
+                            )
+                          })
+                        })()}
                       </div>
                     </div>
                   </TableCell>
