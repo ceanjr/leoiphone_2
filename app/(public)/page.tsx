@@ -144,19 +144,42 @@ function HomePageContent() {
 
   // Prevenir autofocus no input de busca (mobile)
   useEffect(() => {
-    // Forçar blur no input de busca após mount
-    if (searchInputRef.current && document.activeElement === searchInputRef.current) {
-      searchInputRef.current.blur()
-    }
-
-    // Prevenir restauração de foco pelo navegador
-    const timer = setTimeout(() => {
+    const preventFocus = () => {
       if (searchInputRef.current && document.activeElement === searchInputRef.current) {
         searchInputRef.current.blur()
       }
-    }, 100)
+    }
 
-    return () => clearTimeout(timer)
+    // Forçar blur imediatamente
+    preventFocus()
+
+    // Tentar novamente em múltiplos intervalos
+    const timers = [
+      setTimeout(preventFocus, 50),
+      setTimeout(preventFocus, 100),
+      setTimeout(preventFocus, 200),
+      setTimeout(preventFocus, 500),
+    ]
+
+    // Event listener para prevenir focus
+    const handleFocus = (e: FocusEvent) => {
+      if (e.target === searchInputRef.current) {
+        searchInputRef.current?.blur()
+      }
+    }
+
+    // Adicionar listener apenas durante a montagem inicial
+    document.addEventListener('focus', handleFocus, true)
+
+    const cleanupTimer = setTimeout(() => {
+      document.removeEventListener('focus', handleFocus, true)
+    }, 1000)
+
+    return () => {
+      timers.forEach(clearTimeout)
+      clearTimeout(cleanupTimer)
+      document.removeEventListener('focus', handleFocus, true)
+    }
   }, [])
 
   // Polling: sincronização de produtos via verificação periódica
@@ -587,7 +610,6 @@ function HomePageContent() {
           <Input
             ref={searchInputRef}
             type="text"
-            inputMode="search"
             placeholder="Buscar por nome, modelo ou código..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
