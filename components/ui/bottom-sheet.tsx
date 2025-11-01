@@ -168,8 +168,15 @@ const BottomSheetContent = React.forwardRef<
           'shadow-[0_0_20px_rgba(255,255,255,0.03)]',
           // Desktop: dialog centralizado
           'sm:left-[50%] sm:top-[50%] sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:border sm:border-[#1f1f1f] sm:p-6',
-          // Mobile: bottom sheet - termina onde a safe area começa
-          'max-sm:inset-x-0 max-sm:max-h-[90vh] max-sm:rounded-t-2xl max-sm:border-t max-sm:border-[#1f1f1f]',
+          // Mobile: bottom sheet - fixo na parte inferior
+          'max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:max-h-[90vh] max-sm:rounded-t-2xl max-sm:border-t max-sm:border-[#1f1f1f]',
+          // Animações
+          'data-[state=open]:animate-in data-[state=closed]:animate-out',
+          'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+          'max-sm:data-[state=closed]:slide-out-to-bottom max-sm:data-[state=open]:slide-in-from-bottom',
+          'sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95',
+          'sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%]',
+          'sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]',
           // Drag transition suave
           isDragging ? '' : 'transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
           className

@@ -83,3 +83,20 @@ export interface ProdutoCustoFormData {
   estoque: number
   codigo?: string | null
 }
+
+export interface CategoriaProdutosRelacionados {
+  id: string
+  categoria_id: string
+  auto_select: boolean
+  produtos_selecionados: string[]
+  desconto_min: number
+  desconto_max: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ProdutoRelacionado extends Produto {
+  preco_original: number
+  preco_com_desconto: number
+  desconto_percentual: number
+}

@@ -131,6 +131,7 @@ export function BannerCarousel() {
           titulo={currentBanner.titulo}
           subtitulo={currentBanner.subtitulo || undefined}
           produtos={produtos}
+          bannerId={currentBanner.id}
         />
 
         {banners.length > 1 && (

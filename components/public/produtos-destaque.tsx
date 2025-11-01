@@ -1,9 +1,23 @@
 'use client'
 
+import { useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Flame } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { createClient } from '@/lib/supabase/client'
+
+function isProduction(): boolean {
+  if (typeof window === 'undefined') return false
+  const hostname = window.location.hostname
+  return hostname.includes('leoiphone.com.br') || hostname.includes('vercel.app')
+}
+
+function getVisitorId(): string | null {
+  if (typeof window === 'undefined') return null
+  const stored = localStorage.getItem('visitor_id')
+  return stored || null
+}
 
 interface ProdutoDestaque {
   id: string
@@ -23,10 +37,34 @@ interface ProdutosDestaqueProps {
   titulo: string
   subtitulo?: string
   produtos: ProdutoDestaque[]
+  bannerId: string
 }
 
-export function ProdutosDestaque({ titulo, subtitulo, produtos }: ProdutosDestaqueProps) {
+export function ProdutosDestaque({ titulo, subtitulo, produtos, bannerId }: ProdutosDestaqueProps) {
   if (produtos.length === 0) return null
+
+  const trackClick = useCallback(
+    (produtoId: string) => {
+      if (!isProduction()) return
+
+      const supabase = createClient()
+      const visitorId = getVisitorId()
+
+      void supabase
+        .from('banner_produto_clicks')
+        .insert({
+          banner_id: bannerId,
+          produto_id: produtoId,
+          visitor_id: visitorId ?? null,
+        } as any)
+        .then(({ error }) => {
+          if (error) {
+            console.error('[BannerClicks] Falha ao registrar clique:', error.message)
+          }
+        })
+    },
+    [bannerId]
+  )
 
   return (
     <div className="mb-8 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
@@ -50,6 +88,7 @@ export function ProdutosDestaque({ titulo, subtitulo, produtos }: ProdutosDestaq
             <Link
               key={produto.id}
               href={`/produto/${produto.slug}?preco_promo=${produto.preco_promocional}`}
+              onClick={() => trackClick(produto.id)}
               className="group min-w-[240px] flex-shrink-0 rounded-lg border border-zinc-800 bg-zinc-950 p-3 transition-all hover:border-[var(--brand-yellow)] hover:shadow-lg hover:shadow-[var(--brand-yellow)]/10 md:min-w-0 md:p-4"
             >
               {/* Badge de Desconto */}

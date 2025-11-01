@@ -15,6 +15,22 @@ interface ProdutoView {
   preco: number
 }
 
+interface BannerProdutoMetric {
+  produtoId: string
+  nome: string
+  foto_principal: string | null
+  preco: number | null
+  preco_promocional: number | null
+  totalClicks: number
+  uniqueVisitors: number
+}
+
+interface BannerHighlight {
+  bannerId: string
+  titulo: string
+  produtos: BannerProdutoMetric[]
+}
+
 interface AnalyticsStats {
   usuariosOnline: number
   visitantesHoje: number
@@ -25,6 +41,7 @@ interface AnalyticsStats {
   produtosAtivos: number
   totalVisualizacoes: number
   topProdutos: ProdutoView[]
+  bannersDestaque: BannerHighlight[]
 }
 
 type PeriodFilter = 'today' | 'month'
@@ -40,6 +57,7 @@ export default function DashboardPage() {
     produtosAtivos: 0,
     totalVisualizacoes: 0,
     topProdutos: [],
+    bannersDestaque: [],
   })
   const [period, setPeriod] = useState<PeriodFilter>('today')
   const [loading, setLoading] = useState(true)
@@ -65,6 +83,7 @@ export default function DashboardPage() {
       produtosAtivosRes,
       visualizacoesRes,
       topProdutosRes,
+      bannersDestaqueRes,
     ] = await Promise.all([
       // Usuários online (últimos 5 minutos)
       supabase
@@ -144,10 +163,121 @@ export default function DashboardPage() {
         .is('deleted_at', null)
         .order('visualizacoes_total', { ascending: false })
         .limit(5),
+
+      // Banners de produtos em destaque ativos
+      supabase
+        .from('banners')
+        .select('id, titulo, produtos_destaque')
+        .eq('ativo', true)
+        .eq('tipo', 'produtos_destaque'),
     ])
 
     const totalVisualizacoes =
       visualizacoesRes.data?.reduce((acc: number, curr: any) => acc + (curr.visualizacoes_total || 0), 0) || 0
+
+    const bannersDestaqueData = (bannersDestaqueRes.data ?? []) as Array<{
+      id: string
+      titulo: string
+      produtos_destaque: Array<{ produto_id: string; preco_promocional: number | null }> | null
+    }>
+
+    if (bannersDestaqueRes.error) {
+      console.error('[Dashboard] Erro ao carregar banners de destaque:', bannersDestaqueRes.error)
+    }
+
+    let bannersDestaque: BannerHighlight[] = []
+
+    if (bannersDestaqueData.length > 0) {
+      const bannerIds = bannersDestaqueData.map((banner) => banner.id)
+      const produtoIds = Array.from(
+        new Set(
+          bannersDestaqueData.flatMap((banner) =>
+            (banner.produtos_destaque ?? [])
+              .map((produto) => produto?.produto_id)
+              .filter((id): id is string => Boolean(id))
+          )
+        )
+      )
+
+      const clicksPromise =
+        bannerIds.length > 0
+          ? supabase
+              .from('banner_produtos_clicks_stats')
+              .select('banner_id, produto_id, total_clicks, unique_visitors')
+              .in('banner_id', bannerIds)
+          : Promise.resolve({ data: [], error: null })
+
+      const produtosPromise =
+        produtoIds.length > 0
+          ? supabase
+              .from('produtos')
+              .select('id, nome, foto_principal, preco')
+              .in('id', produtoIds)
+              .is('deleted_at', null)
+          : Promise.resolve({ data: [], error: null })
+
+      const [clicksStatsRes, produtosInfoRes] = await Promise.all([clicksPromise, produtosPromise])
+
+      if (clicksStatsRes.error) {
+        console.error('[Dashboard] Erro ao carregar estatísticas de cliques:', clicksStatsRes.error)
+      }
+
+      if (produtosInfoRes.error) {
+        console.error('[Dashboard] Erro ao carregar produtos destacados:', produtosInfoRes.error)
+      }
+
+      const statsMap = new Map<string, Map<string, { totalClicks: number; uniqueVisitors: number }>>()
+      ;(clicksStatsRes.data ?? []).forEach((row: any) => {
+        if (!statsMap.has(row.banner_id)) {
+          statsMap.set(row.banner_id, new Map())
+        }
+        statsMap.get(row.banner_id)?.set(row.produto_id, {
+          totalClicks: row.total_clicks || 0,
+          uniqueVisitors: row.unique_visitors || 0,
+        })
+      })
+
+      const produtoMap = new Map<
+        string,
+        { nome: string; foto_principal: string | null; preco: number | null }
+      >()
+      ;(produtosInfoRes.data ?? []).forEach((produto: any) => {
+        produtoMap.set(produto.id, {
+          nome: produto.nome,
+          foto_principal: produto.foto_principal || null,
+          preco: produto.preco != null ? Number(produto.preco) : null,
+        })
+      })
+
+      bannersDestaque = bannersDestaqueData.map((banner) => {
+        const produtos: BannerProdutoMetric[] = (banner.produtos_destaque ?? []).map((p) => {
+          const produtoInfo = produtoMap.get(p.produto_id)
+          const metrics = statsMap.get(banner.id)?.get(p.produto_id)
+          const precoPromocional =
+            p.preco_promocional != null
+              ? Number(p.preco_promocional)
+              : produtoInfo?.preco ?? null
+
+          return {
+            produtoId: p.produto_id,
+            nome: produtoInfo?.nome ?? 'Produto removido',
+            foto_principal: produtoInfo?.foto_principal ?? null,
+            preco: produtoInfo?.preco ?? null,
+            preco_promocional: precoPromocional,
+            totalClicks: metrics?.totalClicks ?? 0,
+            uniqueVisitors: metrics?.uniqueVisitors ?? 0,
+          }
+        })
+
+        produtos.sort((a, b) => b.totalClicks - a.totalClicks)
+
+        return {
+          bannerId: banner.id,
+          titulo: banner.titulo,
+          produtos,
+        }
+      })
+    }
 
     setStats({
       usuariosOnline: usuariosOnlineRes.count || 0,
@@ -159,6 +289,7 @@ export default function DashboardPage() {
       produtosAtivos: produtosAtivosRes.count || 0,
       totalVisualizacoes,
       topProdutos: (topProdutosRes.data as ProdutoView[]) || [],
+      bannersDestaque,
     })
 
     setLastUpdate(new Date())
@@ -329,6 +460,121 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Performance dos banners de produtos em destaque */}
+      <Card className="border-zinc-800 bg-zinc-900">
+        <CardHeader>
+          <CardTitle className="text-white">Produtos em Destaque • Cliques</CardTitle>
+          <CardDescription className="text-zinc-400">
+            Monitoramento de banners ativos do tipo produtos_destaque
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {stats.bannersDestaque.length === 0 ? (
+            <p className="py-8 text-center text-sm text-zinc-500">
+              Nenhum banner de produtos em destaque está ativo no momento.
+            </p>
+          ) : (
+            <div className="space-y-6">
+              {stats.bannersDestaque.map((banner) => (
+                <div
+                  key={banner.bannerId}
+                  className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">{banner.titulo}</h3>
+                      <p className="text-xs text-zinc-500">
+                        {banner.produtos.length}{' '}
+                        {banner.produtos.length === 1 ? 'produto configurado' : 'produtos configurados'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {banner.produtos.length === 0 ? (
+                    <p className="text-xs text-zinc-500">
+                      Adicione produtos ao banner para começar a medir cliques.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {banner.produtos.map((produto) => {
+                        const precoBase = produto.preco ?? produto.preco_promocional ?? 0
+                        const precoDestaque = produto.preco_promocional ?? produto.preco ?? 0
+                        const temDesconto =
+                          produto.preco !== null &&
+                          produto.preco_promocional !== null &&
+                          produto.preco_promocional < produto.preco
+
+                        return (
+                          <div
+                            key={produto.produtoId}
+                            className="flex items-center gap-4 rounded-md border border-zinc-800/60 bg-zinc-900/80 p-3 md:p-4"
+                          >
+                            {produto.foto_principal ? (
+                              <div className="relative h-12 w-12 overflow-hidden rounded-md">
+                                <Image
+                                  src={produto.foto_principal}
+                                  alt={produto.nome}
+                                  fill
+                                  sizes="48px"
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex h-12 w-12 items-center justify-center rounded-md bg-zinc-800 text-[10px] text-zinc-500">
+                                Sem foto
+                              </div>
+                            )}
+
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-white">{produto.nome}</p>
+                              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                                {temDesconto && (
+                                  <span className="line-through">
+                                    R$ {precoBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  </span>
+                                )}
+                                <span className="font-semibold text-[var(--brand-yellow)]">
+                                  R$ {precoDestaque.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-shrink-0 gap-4">
+                              <div className="text-right">
+                                <p className="text-[11px] uppercase tracking-wide text-zinc-500">Cliques</p>
+                                <p
+                                  className={`text-lg font-semibold ${
+                                    produto.totalClicks > 0 ? 'text-white' : 'text-zinc-500'
+                                  }`}
+                                >
+                                  {produto.totalClicks}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[11px] uppercase tracking-wide text-zinc-500">
+                                  Visitantes
+                                </p>
+                                <p
+                                  className={`text-lg font-semibold ${
+                                    produto.uniqueVisitors > 0 ? 'text-white' : 'text-zinc-500'
+                                  }`}
+                                >
+                                  {produto.uniqueVisitors}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Produtos mais visualizados */}
       <Card className="border-zinc-800 bg-zinc-900">

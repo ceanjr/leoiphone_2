@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { WhatsAppContactButton } from '@/components/shared/whatsapp-contact-button'
 import { CalculadoraParcelas } from '@/components/public/calculadora-parcelas'
+import { ProdutosRelacionados } from '@/components/public/produtos-relacionados'
 import { createClient } from '@/lib/supabase/client'
 import { usePollingTaxas } from '@/hooks/use-polling-taxas'
 import type { ProdutoComCategoria } from '@/types/produto'
@@ -22,6 +23,12 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
   const [imageLoading, setImageLoading] = useState(false)
   const [calculadoraAtiva, setCalculadoraAtiva] = useState(false)
   const [taxas, setTaxas] = useState<TaxasConfig | null>(null)
+  const [produtosRelacionadosSelecionados, setProdutosRelacionadosSelecionados] = useState<
+    string[]
+  >([])
+  const [produtosRelacionadosInfo, setProdutosRelacionadosInfo] = useState<
+    Array<{ id: string; nome: string; slug: string; preco: number }>
+  >([])
 
   // Obter parâmetros de retorno
   const returnParams = searchParams?.get('return') || ''
@@ -37,6 +44,43 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
     produto && precoPromocional && precoPromocional < produto.preco
       ? precoPromocional
       : produto?.preco
+
+  // Ler produtos relacionados da URL ao carregar
+  useEffect(() => {
+    if (!searchParams) return
+
+    const relacionadosParam = searchParams.get('relacionados')
+    if (relacionadosParam) {
+      const ids = relacionadosParam.split(',').filter(Boolean)
+      setProdutosRelacionadosSelecionados(ids)
+    }
+  }, [searchParams])
+
+  // Buscar informações dos produtos relacionados selecionados
+  useEffect(() => {
+    async function loadProdutosRelacionadosInfo() {
+      if (produtosRelacionadosSelecionados.length === 0) {
+        setProdutosRelacionadosInfo([])
+        return
+      }
+
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('produtos')
+          .select('id, nome, slug, preco')
+          .in('id', produtosRelacionadosSelecionados)
+
+        if (data) {
+          setProdutosRelacionadosInfo(data)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar informações dos produtos relacionados:', error)
+      }
+    }
+
+    loadProdutosRelacionadosInfo()
+  }, [produtosRelacionadosSelecionados])
 
   // Polling: callback para atualizar taxas quando mudar no admin
   const handleTaxasUpdate = useCallback((config: { ativo: boolean; taxas: TaxasConfig }) => {
@@ -226,9 +270,28 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
   const productUrl = typeof window !== 'undefined' ? window.location.href : ''
   const codigoProduto = produto.codigo_produto ? `, código ${produto.codigo_produto}` : ''
 
-  const whatsappMessage = `Tenho interesse no ${produto.nome}${codigoProduto}, ${formatPreco(precoAtual || produto.preco)}
+  // Criar URL com produtos relacionados selecionados
+  const urlComProdutosRelacionados = (() => {
+    if (typeof window === 'undefined' || produtosRelacionadosSelecionados.length === 0) {
+      return productUrl
+    }
+    const url = new URL(window.location.href)
+    url.searchParams.set('relacionados', produtosRelacionadosSelecionados.join(','))
+    return url.toString()
+  })()
 
-Link: ${productUrl}`
+  // Construir lista de produtos relacionados para a mensagem
+  const produtosRelacionadosTexto =
+    produtosRelacionadosInfo.length > 0
+      ? `
+
+Produtos adicionais selecionados:
+${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`).join('\n')}`
+      : ''
+
+  const whatsappMessage = `Tenho interesse no ${produto.nome}${codigoProduto}, ${formatPreco(precoAtual || produto.preco)}${produtosRelacionadosTexto}
+
+Link: ${urlComProdutosRelacionados}`
 
   const handleShare = async () => {
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -391,8 +454,8 @@ Link: ${productUrl}`
                   style={{
                     background: 'transparent',
                     border: '1.5px solid var(--brand-yellow)',
-                    padding: '10px 24px',
-                    fontSize: '15px',
+                    padding: '10px 20px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     letterSpacing: '0.01em',
                     color: 'var(--brand-yellow)',
@@ -401,11 +464,11 @@ Link: ${productUrl}`
                     transition: 'all 0.3s ease',
                     cursor: 'pointer',
                   }}
-                  className="hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] hover:shadow-[0_0_20px_rgba(255,204,0,0.4)] hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-34 hover:scale-[1.02] hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] hover:shadow-[0_0_20px_rgba(255,204,0,0.4)] active:scale-[0.98]"
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-12">
+              <div className="flex justify-between sm:flex-row sm:items-center sm:gap-12">
                 <p className="text-4xl font-bold" style={{ color: 'var(--brand-yellow)' }}>
                   {formatPreco(produto.preco)}
                 </p>
@@ -415,19 +478,19 @@ Link: ${productUrl}`
                   produtoId={produto.id}
                   produtoNome={produto.nome}
                   style={{
-                    background: 'transparent',
-                    border: '1.5px solid var(--brand-yellow)',
-                    padding: '10px 24px',
-                    fontSize: '15px',
+                    background: 'var(--brand-yellow)',
+                    border: '1.5px solid var(--brand-black)',
+                    padding: '10px 20px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     letterSpacing: '0.01em',
-                    color: 'var(--brand-yellow)',
+                    color: 'var(--brand-black)',
                     borderRadius: '6px',
                     boxShadow: '0 0 0 0 rgba(255, 204, 0, 0.3)',
                     transition: 'all 0.3s ease',
                     cursor: 'pointer',
                   }}
-                  className="hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] hover:shadow-[0_0_20px_rgba(255,204,0,0.4)] hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-34 opacity-90 hover:scale-[1.02] hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] hover:shadow-[0_0_20px_rgba(255,204,0,0.4)] active:scale-[0.98] sm:w-auto sm:opacity-100"
                 />
               </div>
             )}
@@ -446,6 +509,16 @@ Link: ${productUrl}`
               <h2 className="mb-2 text-xl font-semibold text-white">Descrição</h2>
               <p className="whitespace-pre-line text-zinc-400">{produto.descricao}</p>
             </div>
+          )}
+
+          {/* Produtos Relacionados */}
+          {produto.categoria?.id && (
+            <ProdutosRelacionados
+              produtoId={produto.id}
+              categoriaId={produto.categoria.id}
+              produtosSelecionados={produtosRelacionadosSelecionados}
+              onSelectionChange={setProdutosRelacionadosSelecionados}
+            />
           )}
 
           {/* Especificações */}
