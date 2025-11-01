@@ -58,7 +58,14 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
 
   const downloadImage = async (url: string, filename: string) => {
     try {
-      const response = await fetch(url)
+      // Use API route to proxy image download
+      const apiUrl = `/api/download-image?url=${encodeURIComponent(url)}`
+      const response = await fetch(apiUrl)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const blob = await response.blob()
       const blobUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -70,6 +77,7 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
       URL.revokeObjectURL(blobUrl)
     } catch (error) {
       console.error('Erro ao baixar imagem:', error)
+      throw error
     }
   }
 
@@ -79,22 +87,45 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
     setDownloading(true)
 
     const selectedImagesList = allImages.filter((img) => selectedImages.has(img.url))
+    let successCount = 0
+    let errorCount = 0
 
     for (const [index, image] of selectedImagesList.entries()) {
-      const extension = image.url.split('.').pop()?.split('?')[0] || 'jpg'
-      const slug = produto.slug || produto.nome.toLowerCase().replace(/\s+/g, '-')
-      const filename = `${slug}-${image.label.toLowerCase().replace(/\s+/g, '-')}.${extension}`
+      try {
+        const extension = image.url.split('.').pop()?.split('?')[0] || 'jpg'
+        const slug = produto.slug || produto.nome.toLowerCase().replace(/\s+/g, '-')
+        const filename = `${slug}-${image.label.toLowerCase().replace(/\s+/g, '-')}.${extension}`
 
-      await downloadImage(image.url, filename)
+        await downloadImage(image.url, filename)
+        successCount++
 
-      // Small delay between downloads to avoid browser blocking
-      if (index < selectedImagesList.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 300))
+        // Small delay between downloads to avoid browser blocking
+        if (index < selectedImagesList.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500))
+        }
+      } catch (error) {
+        console.error(`Erro ao baixar imagem ${image.label}:`, error)
+        errorCount++
       }
     }
 
     setDownloading(false)
     setSelectedImages(new Set())
+
+    // Show result notification
+    if (errorCount === 0) {
+      import('sonner').then(({ toast }) => {
+        toast.success(`${successCount} imagem(ns) exportada(s) com sucesso!`)
+      })
+    } else if (successCount > 0) {
+      import('sonner').then(({ toast }) => {
+        toast.warning(`${successCount} imagem(ns) exportada(s), ${errorCount} falharam.`)
+      })
+    } else {
+      import('sonner').then(({ toast }) => {
+        toast.error('Erro ao exportar as imagens. Tente novamente.')
+      })
+    }
   }
 
   return (

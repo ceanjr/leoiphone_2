@@ -21,6 +21,7 @@ import {
 import { ExportImagesDialog } from '@/components/admin/produtos/export-images-dialog'
 import { Badge } from '@/components/ui/badge'
 import { getCorOficial, getContrastColor } from '@/lib/iphone-cores'
+import { BatteryIcon } from '@/components/shared/battery-icon'
 
 function parsePriceInput(value: string): number | null {
   const trimmed = value.trim()
@@ -504,9 +505,10 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                         )}
                         {/* Badge de bateria */}
                         {produto.nivel_bateria && (
-                          <span className="inline-flex rounded-full bg-green-600 px-2 py-0.5 text-xs font-medium text-white border border-green-600">
-                            🔋 {produto.nivel_bateria}%
-                          </span>
+                          <Badge className="flex items-center gap-1.5 bg-zinc-700 px-2 py-0.5 text-xs text-white hover:bg-zinc-600">
+                            <BatteryIcon level={produto.nivel_bateria} />
+                            <span>{produto.nivel_bateria}%</span>
+                          </Badge>
                         )}
                         {/* Badge de cores */}
                         {(() => {
@@ -716,9 +718,10 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                       {/* Badges de cor e bateria */}
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                         {produto.nivel_bateria && (
-                          <span className="inline-flex rounded-full bg-green-600 px-1.5 py-0.5 text-xs font-medium text-white border border-green-600">
-                            🔋 {produto.nivel_bateria}%
-                          </span>
+                          <Badge className="flex items-center gap-1.5 bg-zinc-700 px-1.5 py-0.5 text-xs text-white hover:bg-zinc-600">
+                            <BatteryIcon level={produto.nivel_bateria} />
+                            <span>{produto.nivel_bateria}%</span>
+                          </Badge>
                         )}
                         {(() => {
                           // Obter cores (novo array ou legado cor_oficial)
