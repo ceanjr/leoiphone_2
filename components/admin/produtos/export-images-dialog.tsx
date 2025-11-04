@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from '@/lib/utils/logger'
 import { useState } from 'react'
 import { Download, Image as ImageIcon } from 'lucide-react'
 import {
@@ -76,7 +77,7 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
       document.body.removeChild(link)
       URL.revokeObjectURL(blobUrl)
     } catch (error) {
-      console.error('Erro ao baixar imagem:', error)
+      logger.error('Erro ao baixar imagem:', error)
       throw error
     }
   }
@@ -104,7 +105,7 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
           await new Promise((resolve) => setTimeout(resolve, 500))
         }
       } catch (error) {
-        console.error(`Erro ao baixar imagem ${image.label}:`, error)
+        logger.error(`Erro ao baixar imagem ${image.label}:`, error)
         errorCount++
       }
     }

@@ -1,4 +1,5 @@
 import { toBlob, toPng } from 'html-to-image'
+import { logger } from '@/lib/utils/logger'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import type { ProductCardData } from './product-card-renderer'
@@ -23,7 +24,7 @@ async function forceReloadImages(element: HTMLElement): Promise<void> {
   const images = element.querySelectorAll('img')
   const timestamp = Date.now()
 
-  console.log(`🔄 Forçando reload de ${images.length} imagens com timestamp ${timestamp}`)
+  logger.info(`🔄 Forçando reload de ${images.length} imagens com timestamp ${timestamp}`)
 
   // Criar array de promises para aguardar todas as imagens
   const loadPromises = Array.from(images).map((img, index) => {
@@ -36,11 +37,11 @@ async function forceReloadImages(element: HTMLElement): Promise<void> {
           img.setAttribute('data-original-src', originalSrc)
         }
 
-        console.log(`📸 Imagem ${index}: Carregando...`)
+        logger.info(`📸 Imagem ${index}: Carregando...`)
 
         // Timeout de segurança
         const timeout = setTimeout(() => {
-          console.warn(`⚠️ Timeout na imagem ${index}`)
+          logger.warn(`⚠️ Timeout na imagem ${index}`)
           resolve()
         }, 10000)
 
@@ -64,14 +65,14 @@ async function forceReloadImages(element: HTMLElement): Promise<void> {
             await new Promise<void>((resolveLoad) => {
               img.onload = () => {
                 clearTimeout(timeout)
-                console.log(
+                logger.info(
                   `✅ Imagem ${index} carregada via fetch: ${img.naturalWidth}x${img.naturalHeight}`
                 )
                 resolveLoad()
               }
               img.onerror = () => {
                 clearTimeout(timeout)
-                console.warn(`⚠️ Erro ao carregar imagem ${index} via object URL`)
+                logger.warn(`⚠️ Erro ao carregar imagem ${index} via object URL`)
                 resolveLoad()
               }
               img.src = objectUrl
@@ -80,7 +81,7 @@ async function forceReloadImages(element: HTMLElement): Promise<void> {
             throw new Error(`HTTP ${response.status}`)
           }
         } catch (fetchError) {
-          console.warn(
+          logger.warn(
             `⚠️ Fetch falhou para imagem ${index}, tentando método tradicional:`,
             fetchError
           )
@@ -92,19 +93,19 @@ async function forceReloadImages(element: HTMLElement): Promise<void> {
           await new Promise<void>((resolveLoad) => {
             const onLoad = () => {
               clearTimeout(timeout)
-              console.log(`✅ Imagem ${index} carregada: ${img.naturalWidth}x${img.naturalHeight}`)
+              logger.info(`✅ Imagem ${index} carregada: ${img.naturalWidth}x${img.naturalHeight}`)
               resolveLoad()
             }
 
             const onError = () => {
               clearTimeout(timeout)
-              console.error(`❌ Erro ao carregar imagem ${index}`)
+              logger.error(`❌ Erro ao carregar imagem ${index}`)
               resolveLoad()
             }
 
             if (img.complete && img.naturalHeight > 0) {
               clearTimeout(timeout)
-              console.log(`✅ Imagem ${index} já estava carregada`)
+              logger.info(`✅ Imagem ${index} já estava carregada`)
               resolveLoad()
               return
             }
@@ -121,7 +122,7 @@ async function forceReloadImages(element: HTMLElement): Promise<void> {
         clearTimeout(timeout)
         resolve()
       } catch (error) {
-        console.error(`❌ Erro geral na imagem ${index}:`, error)
+        logger.error(`❌ Erro geral na imagem ${index}:`, error)
         resolve()
       }
     })
@@ -131,7 +132,7 @@ async function forceReloadImages(element: HTMLElement): Promise<void> {
   await Promise.all(loadPromises)
 
   // Delay adicional para garantir renderização
-  console.log('⏳ Aguardando renderização final...')
+  logger.info('⏳ Aguardando renderização final...')
   await new Promise((resolve) => setTimeout(resolve, 1000))
 }
 
@@ -155,7 +156,7 @@ function cleanupImageCache(element: HTMLElement): void {
       img.removeAttribute('data-original-src')
     }
   })
-  console.log('🧹 Cache de imagens limpo')
+  logger.info('🧹 Cache de imagens limpo')
 }
 
 /**
@@ -171,7 +172,7 @@ export async function exportProductCard(
     throw new Error(`Elemento ${elementId} não encontrado`)
   }
 
-  console.log(`\n📦 Iniciando exportação: ${produto.nome} (${produto.codigo_produto})`)
+  logger.info(`\n📦 Iniciando exportação: ${produto.nome} (${produto.codigo_produto})`)
 
   try {
     // 1. Forçar reload das imagens
@@ -179,10 +180,10 @@ export async function exportProductCard(
 
     // 2. Log das dimensões
     const rect = element.getBoundingClientRect()
-    console.log(`📏 Dimensões: ${rect.width}x${rect.height}`)
+    logger.info(`📏 Dimensões: ${rect.width}x${rect.height}`)
 
     // 3. Tentar exportar com toBlob primeiro
-    console.log('🎨 Gerando blob...')
+    logger.info('🎨 Gerando blob...')
 
     let blob: Blob | null = null
 
@@ -195,7 +196,7 @@ export async function exportProductCard(
         includeQueryParams: false, // Importante: não incluir query params para evitar problemas
       })
     } catch (error) {
-      console.error('⚠️ toBlob falhou, tentando toPng:', error)
+      logger.error('⚠️ toBlob falhou, tentando toPng:', error)
 
       // Fallback para toPng
       const dataUrl = await toPng(element, {
@@ -223,14 +224,14 @@ export async function exportProductCard(
       throw new Error(`Blob muito pequeno: ${blob.size} bytes`)
     }
 
-    console.log(`✅ Blob gerado com sucesso: ${(blob.size / 1024).toFixed(2)} KB`)
+    logger.info(`✅ Blob gerado com sucesso: ${(blob.size / 1024).toFixed(2)} KB`)
 
     // 5. Limpar cache para próxima exportação
     cleanupImageCache(element)
 
     return blob
   } catch (error) {
-    console.error('❌ Erro na exportação:', error)
+    logger.error('❌ Erro na exportação:', error)
     cleanupImageCache(element)
     throw error
   }
@@ -244,7 +245,7 @@ export async function exportProductGrid(produtos: ProductCardData[]): Promise<Bl
     throw new Error('A grade precisa ter exatamente 4 produtos')
   }
 
-  console.log('\n🎨 Iniciando exportação de grade 2x2')
+  logger.info('\n🎨 Iniciando exportação de grade 2x2')
 
   // Criar elemento temporário para a grade
   const gridContainer = document.createElement('div')
@@ -322,7 +323,7 @@ export async function exportProductGrid(produtos: ProductCardData[]): Promise<Bl
     // Delay adicional para renderização completa
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    console.log('🎨 Gerando blob da grade...')
+    logger.info('🎨 Gerando blob da grade...')
 
     let blob: Blob | null = null
 
@@ -334,7 +335,7 @@ export async function exportProductGrid(produtos: ProductCardData[]): Promise<Bl
         skipFonts: false,
       })
     } catch (error) {
-      console.error('⚠️ toBlob falhou, tentando toPng:', error)
+      logger.error('⚠️ toBlob falhou, tentando toPng:', error)
 
       const dataUrl = await toPng(gridContainer, {
         cacheBust: true,
@@ -351,7 +352,7 @@ export async function exportProductGrid(produtos: ProductCardData[]): Promise<Bl
       throw new Error('Falha ao gerar blob da grade')
     }
 
-    console.log(`✅ Grade gerada: ${(blob.size / 1024).toFixed(2)} KB`)
+    logger.info(`✅ Grade gerada: ${(blob.size / 1024).toFixed(2)} KB`)
 
     return blob
   } finally {
@@ -608,7 +609,7 @@ export function downloadFile(blob: Blob, fileName: string): void {
   // Limpar URL após uso
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 
-  console.log(`💾 Download iniciado: ${fileName}`)
+  logger.info(`💾 Download iniciado: ${fileName}`)
 }
 
 /**
@@ -618,7 +619,7 @@ export async function exportMultipleCards(
   produtos: ProductCardData[],
   onProgress?: (current: number, total: number) => void
 ): Promise<void> {
-  console.log(`\n🚀 Iniciando exportação em lote: ${produtos.length} produtos\n`)
+  logger.info(`\n🚀 Iniciando exportação em lote: ${produtos.length} produtos\n`)
 
   const zip = new JSZip()
   const folder = zip.folder('produtos-destaque')
@@ -637,27 +638,27 @@ export async function exportMultipleCards(
     }
 
     try {
-      console.log(`\n📦 [${i + 1}/${produtos.length}] ${produto.nome}`)
+      logger.info(`\n📦 [${i + 1}/${produtos.length}] ${produto.nome}`)
 
       // Exportar card
       const blob = await exportProductCard(produto, `product-card-${produto.id}`)
       const fileName = generateFileName(produto)
       folder.file(fileName, blob)
 
-      console.log(`✅ Adicionado ao ZIP: ${fileName}`)
+      logger.info(`✅ Adicionado ao ZIP: ${fileName}`)
 
       // Delay entre exportações (crítico para evitar cache)
       if (i < produtos.length - 1) {
-        console.log('⏳ Aguardando 2s antes do próximo...')
+        logger.info('⏳ Aguardando 2s antes do próximo...')
         await new Promise((resolve) => setTimeout(resolve, 2000))
       }
     } catch (error) {
-      console.error(`❌ Erro ao exportar ${produto.codigo_produto}:`, error)
+      logger.error(`❌ Erro ao exportar ${produto.codigo_produto}:`, error)
       // Continua com os outros produtos ao invés de falhar completamente
     }
   }
 
-  console.log('\n🗜️ Gerando arquivo ZIP...')
+  logger.info('\n🗜️ Gerando arquivo ZIP...')
 
   const zipBlob = await zip.generateAsync({
     type: 'blob',
@@ -665,11 +666,11 @@ export async function exportMultipleCards(
     compressionOptions: { level: 6 },
   })
 
-  console.log(`✅ ZIP gerado: ${(zipBlob.size / 1024 / 1024).toFixed(2)} MB`)
+  logger.info(`✅ ZIP gerado: ${(zipBlob.size / 1024 / 1024).toFixed(2)} MB`)
 
   // Download
   const timestamp = Date.now()
   saveAs(zipBlob, `produtos-destaque-${timestamp}.zip`)
 
-  console.log('🎉 Exportação concluída!')
+  logger.info('🎉 Exportação concluída!')
 }

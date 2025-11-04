@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, TouchEvent } from 'react'
+import { useState, useRef, useEffect, TouchEvent, memo } from 'react'
 import NextImage from 'next/image'
 import { X, ZoomIn, ZoomOut } from 'lucide-react'
 
@@ -11,7 +11,7 @@ interface ImageGalleryProps {
   onIndexChange: (index: number) => void
 }
 
-export function ImageGalleryWithZoom({
+function ImageGalleryWithZoomComponent({
   images,
   productName,
   selectedIndex,
@@ -316,3 +316,6 @@ export function ImageGalleryWithZoom({
     </>
   )
 }
+
+// Memoize para evitar re-renders desnecessários do componente pesado
+export const ImageGalleryWithZoom = memo(ImageGalleryWithZoomComponent)

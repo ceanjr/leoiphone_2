@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from '@/lib/utils/logger'
 import { useState, useEffect } from 'react'
 import { Calculator, Share2, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -139,7 +140,7 @@ export function CalculadoraTaxasDialog({
         toast.success('Simulação baixada!')
       }
     } catch (error) {
-      console.error('❌ Erro ao gerar imagem:', error)
+      logger.error('❌ Erro ao gerar imagem:', error)
       if (error instanceof Error) {
         toast.error(`Erro: ${error.message}`)
       } else {

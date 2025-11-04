@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback } from 'react'
+import { logger } from '@/lib/utils/logger'
+import { useCallback, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Flame } from 'lucide-react'
@@ -8,16 +9,17 @@ import { Badge } from '@/components/ui/badge'
 import { CountdownTimer } from '@/components/ui/countdown-timer'
 import { createClient } from '@/lib/supabase/client'
 
-function isProduction(): boolean {
-  if (typeof window === 'undefined') return false
-  const hostname = window.location.hostname
-  return hostname.includes('leoiphone.com.br') || hostname.includes('vercel.app')
-}
-
-function getVisitorId(): string | null {
-  if (typeof window === 'undefined') return null
+function getOrCreateVisitorId(): string {
+  if (typeof window === 'undefined') return ''
+  
   const stored = localStorage.getItem('visitor_id')
-  return stored || null
+  if (stored) return stored
+  
+  // Criar novo visitor_id (UUID simples)
+  const newVisitorId = `v_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
+  localStorage.setItem('visitor_id', newVisitorId)
+  
+  return newVisitorId
 }
 
 interface ProdutoDestaque {
@@ -42,7 +44,7 @@ interface ProdutosDestaqueProps {
   countdownEndsAt?: string | null
 }
 
-export function ProdutosDestaque({
+function ProdutosDestaqueComponent({
   titulo,
   subtitulo,
   produtos,
@@ -50,24 +52,32 @@ export function ProdutosDestaque({
   countdownEndsAt,
 }: ProdutosDestaqueProps) {
   const trackClick = useCallback(
-    (produtoId: string) => {
-      if (!isProduction()) return
+    async (produtoId: string) => {
+      try {
+        const supabase = createClient()
+        const visitorId = getOrCreateVisitorId()
 
-      const supabase = createClient()
-      const visitorId = getVisitorId()
+        // Type assertion necessária pois banner_produto_clicks não está em database.types.ts
+        const { error } = await (supabase as any)
+          .from('banner_produto_clicks')
+          .insert({
+            banner_id: bannerId,
+            produto_id: produtoId,
+            visitor_id: visitorId,
+          })
 
-      void supabase
-        .from('banner_produto_clicks')
-        .insert({
-          banner_id: bannerId,
-          produto_id: produtoId,
-          visitor_id: visitorId ?? null,
-        } as any)
-        .then(({ error }) => {
-          if (error) {
-            console.error('[BannerClicks] Falha ao registrar clique:', error.message)
-          }
-        })
+        if (error) {
+          logger.error('[BannerClicks] Erro ao registrar clique:', error)
+        } else {
+          logger.info('[BannerClicks] Clique registrado:', {
+            bannerId,
+            produtoId,
+            visitorId,
+          })
+        }
+      } catch (error) {
+        logger.error('[BannerClicks] Exceção ao registrar clique:', error)
+      }
     },
     [bannerId]
   )
@@ -212,3 +222,6 @@ export function ProdutosDestaque({
     </div>
   )
 }
+
+// Memoize para melhor performance em carrosséis
+export const ProdutosDestaque = memo(ProdutosDestaqueComponent)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -32,7 +32,7 @@ interface Produto {
   garantia: string | null
 }
 
-export function BannerCarousel() {
+function BannerCarouselComponent() {
   const [banners, setBanners] = useState<Banner[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -246,3 +246,6 @@ export function BannerCarousel() {
     </div>
   )
 }
+
+// Memoize para evitar re-renders desnecessários
+export const BannerCarousel = memo(BannerCarouselComponent)

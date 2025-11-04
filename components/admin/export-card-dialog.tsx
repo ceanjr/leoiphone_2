@@ -20,6 +20,7 @@ import {
   generateGridFileName,
   downloadFile,
 } from './export-card-utils'
+import { logger } from '@/lib/utils/logger'
 
 interface ExportCardDialogProps {
   open: boolean
@@ -34,13 +35,13 @@ export function ExportCardDialog({ open, onOpenChange, produtos }: ExportCardDia
   const handleExportSingle = async (produto: ProductCardData) => {
     setIsExporting(true)
     try {
-      console.log(`\n🎯 Exportação individual: ${produto.nome}`)
+      logger.info(`\n🎯 Exportação individual: ${produto.nome}`)
       const blob = await exportProductCard(produto, `product-card-${produto.id}`)
       const fileName = generateFileName(produto)
       downloadFile(blob, fileName)
-      console.log('✅ Exportação individual concluída')
+      logger.info('✅ Exportação individual concluída')
     } catch (error) {
-      console.error('❌ Erro ao exportar card:', error)
+      logger.error('❌ Erro ao exportar card:', error)
       alert(
         `Erro ao exportar card: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
       )
@@ -63,7 +64,7 @@ export function ExportCardDialog({ open, onOpenChange, produtos }: ExportCardDia
       alert(`✅ ${produtos.length} cards exportados com sucesso!`)
       onOpenChange(false)
     } catch (error) {
-      console.error('❌ Erro ao exportar cards:', error)
+      logger.error('❌ Erro ao exportar cards:', error)
       alert(
         `Erro ao exportar cards: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
       )
@@ -82,7 +83,7 @@ export function ExportCardDialog({ open, onOpenChange, produtos }: ExportCardDia
     setIsExporting(true)
 
     try {
-      console.log('\n🎯 Exportação em grade 2x2')
+      logger.info('\n🎯 Exportação em grade 2x2')
 
       // Pegar os 4 primeiros produtos
       const produtosParaGrade = produtos.slice(0, 4)
@@ -91,10 +92,10 @@ export function ExportCardDialog({ open, onOpenChange, produtos }: ExportCardDia
       const fileName = generateGridFileName()
       downloadFile(blob, fileName)
 
-      console.log('✅ Grade exportada com sucesso')
+      logger.info('✅ Grade exportada com sucesso')
       alert('✅ Grade 2x2 exportada com sucesso!')
     } catch (error) {
-      console.error('❌ Erro ao exportar grade:', error)
+      logger.error('❌ Erro ao exportar grade:', error)
       alert(
         `Erro ao exportar grade: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
       )
@@ -359,31 +360,31 @@ export function ProdutoCardExport({ produto }: ProdutoCardExportProps) {
     setIsExporting(true)
 
     try {
-      console.log('\n🎯 Exportação via ProdutoCardExport')
-      console.log('📦 Produto:', produto.nome)
+      logger.info('\n🎯 Exportação via ProdutoCardExport')
+      logger.info('📦 Produto:', produto.nome)
 
       // 1. Forçar reload das imagens
       const images = cardRef.current.querySelectorAll('img')
       const timestamp = Date.now()
-      console.log(`🔄 Recarregando ${images.length} imagens...`)
+      logger.info(`🔄 Recarregando ${images.length} imagens...`)
 
       await Promise.all(
         Array.from(images).map((img, index) => {
           return new Promise((resolve) => {
             const timeout = setTimeout(() => {
-              console.warn(`⚠️ Timeout na imagem ${index}`)
+              logger.warn(`⚠️ Timeout na imagem ${index}`)
               resolve(null)
             }, 8000)
 
             const onLoad = () => {
               clearTimeout(timeout)
-              console.log(`✅ Imagem ${index}: ${img.naturalWidth}x${img.naturalHeight}`)
+              logger.info(`✅ Imagem ${index}: ${img.naturalWidth}x${img.naturalHeight}`)
               resolve(null)
             }
 
             const onError = () => {
               clearTimeout(timeout)
-              console.warn(`❌ Erro na imagem ${index}`)
+              logger.warn(`❌ Erro na imagem ${index}`)
               resolve(null)
             }
 
@@ -405,10 +406,10 @@ export function ProdutoCardExport({ produto }: ProdutoCardExportProps) {
       )
 
       // 2. Delay para renderização
-      console.log('⏳ Aguardando renderização...')
+      logger.info('⏳ Aguardando renderização...')
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      console.log('🎨 Gerando blob...')
+      logger.info('🎨 Gerando blob...')
 
       // 3. Gerar blob
       let blob: Blob | null = null
@@ -421,7 +422,7 @@ export function ProdutoCardExport({ produto }: ProdutoCardExportProps) {
           skipFonts: false,
         })
       } catch (error) {
-        console.error('⚠️ toBlob falhou, tentando toPng:', error)
+        logger.error('⚠️ toBlob falhou, tentando toPng:', error)
 
         const dataUrl = await toPng(cardRef.current, {
           cacheBust: true,
@@ -446,7 +447,7 @@ export function ProdutoCardExport({ produto }: ProdutoCardExportProps) {
         throw new Error(`Blob muito pequeno: ${blob.size} bytes`)
       }
 
-      console.log(`✅ Blob: ${(blob.size / 1024).toFixed(2)} KB`)
+      logger.info(`✅ Blob: ${(blob.size / 1024).toFixed(2)} KB`)
 
       // 4. Download
       const url = URL.createObjectURL(blob)
@@ -457,10 +458,10 @@ export function ProdutoCardExport({ produto }: ProdutoCardExportProps) {
 
       setTimeout(() => URL.revokeObjectURL(url), 1000)
 
-      console.log('✅ Exportado com sucesso!')
+      logger.info('✅ Exportado com sucesso!')
       alert('✅ Imagem exportada com sucesso!')
     } catch (error) {
-      console.error('❌ Erro ao exportar:', error)
+      logger.error('❌ Erro ao exportar:', error)
       alert(`Erro ao exportar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     } finally {
       setIsExporting(false)

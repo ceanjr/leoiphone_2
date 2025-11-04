@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from '@/lib/utils/logger'
 import { useState } from 'react'
 
 export interface ProductCardData {
@@ -22,7 +23,7 @@ interface ProductCardRendererProps {
 
 export function ProductCardRenderer({ produto, visible = false }: ProductCardRendererProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
-  console.log(produto)
+  logger.info(produto)
 
   // Criar URL proxied para evitar problemas de CORS
   const getProxiedImageUrl = (url: string) => {

@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from '@/lib/utils/logger'
 import { useEffect, useState } from 'react'
 import { Download, X, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -37,7 +38,7 @@ export function InstallPrompt() {
 
     const handler = (e: Event) => {
       e.preventDefault()
-      console.log('beforeinstallprompt event fired')
+      logger.info('beforeinstallprompt event fired')
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       // Show prompt after 3 seconds
       setTimeout(() => {
@@ -50,7 +51,7 @@ export function InstallPrompt() {
     // For development/testing - show instructions if no prompt after 5 seconds
     const devTimeout = setTimeout(() => {
       if (!deferredPrompt && process.env.NODE_ENV === 'development') {
-        console.log('No beforeinstallprompt event. Showing manual instructions.')
+        logger.info('No beforeinstallprompt event. Showing manual instructions.')
         setShowInstructions(true)
       }
     }, 5000)
@@ -69,7 +70,7 @@ export function InstallPrompt() {
     const { outcome } = await deferredPrompt.userChoice
 
     if (outcome === 'accepted') {
-      console.log('PWA installed')
+      logger.info('PWA installed')
       setIsInstalled(true)
     }
 

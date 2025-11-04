@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from '@/lib/utils/logger'
 import { useState, useRef, useEffect } from 'react'
 import { Download, Smartphone, Flame, Sparkles } from 'lucide-react'
 import {
@@ -69,7 +70,7 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
         }
         setBannerPromo(null)
       } catch (error) {
-        console.error('Erro ao verificar banner:', error)
+        logger.error('Erro ao verificar banner:', error)
         setBannerPromo(null)
       }
     }
@@ -105,31 +106,31 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
     setExporting(true)
 
     try {
-      console.log('🔍 Iniciando exportação do story...')
+      logger.info('🔍 Iniciando exportação do story...')
 
       // Aguardar imagens carregarem completamente
       const images = storyRef.current.querySelectorAll('img')
-      console.log(`📸 Encontradas ${images.length} imagens`)
+      logger.info(`📸 Encontradas ${images.length} imagens`)
 
       await Promise.all(
         Array.from(images).map((img, index) => {
           if (img.complete && img.naturalHeight !== 0) {
-            console.log(`✅ Imagem ${index} já carregada`)
+            logger.info(`✅ Imagem ${index} já carregada`)
             return Promise.resolve()
           }
           return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
-              console.warn(`⏱️ Timeout na imagem ${index}`)
+              logger.warn(`⏱️ Timeout na imagem ${index}`)
               reject(new Error('Image load timeout'))
             }, 10000)
             img.onload = () => {
               clearTimeout(timeout)
-              console.log(`✅ Imagem ${index} carregou: ${img.naturalWidth}x${img.naturalHeight}`)
+              logger.info(`✅ Imagem ${index} carregou: ${img.naturalWidth}x${img.naturalHeight}`)
               resolve(null)
             }
             img.onerror = () => {
               clearTimeout(timeout)
-              console.warn(`❌ Erro ao carregar imagem ${index}`)
+              logger.warn(`❌ Erro ao carregar imagem ${index}`)
               resolve(null)
             }
           })
@@ -137,14 +138,14 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
       )
 
       // Delay adicional para garantir renderização
-      console.log('⏳ Aguardando renderização...')
+      logger.info('⏳ Aguardando renderização...')
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      console.log('🎨 Gerando blob...')
+      logger.info('🎨 Gerando blob...')
 
       // Log das dimensões do elemento
       const rect = storyRef.current.getBoundingClientRect()
-      console.log(`📐 Dimensões do elemento: ${rect.width}x${rect.height}`)
+      logger.info(`📐 Dimensões do elemento: ${rect.width}x${rect.height}`)
 
       // Usar toBlob com tratamento de erro robusto
       let blob: Blob | null = null
@@ -159,11 +160,11 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
           height: 1920,
         })
 
-        console.log('✅ toBlob executou sem erro')
+        logger.info('✅ toBlob executou sem erro')
       } catch (error) {
-        console.error('❌ Erro no toBlob:', error)
+        logger.error('❌ Erro no toBlob:', error)
         // Tentar com toPng como fallback
-        console.log('🔄 Tentando com toPng como fallback...')
+        logger.info('🔄 Tentando com toPng como fallback...')
 
         const dataUrl = await toPng(storyRef.current, {
           cacheBust: false,
@@ -184,11 +185,11 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
       }
 
       if (!blob) {
-        console.error('❌ Blob é null após toBlob')
+        logger.error('❌ Blob é null após toBlob')
         throw new Error('Falha ao criar imagem - toBlob retornou null')
       }
 
-      console.log(`✅ Blob gerado: ${blob.size} bytes, tipo: ${blob.type}`)
+      logger.info(`✅ Blob gerado: ${blob.size} bytes, tipo: ${blob.type}`)
 
       // Validar tamanho mínimo do blob (1KB)
       if (blob.size < 1024) {
@@ -207,13 +208,13 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
       // Limpar URL depois de um tempo
       setTimeout(() => URL.revokeObjectURL(url), 1000)
 
-      console.log('✅ Story exportado com sucesso!')
+      logger.info('✅ Story exportado com sucesso!')
 
       import('sonner').then(({ toast }) => {
         toast.success('Story exportado com sucesso!')
       })
     } catch (error) {
-      console.error('❌ Erro ao exportar story:', error)
+      logger.error('❌ Erro ao exportar story:', error)
       import('sonner').then(({ toast }) => {
         toast.error(`Erro ao exportar story: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
       })

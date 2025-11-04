@@ -1,3 +1,4 @@
+import { logger } from '@/lib/utils/logger'
 import { toBlob, toPng } from 'html-to-image'
 import type { ParcelaData } from './calculadora-export-renderer'
 
@@ -14,17 +15,17 @@ export async function exportSimulacao(
     throw new Error('Elemento calculadora-export não encontrado')
   }
 
-  console.log(`🔍 Exportando simulação: R$ ${valor}`)
+  logger.info(`🔍 Exportando simulação: R$ ${valor}`)
 
   // Delay para garantir renderização
-  console.log('⏳ Aguardando renderização...')
+  logger.info('⏳ Aguardando renderização...')
   await new Promise(resolve => setTimeout(resolve, 500))
 
-  console.log('🎨 Gerando blob...')
+  logger.info('🎨 Gerando blob...')
   
   // Log das dimensões do elemento
   const rect = element.getBoundingClientRect()
-  console.log(`📐 Dimensões do elemento: ${rect.width}x${rect.height}`)
+  logger.info(`📐 Dimensões do elemento: ${rect.width}x${rect.height}`)
   
   // Usar toBlob com tratamento de erro robusto
   let blob: Blob | null = null
@@ -38,11 +39,11 @@ export async function exportSimulacao(
       width: 800,
     })
     
-    console.log('✅ toBlob executou sem erro')
+    logger.info('✅ toBlob executou sem erro')
   } catch (error) {
-    console.error('❌ Erro no toBlob:', error)
+    logger.error('❌ Erro no toBlob:', error)
     // Tentar com toPng como fallback
-    console.log('🔄 Tentando com toPng como fallback...')
+    logger.info('🔄 Tentando com toPng como fallback...')
     
     const dataUrl = await toPng(element, {
       cacheBust: false,
@@ -62,11 +63,11 @@ export async function exportSimulacao(
   }
 
   if (!blob) {
-    console.error('❌ Blob é null após toBlob')
+    logger.error('❌ Blob é null após toBlob')
     throw new Error('Falha ao criar imagem - toBlob retornou null')
   }
 
-  console.log(`✅ Blob gerado: ${blob.size} bytes, tipo: ${blob.type}`)
+  logger.info(`✅ Blob gerado: ${blob.size} bytes, tipo: ${blob.type}`)
 
   // Validar tamanho mínimo do blob (1KB)
   if (blob.size < 1024) {
@@ -91,7 +92,7 @@ export function downloadSimulacao(blob: Blob, filename?: string): void {
   // Limpar URL depois de um tempo
   setTimeout(() => URL.revokeObjectURL(url), 1000)
   
-  console.log('✅ Simulação baixada com sucesso!')
+  logger.info('✅ Simulação baixada com sucesso!')
 }
 
 /**
@@ -119,10 +120,10 @@ export async function shareSimulacao(
       text: `Simulação de parcelamento para R$ ${valor}`,
       files: [file],
     })
-    console.log('✅ Simulação compartilhada com sucesso!')
+    logger.info('✅ Simulação compartilhada com sucesso!')
     return true
   } catch (error) {
-    console.log('[Export] Erro no compartilhamento:', error)
+    logger.info('[Export] Erro no compartilhamento:', error)
     return false
   }
 }

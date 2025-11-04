@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Smartphone, HardDrive, Star, Wrench, Send } from 'lucide-react'
@@ -29,7 +29,7 @@ interface TrocaModalProps {
   produtoNome: string
 }
 
-export function TrocaModal({ open, onClose, onSubmit, produtoNome }: TrocaModalProps) {
+function TrocaModalComponent({ open, onClose, onSubmit, produtoNome }: TrocaModalProps) {
   const {
     register,
     handleSubmit,
@@ -274,3 +274,6 @@ export function TrocaModal({ open, onClose, onSubmit, produtoNome }: TrocaModalP
     </BottomSheet>
   )
 }
+
+// Memoize para lazy loading eficiente
+export const TrocaModal = memo(TrocaModalComponent)

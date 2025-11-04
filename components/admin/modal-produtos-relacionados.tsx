@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from '@/lib/utils/logger'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Settings, RotateCcw, Search, Check } from 'lucide-react'
@@ -98,7 +99,7 @@ export function ModalProdutosRelacionados({
         setFilteredProdutos(produtosData)
       }
     } catch (error) {
-      console.error('Erro ao carregar dados:', error)
+      logger.error('Erro ao carregar dados:', error)
       toast.error('Erro ao carregar dados')
     } finally {
       setLoading(false)
@@ -140,7 +141,7 @@ export function ModalProdutosRelacionados({
         toast.error(error || 'Erro ao salvar configuração')
       }
     } catch (error) {
-      console.error('Erro ao salvar:', error)
+      logger.error('Erro ao salvar:', error)
       toast.error('Erro ao salvar configuração')
     } finally {
       setSaving(false)
@@ -163,7 +164,7 @@ export function ModalProdutosRelacionados({
         toast.error(error || 'Erro ao resetar')
       }
     } catch (error) {
-      console.error('Erro ao resetar:', error)
+      logger.error('Erro ao resetar:', error)
       toast.error('Erro ao resetar produtos relacionados')
     } finally {
       setResetting(false)

@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from '@/lib/utils/logger'
 import { useEffect, useMemo, useState, memo, type ChangeEvent, type KeyboardEvent } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -330,7 +331,7 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
         [produto.id]: parsedPrice,
       }))
     } catch (error) {
-      console.error(error)
+      logger.error(error)
       toast.error('Erro inesperado ao atualizar preço')
     } finally {
       setSavingPriceId(null)

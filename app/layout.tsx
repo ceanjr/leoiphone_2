@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Toaster } from '@/components/ui/sonner'
 import { Analytics } from '@vercel/analytics/react'
-import { ServiceWorkerManager } from '@/components/service-worker-manager'
+import { ServiceWorkerManager } from '@/components/shared/service-worker-manager'
 import './globals.css'
 
 export const metadata: Metadata = {

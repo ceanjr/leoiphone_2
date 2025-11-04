@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from '@/lib/utils/logger'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -138,7 +139,7 @@ export function ProductFormDialog({
           if ((!coresMigradas || coresMigradas.length === 0) && produto.cor_oficial) {
             // Produto antigo com cor_oficial, migrar para array cores
             coresMigradas = [produto.cor_oficial]
-            console.log(`Migrando cor_oficial "${produto.cor_oficial}" para array cores`)
+            logger.info(`Migrando cor_oficial "${produto.cor_oficial}" para array cores`)
           }
 
           setFormData({
@@ -178,7 +179,7 @@ export function ProductFormDialog({
 
         setIsInitialised(true)
       } catch (error) {
-        console.error(error)
+        logger.error(error)
         toast.error('Não foi possível carregar os dados do produto')
         onClose()
       } finally {
@@ -288,7 +289,7 @@ export function ProductFormDialog({
 
       // Debug: ver o que está sendo enviado
       if (process.env.NODE_ENV === 'development') {
-        console.log('[ProductForm] Salvando produto:', {
+        logger.info('[ProductForm] Salvando produto:', {
           nome: payload.nome,
           descricao: payload.descricao,
           cores: payload.cores,
@@ -316,7 +317,7 @@ export function ProductFormDialog({
         )
 
         if (process.env.NODE_ENV === 'development') {
-          console.log('[ProductForm] Salvando custos:', {
+          logger.info('[ProductForm] Salvando custos:', {
             produtoId: produtoIdFinal,
             totalCustos: custos.length,
             custosValidos: custosValidos.length,
@@ -332,14 +333,14 @@ export function ProductFormDialog({
         )
 
         if (custosError) {
-          console.error('❌ Erro ao salvar custos:', custosError)
+          logger.error('❌ Erro ao salvar custos:', custosError)
           toast.error(`Produto salvo, mas erro ao salvar custos: ${custosError}`)
           setIsLoading(false)
           return
         }
 
         if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Custos salvos com sucesso:', custosSalvos)
+          logger.info('✅ Custos salvos com sucesso:', custosSalvos)
         }
       }
 
@@ -348,7 +349,7 @@ export function ProductFormDialog({
       onCompleted?.()
       onClose()
     } catch (error) {
-      console.error(error)
+      logger.error(error)
       toast.error('Erro inesperado ao salvar o produto')
       setIsLoading(false)
     }

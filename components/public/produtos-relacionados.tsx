@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import NextImage from 'next/image'
 import Link from 'next/link'
 import { Tag, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+import { logger } from '@/lib/utils/logger'
 import type { ProdutoRelacionado } from '@/types/produto'
 import { getDescontoColor } from '@/lib/utils/desconto-colors'
 
@@ -15,7 +16,7 @@ interface ProdutosRelacionadosProps {
   onSelectionChange?: (selectedIds: string[]) => void
 }
 
-export function ProdutosRelacionados({
+function ProdutosRelacionadosComponent({
   produtoId,
   categoriaId,
   produtosSelecionados = [],
@@ -28,23 +29,23 @@ export function ProdutosRelacionados({
   useEffect(() => {
     async function loadProdutosRelacionados() {
       try {
-        console.log('[ProdutosRelacionados] Carregando...', { produtoId, categoriaId })
+        logger.info('[ProdutosRelacionados] Carregando...', { produtoId, categoriaId })
 
         const response = await fetch(
           `/api/produtos-relacionados?produtoId=${produtoId}&categoriaId=${categoriaId}`
         )
 
         if (!response.ok) {
-          console.error('[ProdutosRelacionados] Erro HTTP:', response.status)
+          logger.error('[ProdutosRelacionados] Erro HTTP:', response.status)
           setLoading(false)
           return
         }
 
         const data = await response.json()
-        console.log('[ProdutosRelacionados] Produtos carregados:', data.produtos?.length || 0)
+        logger.info('[ProdutosRelacionados] Produtos carregados:', data.produtos?.length || 0)
         setProdutos(data.produtos || [])
       } catch (error) {
-        console.error('[ProdutosRelacionados] Erro ao carregar:', error)
+        logger.error('[ProdutosRelacionados] Erro ao carregar:', error)
       } finally {
         setLoading(false)
       }
@@ -276,3 +277,6 @@ export function ProdutosRelacionados({
     </div>
   )
 }
+
+// Memoize para evitar re-renders desnecessários
+export const ProdutosRelacionados = memo(ProdutosRelacionadosComponent)

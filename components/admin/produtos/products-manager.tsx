@@ -1,5 +1,6 @@
 'use client'
 
+import { logger } from '@/lib/utils/logger'
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Download } from 'lucide-react'
@@ -166,7 +167,7 @@ export function ProdutosManager({
 
       toast.success(`${produtos.length} produtos exportados com sucesso!`)
     } catch (error) {
-      console.error('Erro ao exportar CSV:', error)
+      logger.error('Erro ao exportar CSV:', error)
       toast.error('Erro ao exportar produtos para CSV')
     }
   }, [produtos])
