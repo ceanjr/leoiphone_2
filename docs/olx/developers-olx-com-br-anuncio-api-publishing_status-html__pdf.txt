@@ -1,0 +1,614 @@
+Integração
+
+Importação de Anúncios
+Anúncios Publicados
+Listagem de Publicação
+Consulta de status da Importação
+Requisição de Status
+Retorno Esperado
+Exemplos de retorno:
+
+Portal de integração OLX
+/ Documentação para a Importação de Anúncios da OLX
+/ Documentação da API de Integração de Anúncios da OLX
+/ Consulta de status da Importação
+
+Consulta de status da
+Importação
+Por volta de 2 min
+
+Consulta do status de Anúncios
+Publicados
+
+Destaques do anúncio
+Integração de Leads
+Integração de Chat
+Webhooks
+New
+
+Histórico Veicular
+
+New
+
+Renovação de Anúncios
+
+FAQ
+
+Depois da importação, os anúncios vão para a fila de
+importação da OLX para serem processados. Essa
+consulta retorna a confirmação de inserção do
+anúncio com sucesso, bem como informa e detalha
+um eventual erro no processo de importação de um
+anúncio.
+Essa consulta de importação, lembrando que é o
+status daquela versão do anúncio por importação, ou
+seja, para uma atualização feita do anuncio, é criado
+um outro token. Caso o cliente OLX faça uma deleção
+ou alteração na OLX, não será refletido no mesmo
+token. Utilize a Consulta do status de Anúncios
+Publicados
+
+Requisição de Status
+A URL usada para fazer a requisição do arquivo JSON:
+https://apps.olx.com.br/autoupload/import/{token}. O
+a ser inserido no final da URL é o retorno
+
+token
+
+mencionado na importação.
+A requisição feita para esta URL deve conter o
+access_token de cada anunciante, usando o método
+POST :
+
+3
+
+Como posso te ajudar?
+1
+2
+
+JSON
+
+{
+"access_token": "37812426ab5961d8a029b22
+
+3
+
+}
+
+Retorno Esperado
+O formato do retorno de nosso servidor será do tipo
+JSON, que contém a seguinte estrutura:
+Parâmetro
+
+autoupload_status
+
+ads
+
+Valores
+
+done ,
+pending
+
+array[]
+
+Descrição
+Retorna o
+status dos
+anúncios.
+done :
+todos os
+anúncios
+foram
+processados
+(inseridos ou
+deletados)
+pending :
+Pelo menos
+um anúncio
+ainda está
+na fila de
+importação
+Este
+parâmetro
+detalha o
+resultado de
+publicação
+de
+determinado
+anúncio,
+seguindo a
+descrição da
+tabela
+abaixo.
+
+A tabela abaixo detalha o retorno do parâmetro ads ,
+que de fato explica o que houve com o anúncio em si:
+Parâmetro
+
+Valores
+
+D
+
+Parâmetro
+
+Valores
+
+D
+Re
+st
+an
+p
+
+an
+se
+p
+e
+
+an
+es
+er
+q
+
+status
+
+pending , error , queued ,
+accepted , refused
+
+an
+in
+se
+at
+b
+a
+
+o
+fo
+C
+o
+se
+de
+si
+q
+an
+de
+r
+
+an
+nã
+at
+O
+ut
+i
+
+operation
+
+insert , delete
+
+in
+an
+d
+
+de
+an
+Exemplos:
+
+ERROR_IMAGE_TOO_SMALL ,
+
+ERROR_DOWNLOADING_IMAGE ,
+
+Parâmetro
+
+Valores
+
+D
+
+ERROR_UPLOADING_IMAGE ,
+
+M
+de
+so
+oc
+
+NOT_ENOUGH_AD_SLOTS ,
+
+REFUSED_SUSPECT_CATEGORY ,
+
+message
+
+REFUSED_SUSPECT_REGION ,
+REFUSED_DENOUNCE ,
+
+REFUSED_SUSPECT_AUTOS ,
+
+REFUSED_SUSPECT_DUPLICATES ,
+REFUSED_GENERIC
+
+Re
+id
+an
+ca
+m
+te
+
+string
+
+list_id
+
+ap
+U
+an
+
+string
+
+url
+
+ge
+1
+
+ATENÇÃO, é uma sugestão de armazenar esse
+
+campo list_id qualquer outra funcionalidade por
+API é o valor a ser utilizado.
+2 Para um anúncio novo, a url é gerada porém pode
+
+levar alguns minutos para aparecer no site.
+
+Exemplos de retorno:
+Para um anúncio inserido ou editado, que ainda não
+entrou na fila de ativação:
+json
+
+1
+
+{
+
+2
+
+"autoupload_status": "pending",
+
+3
+
+"ads": {
+"1111111111": {
+
+4
+5
+
+"status": "pending",
+
+6
+
+"operation": "insert"
+}
+
+7
+8
+
+}
+
+9
+
+}
+
+Para um anúncio editado antes de ter sido ativado:
+json
+
+1
+
+{
+
+2
+
+"autoupload_status": "pending",
+
+3
+
+"ads": {
+"1111111111": {
+
+4
+5
+
+"status": "queued",
+
+6
+
+"operation": "edit",
+
+7
+
+"list_id": "8000000",
+
+8
+
+"message": []
+}
+
+9
+}
+
+10
+11
+
+}
+
+Para anúncio inserido e aguardando ativação:
+json
+
+1
+
+{
+
+2
+
+"autoupload_status": "pending",
+
+3
+
+"ads": {
+"1111111111": {
+
+4
+5
+
+"status": "queued",
+
+6
+
+"operation": "insert",
+
+7
+
+"message": []
+}
+
+8
+}
+
+9
+10
+
+}
+
+Para um anúncio inserido com sucesso:
+json
+
+1
+
+{
+
+2
+
+"autoupload_status": "done",
+
+3
+
+"ads": {
+"1111111111": {
+
+4
+5
+
+"status": "accepted",
+
+6
+
+"operation": "insert",
+
+7
+
+"message": [],
+
+8
+
+"url": "http://www.olx.com.br/vi/
+}
+
+9
+}
+
+10
+11
+
+}
+
+Para um anúncio que não foi inserido por algum
+motivo:
+json
+
+1
+
+{
+
+2
+
+"autoupload_status": "done",
+
+3
+
+"ads": {
+"1111111111": {
+
+4
+5
+
+"status": "refused",
+
+6
+
+"operation": "insert",
+
+7
+
+"message": [
+{
+
+8
+
+"error": "REFUSED_SUSPECT
+
+9
+}
+
+10
+]
+
+11
+}
+
+12
+}
+
+13
+14
+
+}
+
+Para um anúncio editado com sucesso:
+json
+
+1
+
+{
+
+2
+
+"autoupload_status": "done",
+
+3
+
+"ads": {
+"1111111111": {
+
+4
+5
+
+"status": "accept",
+
+6
+
+"operation": "edit",
+
+7
+
+"list_id": "8000000",
+
+8
+
+"message": [],
+
+9
+
+"url": "http://www.olx.com.br/vi/
+}
+
+10
+}
+
+11
+12
+
+}
+
+Para um anúncio que teve uma edição recusada:
+json
+
+1
+
+{
+
+2
+
+"autoupload_status": "done",
+
+3
+
+"ads": {
+
+4
+
+"1111111111": {
+
+5
+
+"status": "refused",
+
+6
+
+"operation": "edit",
+
+7
+
+"message": [
+
+{
+
+8
+
+"error": "REFUSED_SUSPECT
+
+9
+}
+
+10
+]
+
+11
+}
+
+12
+}
+
+13
+14
+
+}
+
+Para um anúncio removido com sucesso:
+json
+
+1
+
+{
+
+2
+
+"autoupload_status": "done",
+
+3
+
+"ads": {
+"1111111111": {
+
+4
+5
+
+"status": "accepted",
+
+6
+
+"operation": "delete",
+
+7
+
+"message": []
+}
+
+8
+}
+
+9
+10
+
+}
+
+Última atualização: 10/09/2024, 09:15:28
+
+Anterior
+
+Listagem de Publicação
+Próximo
+
+Consulta do status de Anúncios Publicados
+
+

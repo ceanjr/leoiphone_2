@@ -1,0 +1,1011 @@
+'use client'
+
+import { useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { ProdutoCard } from '@/components/public/produto-card'
+import { BannerCarousel } from '@/components/public/banner-carousel'
+import { FiltersDrawer, type ProductFilters } from '@/components/public/filters-drawer'
+import { ActiveFilters } from '@/components/public/active-filters'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { X, SlidersHorizontal } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { usePollingProdutos } from '@/hooks/use-polling-produtos'
+import { useAuth } from '@/hooks/use-auth'
+import {
+  extrairArmazenamento,
+  extrairModeloECapacidade,
+  ordenarProdutosPorModelo,
+} from '@/lib/utils/produto-helpers'
+import {
+  BuscaForm,
+  ViewToggle,
+  VerMaisButton,
+  CategoriaFilterBar,
+  ProdutosPorCategoria,
+} from '@/components/public/home'
+import type { Produto, ProdutoComCategoria, ProdutoCusto } from '@/types/produto'
+
+interface Categoria {
+  id: string
+  nome: string
+  slug: string
+  ordem: number
+}
+
+interface Secao {
+  id: string
+  tipo: 'destaques' | 'promocoes' | 'lancamentos'
+  titulo: string
+  subtitulo: string | null
+  produtos: Produto[]
+}
+
+interface ProdutosAgrupados {
+  categoria: Categoria
+  produtos: Produto[]
+}
+
+interface BannerProdutoDestaqueRow {
+  produto_id?: string
+}
+
+interface BannerAtivoRow {
+  produtos_destaque?: BannerProdutoDestaqueRow[] | null
+  tipo: 'banner' | 'produtos_destaque'
+}
+
+interface SecaoHomeRow {
+  id: string
+  tipo: Secao['tipo']
+  titulo: string
+  subtitulo: string | null
+}
+
+interface ProdutoSecaoRow {
+  ordem: number
+  produto: Produto | null
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <HomePageContent />
+    </Suspense>
+  )
+}
+
+function HomePageContent() {
+  const [produtos, setProdutos] = useState<Produto[]>([])
+  const [produtosAgrupados, setProdutosAgrupados] = useState<ProdutosAgrupados[]>([])
+  const [secoes, setSecoes] = useState<Secao[]>([])
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [categoriasExibidas, setCategoriasExibidas] = useState(1) // Quantas categorias mostrar
+  const [todasCategorias, setTodasCategorias] = useState<ProdutosAgrupados[]>([]) // Todos os produtos agrupados
+  const [produtosEmDestaqueIds, setProdutosEmDestaqueIds] = useState<string[]>([]) // IDs dos produtos em destaque nos banners
+  const [custosPorProduto, setCustosPorProduto] = useState<Record<string, ProdutoCusto[]>>({}) // Custos indexados por produto_id
+
+  // Hook de autenticação
+  const { isAuthenticated } = useAuth()
+
+  // Filtros
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  // Ref para o input de busca
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Inicializar estados diretamente dos searchParams
+  const initialBusca = searchParams?.get('busca') ?? ''
+  const initialCategoria = searchParams?.get('categoria') ?? 'todas'
+  const initialViewMode = (searchParams?.get('view') ?? 'list') as 'grid' | 'list'
+
+  const [busca, setBusca] = useState(initialBusca)
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string>(initialCategoria)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(initialViewMode)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [dropdownSide, setDropdownSide] = useState<'top' | 'bottom'>('bottom')
+  const [advancedFilters, setAdvancedFilters] = useState<ProductFilters>({
+    priceMin: null,
+    priceMax: null,
+    batteryMin: null,
+    colors: [],
+    storage: [],
+  })
+
+  // Detect available space and adjust dropdown direction
+  const selectTriggerRef = useRef<HTMLButtonElement>(null)
+
+  const checkDropdownSpace = useCallback(() => {
+    if (!selectTriggerRef.current) return
+
+    const triggerRect = selectTriggerRef.current.getBoundingClientRect()
+    const spaceBelow = window.innerHeight - triggerRect.bottom
+    const viewportHeight = window.innerHeight
+    const spacePercentage = (spaceBelow / viewportHeight) * 100
+
+    // Se o espaço abaixo for menor que 40vh, abrir para cima
+    setDropdownSide(spacePercentage < 40 ? 'top' : 'bottom')
+  }, [])
+
+  // Load filters from localStorage on mount
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('product-filters')
+    if (savedFilters) {
+      try {
+        setAdvancedFilters(JSON.parse(savedFilters))
+      } catch (e) {
+        console.error('Failed to parse saved filters', e)
+      }
+    }
+  }, [])
+
+  // Sincronizar filtros quando searchParams mudar (para navegação)
+  useEffect(() => {
+    if (!searchParams) return
+    const paramBusca = searchParams.get('busca') ?? ''
+    const paramCategoria = searchParams.get('categoria') ?? 'todas'
+    const paramViewMode = searchParams.get('view') ?? 'list'
+
+    setBusca(paramBusca)
+    setCategoriaFiltro(paramCategoria)
+    setViewMode(paramViewMode as 'grid' | 'list')
+  }, [searchParams])
+
+  // Prevenir autofocus no input de busca (mobile)
+  useEffect(() => {
+    const preventFocus = () => {
+      if (searchInputRef.current && document.activeElement === searchInputRef.current) {
+        searchInputRef.current.blur()
+      }
+    }
+
+    // Forçar blur imediatamente
+    preventFocus()
+
+    // Tentar novamente em múltiplos intervalos
+    const timers = [
+      setTimeout(preventFocus, 50),
+      setTimeout(preventFocus, 100),
+      setTimeout(preventFocus, 200),
+      setTimeout(preventFocus, 500),
+    ]
+
+    // Event listener para prevenir focus
+    const handleFocus = (e: FocusEvent) => {
+      if (e.target === searchInputRef.current) {
+        searchInputRef.current?.blur()
+      }
+    }
+
+    // Adicionar listener apenas durante a montagem inicial
+    document.addEventListener('focus', handleFocus, true)
+
+    const cleanupTimer = setTimeout(() => {
+      document.removeEventListener('focus', handleFocus, true)
+    }, 1000)
+
+    return () => {
+      timers.forEach(clearTimeout)
+      clearTimeout(cleanupTimer)
+      document.removeEventListener('focus', handleFocus, true)
+    }
+  }, [])
+
+  // Polling: sincronização de produtos via verificação periódica
+  const handleProdutosUpdate = useCallback(
+    (produtosAtualizados: ProdutoComCategoria[]) => {
+      console.log('[HomePage] Produtos atualizados via polling:', produtosAtualizados.length)
+
+      // Filtrar produtos em destaque
+      let produtosFiltrados = produtosAtualizados.filter(
+        (p) => !produtosEmDestaqueIds.includes(p.id)
+      )
+
+      // Aplicar filtro de categoria (se houver)
+      if (categoriaFiltro !== 'todas') {
+        produtosFiltrados = produtosFiltrados.filter((p) => p.categoria_id === categoriaFiltro)
+      }
+
+      // Aplicar filtro de busca (se houver)
+      if (busca.trim()) {
+        const buscaLower = busca.toLowerCase()
+        produtosFiltrados = produtosFiltrados.filter(
+          (p) =>
+            p.nome.toLowerCase().includes(buscaLower) ||
+            p.descricao?.toLowerCase().includes(buscaLower) ||
+            p.codigo_produto?.toLowerCase().includes(buscaLower)
+        )
+      }
+
+      // Ordenar por modelo iPhone
+      const produtosOrdenados = ordenarProdutosPorModelo(produtosFiltrados as Produto[])
+
+      // Agrupar por categoria mantendo a estrutura atual
+      const grupos: { [key: string]: ProdutosAgrupados } = {}
+
+      produtosOrdenados.forEach((produto: any) => {
+        const catId = produto.categoria?.id || 'sem-categoria'
+        if (!grupos[catId]) {
+          grupos[catId] = {
+            categoria: produto.categoria || {
+              id: 'sem-categoria',
+              nome: 'Outros Produtos',
+              slug: 'outros',
+              ordem: 9999,
+            },
+            produtos: [],
+          }
+        }
+        grupos[catId].produtos.push(produto)
+      })
+
+      // Ordenar cada grupo internamente
+      Object.values(grupos).forEach((grupo) => {
+        grupo.produtos = ordenarProdutosPorModelo(grupo.produtos)
+      })
+
+      // Converter para array e ordenar
+      const gruposArray = Object.values(grupos).sort(
+        (a, b) => (a.categoria.ordem || 9999) - (b.categoria.ordem || 9999)
+      )
+
+      // Atualizar dados SEM resetar categoriasExibidas
+      setTodasCategorias(gruposArray)
+      setProdutos(produtosOrdenados as Produto[])
+
+      // Atualizar apenas as categorias que estão sendo exibidas
+      setProdutosAgrupados((prevAgrupados) => {
+        const currentCount = prevAgrupados.length
+        return gruposArray.slice(0, Math.max(currentCount, 1))
+      })
+    },
+    [produtosEmDestaqueIds, categoriaFiltro, busca]
+  )
+
+  // Ativar polling de produtos
+  usePollingProdutos({
+    enabled: true,
+    onUpdate: handleProdutosUpdate,
+  })
+
+  useEffect(() => {
+    async function loadData() {
+      const supabase = createClient()
+
+      // Carregar categorias
+      const { data: cats } = await supabase
+        .from('categorias')
+        .select('id, nome, slug, ordem')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true })
+
+      if (cats) setCategorias(cats)
+
+      // Carregar IDs de produtos em destaque de banners ativos
+      const { data: bannersAtivos } = await supabase
+        .from('banners')
+        .select('produtos_destaque, tipo')
+        .eq('ativo', true)
+        .eq('tipo', 'produtos_destaque')
+
+      if (bannersAtivos && bannersAtivos.length > 0) {
+        const idsDestaque: string[] = []
+        const ativos = (bannersAtivos ?? []) as BannerAtivoRow[]
+        ativos.forEach((banner) => {
+          ;(banner.produtos_destaque ?? []).forEach((entry) => {
+            const produtoId = entry?.produto_id
+            if (produtoId && !idsDestaque.includes(produtoId)) {
+              idsDestaque.push(produtoId)
+            }
+          })
+        })
+        setProdutosEmDestaqueIds(idsDestaque)
+      }
+
+      // Carregar seções de destaque (promoções, lançamentos, etc)
+      const { data: secoesData } = await supabase
+        .from('secoes_home')
+        .select('id, tipo, titulo, subtitulo')
+        .eq('ativo', true)
+        .order('ordem', { ascending: true })
+
+      if (secoesData) {
+        const secoesBase = (secoesData ?? []) as SecaoHomeRow[]
+        const secoesComProdutos = await Promise.all(
+          secoesBase.map(async (secao) => {
+            const { data: produtosSecao } = await supabase
+              .from('produtos_secoes')
+              .select(
+                `
+                ordem,
+                produto:produtos(*)
+              `
+              )
+              .eq('secao_id', secao.id)
+              .order('ordem', { ascending: true })
+
+            const produtos = ((produtosSecao ?? []) as ProdutoSecaoRow[])
+              .map((ps) => ps.produto)
+              .filter((p): p is Produto => Boolean(p && p.ativo && !p.deleted_at))
+
+            return {
+              ...secao,
+              produtos,
+            }
+          })
+        )
+
+        setSecoes(secoesComProdutos.filter((s) => s.produtos.length > 0))
+      }
+
+      // Carregar todos os produtos
+      await loadProdutos()
+    }
+
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Buscar custos quando o usuário estiver autenticado
+  useEffect(() => {
+    async function loadCustos() {
+      if (!isAuthenticated) {
+        setCustosPorProduto({})
+        return
+      }
+
+      const supabase = createClient()
+
+      // Buscar todos os custos de uma vez
+      const { data: custosData, error } = await supabase
+        .from('produtos_custos')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      if (!error && custosData) {
+        // Agrupar custos por produto_id
+        const custosAgrupados: Record<string, ProdutoCusto[]> = {}
+
+        ;(custosData as ProdutoCusto[]).forEach((custo) => {
+          if (!custosAgrupados[custo.produto_id]) {
+            custosAgrupados[custo.produto_id] = []
+          }
+          custosAgrupados[custo.produto_id].push(custo)
+        })
+
+        setCustosPorProduto(custosAgrupados)
+      }
+    }
+
+    loadCustos()
+  }, [isAuthenticated])
+
+  async function loadProdutos() {
+    setLoading(true)
+    setCategoriasExibidas(1)
+
+    const supabase = createClient()
+
+    // Carregar TODOS os produtos (sem paginação)
+    let query = supabase
+      .from('produtos')
+      .select(
+        `
+        *,
+        categoria:categorias(id, nome, slug, ordem)
+      `
+      )
+      .eq('ativo', true)
+      .is('deleted_at', null)
+
+    // Filtrar por categoria
+    if (categoriaFiltro !== 'todas') {
+      query = query.eq('categoria_id', categoriaFiltro)
+    }
+
+    const { data, error } = await query
+
+    if (!error && data) {
+      // Filtrar produtos em destaque dos banners
+      let produtosFiltrados = data.filter((p: any) => !produtosEmDestaqueIds.includes(p.id))
+
+      // Filtrar por busca (cliente)
+      if (busca.trim()) {
+        const buscaLower = busca.toLowerCase()
+        produtosFiltrados = produtosFiltrados.filter(
+          (p: any) =>
+            p.nome.toLowerCase().includes(buscaLower) ||
+            p.descricao?.toLowerCase().includes(buscaLower) ||
+            p.codigo_produto?.toLowerCase().includes(buscaLower)
+        )
+      }
+
+      // Ordenar por modelo iPhone
+      let produtosOrdenados: any[] = ordenarProdutosPorModelo(produtosFiltrados as Produto[])
+
+      // Agrupar por categoria
+      const grupos: { [key: string]: ProdutosAgrupados } = {}
+
+      produtosOrdenados.forEach((produto: any) => {
+        const catId = produto.categoria?.id || 'sem-categoria'
+        if (!grupos[catId]) {
+          grupos[catId] = {
+            categoria: produto.categoria || {
+              id: 'sem-categoria',
+              nome: 'Outros Produtos',
+              slug: 'outros',
+              ordem: 9999,
+            },
+            produtos: [],
+          }
+        }
+        grupos[catId].produtos.push(produto)
+      })
+
+      // Ordenar cada grupo internamente por modelo
+      Object.values(grupos).forEach((grupo) => {
+        grupo.produtos = ordenarProdutosPorModelo(grupo.produtos)
+      })
+
+      // Converter para array e ordenar por ordem da categoria
+      const gruposArray = Object.values(grupos).sort(
+        (a, b) => (a.categoria.ordem || 9999) - (b.categoria.ordem || 9999)
+      )
+
+      // Salvar todos os grupos
+      setTodasCategorias(gruposArray)
+
+      // Calcular quantas categorias são necessárias para mostrar pelo menos 20 produtos
+      const MINIMO_PRODUTOS_INICIAIS = 20
+      let totalProdutos = 0
+      let categoriasIniciais = 0
+
+      for (let i = 0; i < gruposArray.length; i++) {
+        totalProdutos += gruposArray[i].produtos.length
+        categoriasIniciais++
+        if (totalProdutos >= MINIMO_PRODUTOS_INICIAIS) {
+          break
+        }
+      }
+
+      // Exibir categorias suficientes para ter pelo menos 20 produtos
+      setCategoriasExibidas(categoriasIniciais)
+      setProdutosAgrupados(gruposArray.slice(0, categoriasIniciais))
+      setProdutos(produtosOrdenados as Produto[])
+    }
+
+    setLoading(false)
+  }
+
+  const carregarMais = useCallback(() => {
+    setLoadingMore(true)
+
+    // Calcular quantas categorias adicionar para mostrar mais ~20 produtos
+    const PRODUTOS_POR_PAGINA = 20
+    let totalProdutosAdicionais = 0
+    let categoriasAdicionais = 0
+
+    for (let i = categoriasExibidas; i < todasCategorias.length; i++) {
+      totalProdutosAdicionais += todasCategorias[i].produtos.length
+      categoriasAdicionais++
+      if (totalProdutosAdicionais >= PRODUTOS_POR_PAGINA) {
+        break
+      }
+    }
+
+    const novaQuantidade = categoriasExibidas + categoriasAdicionais
+    setCategoriasExibidas(novaQuantidade)
+
+    // Atualizar produtos agrupados com mais categorias
+    setProdutosAgrupados(todasCategorias.slice(0, novaQuantidade))
+
+    setLoadingMore(false)
+  }, [categoriasExibidas, todasCategorias])
+
+  const temMaisProdutos = categoriasExibidas < todasCategorias.length
+
+  // Criar string de query params para retornar ao catálogo
+  const returnParams = useMemo(() => {
+    const params = new URLSearchParams()
+    if (busca.trim()) params.set('busca', busca.trim())
+    if (categoriaFiltro !== 'todas') params.set('categoria', categoriaFiltro)
+    if (viewMode !== 'list') params.set('view', viewMode)
+    return params.toString()
+  }, [busca, categoriaFiltro, viewMode])
+
+  // Optimization: Load products efficiently
+  useEffect(() => {
+    void loadProdutos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoriaFiltro, busca, produtosEmDestaqueIds])
+
+  // Apply advanced filters to products
+  const filteredProdutos = useMemo(() => {
+    let filtered = produtos
+
+    // Price filter
+    if (advancedFilters.priceMin !== null) {
+      filtered = filtered.filter((p) => p.preco >= advancedFilters.priceMin!)
+    }
+    if (advancedFilters.priceMax !== null) {
+      filtered = filtered.filter((p) => p.preco <= advancedFilters.priceMax!)
+    }
+
+    // Battery filter
+    if (advancedFilters.batteryMin !== null) {
+      filtered = filtered.filter(
+        (p) => p.nivel_bateria !== null && p.nivel_bateria >= advancedFilters.batteryMin!
+      )
+    }
+
+    // Color filter
+    if (advancedFilters.colors.length > 0) {
+      filtered = filtered.filter((p) => {
+        if (!p.cores || p.cores.length === 0) return false
+        return p.cores.some((cor) => advancedFilters.colors.includes(cor))
+      })
+    }
+
+    // Storage filter
+    if (advancedFilters.storage.length > 0) {
+      filtered = filtered.filter((p) => {
+        const storage = extrairArmazenamento(p.nome)
+        if (storage === 0) return false
+        const storageStr = storage >= 1024 ? `${storage / 1024}TB` : `${storage}GB`
+        return advancedFilters.storage.includes(storageStr)
+      })
+    }
+
+    return filtered
+  }, [produtos, advancedFilters])
+
+  // Get available colors and storage from filtered products
+  const availableColors = useMemo(() => {
+    const colors = new Set<string>()
+    produtos.forEach((p) => {
+      if (p.cores && p.cores.length > 0) {
+        p.cores.forEach((cor) => colors.add(cor))
+      }
+    })
+    return Array.from(colors).sort()
+  }, [produtos])
+
+  const availableStorage = useMemo(() => {
+    const storages = new Set<string>()
+    produtos.forEach((p) => {
+      const storage = extrairArmazenamento(p.nome)
+      if (storage > 0) {
+        const storageStr = storage >= 1024 ? `${storage / 1024}TB` : `${storage}GB`
+        storages.add(storageStr)
+      }
+    })
+    return Array.from(storages).sort((a, b) => {
+      const aVal = parseInt(a)
+      const bVal = parseInt(b)
+      return aVal - bVal
+    })
+  }, [produtos])
+
+  const priceRange = useMemo(() => {
+    if (produtos.length === 0) return { min: 0, max: 10000 }
+    const prices = produtos.map((p) => p.preco)
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+    }
+  }, [produtos])
+
+  // Regroup filtered products by category
+  const filteredProdutosAgrupados = useMemo(() => {
+    const grupos: Record<string, ProdutosAgrupados> = {}
+
+    filteredProdutos.forEach((produto) => {
+      const categoria = categorias.find((c) => c.id === produto.categoria_id)
+      if (!categoria) return
+
+      if (!grupos[categoria.id]) {
+        grupos[categoria.id] = {
+          categoria,
+          produtos: [],
+        }
+      }
+
+      grupos[categoria.id].produtos.push(produto)
+    })
+
+    // Sort produtos within each group
+    Object.values(grupos).forEach((grupo) => {
+      grupo.produtos = ordenarProdutosPorModelo(grupo.produtos)
+    })
+
+    return Object.values(grupos).sort(
+      (a, b) => (a.categoria.ordem || 9999) - (b.categoria.ordem || 9999)
+    )
+  }, [filteredProdutos, categorias])
+
+  // Handle filter changes
+  const handleFiltersChange = useCallback((newFilters: ProductFilters) => {
+    setAdvancedFilters(newFilters)
+    localStorage.setItem('product-filters', JSON.stringify(newFilters))
+  }, [])
+
+  const handleRemoveFilter = useCallback(
+    (filterType: keyof ProductFilters, value?: string | number) => {
+      setAdvancedFilters((prev) => {
+        const updated = { ...prev }
+        if (filterType === 'priceMin') updated.priceMin = null
+        if (filterType === 'priceMax') updated.priceMax = null
+        if (filterType === 'batteryMin') updated.batteryMin = null
+        if (filterType === 'colors' && typeof value === 'string') {
+          updated.colors = prev.colors.filter((c) => c !== value)
+        }
+        if (filterType === 'storage' && typeof value === 'string') {
+          updated.storage = prev.storage.filter((s) => s !== value)
+        }
+        localStorage.setItem('product-filters', JSON.stringify(updated))
+        return updated
+      })
+    },
+    []
+  )
+
+  const handleClearAllFilters = useCallback(() => {
+    const cleared: ProductFilters = {
+      priceMin: null,
+      priceMax: null,
+      batteryMin: null,
+      colors: [],
+      storage: [],
+    }
+    setAdvancedFilters(cleared)
+    localStorage.setItem('product-filters', JSON.stringify(cleared))
+  }, [])
+
+  // Atualizar URL com os filtros atuais
+  const updateURLWithFilters = useCallback(
+    (filters: { busca?: string; categoria?: string; view?: string }) => {
+      const params = new URLSearchParams()
+
+      if (filters.busca && filters.busca.trim()) {
+        params.set('busca', filters.busca.trim())
+      }
+      if (filters.categoria && filters.categoria !== 'todas') {
+        params.set('categoria', filters.categoria)
+      }
+      if (filters.view && filters.view !== 'list') {
+        params.set('view', filters.view)
+      }
+
+      const queryString = params.toString()
+      const newURL = queryString ? `/?${queryString}` : '/'
+      router.replace(newURL, { scroll: false })
+    },
+    [router]
+  )
+
+  const limparFiltros = useCallback(() => {
+    setBusca('')
+    setCategoriaFiltro('todas')
+    setViewMode('list')
+    router.replace(pathname)
+  }, [pathname, router])
+
+  // Handlers que atualizam estado e URL
+  const handleCategoriaChange = useCallback(
+    (value: string) => {
+      setCategoriaFiltro(value)
+      updateURLWithFilters({
+        busca,
+        categoria: value,
+        view: viewMode,
+      })
+    },
+    [busca, viewMode, updateURLWithFilters]
+  )
+
+  const handleViewModeChange = useCallback(
+    (value: 'grid' | 'list') => {
+      setViewMode(value)
+      updateURLWithFilters({
+        busca,
+        categoria: categoriaFiltro,
+        view: value,
+      })
+    },
+    [busca, categoriaFiltro, updateURLWithFilters]
+  )
+
+  // Optimization: Memoize section config to prevent recalculation
+  const getSecaoConfig = useCallback((tipo: Secao['tipo']) => {
+    switch (tipo) {
+      case 'destaques':
+        return {
+          icon: '⭐',
+          borderColor: 'var(--brand-yellow)',
+          bgGradient:
+            'linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(234, 179, 8, 0.02) 100%)',
+          badge: 'Destaque',
+          badgeColor: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+        }
+      case 'promocoes':
+        return {
+          icon: '🔥',
+          borderColor: '#ef4444',
+          bgGradient:
+            'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.02) 100%)',
+          badge: 'Promoção',
+          badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30',
+        }
+      case 'lancamentos':
+        return {
+          icon: '🚀',
+          borderColor: '#3b82f6',
+          bgGradient:
+            'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.02) 100%)',
+          badge: 'Novo',
+          badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+        }
+      default:
+        return {
+          icon: '⭐',
+          borderColor: 'var(--brand-yellow)',
+          bgGradient:
+            'linear-gradient(135deg, rgba(234, 179, 8, 0.08) 0%, rgba(234, 179, 8, 0.02) 100%)',
+          badge: 'Destaque',
+          badgeColor: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+        }
+    }
+  }, [])
+
+  return (
+    <>
+      <div className="container mx-auto px-4 pt-8 pb-2" suppressHydrationWarning>
+        {/* Catálogo */}
+        <div className="mb-8 text-center" suppressHydrationWarning>
+          <h1 className="mb-2 text-center text-4xl font-bold text-(--brand-yellow)">
+            Catálogo Completo
+          </h1>
+          <p className="text-center text-zinc-400">Explore todos os nossos produtos disponíveis</p>
+        </div>
+
+        {/* Carrossel de Banners */}
+        <BannerCarousel />
+
+        {/* Barra de Busca */}
+        <div className="mb-4">
+          <BuscaForm
+            busca={busca}
+            onBuscaChange={setBusca}
+            onBuscaSubmit={(event) => {
+              event.preventDefault()
+              const trimmed = busca.trim()
+              const params = new URLSearchParams(searchParams?.toString())
+              if (trimmed) {
+                params.set('busca', trimmed)
+              } else {
+                params.delete('busca')
+              }
+              const query = params.toString()
+              const target = query ? `/?${query}` : '/'
+              const currentQuery = searchParams?.toString() ?? ''
+              if (pathname === '/' && query === currentQuery) return
+              router.replace(target)
+            }}
+            onLimpar={() => setBusca('')}
+            inputRef={searchInputRef}
+          />
+        </div>
+
+        {/* Active Filters - DISABLED */}
+        {/* <ActiveFilters
+          filters={advancedFilters}
+          onRemoveFilter={handleRemoveFilter}
+          onClearAll={handleClearAllFilters}
+          productCount={filteredProdutos.length}
+        /> */}
+
+        {/* Label do Filtro - Desktop only, outside sticky */}
+      </div>
+      <div className="container mx-auto hidden px-4 md:block">
+        <Label className="mb-2 block text-sm font-bold text-zinc-300">Filtrar por Categoria</Label>
+      </div>
+
+      {/* Filtro de Categoria Sticky - FORA do container */}
+      <div className="sticky top-14 z-10 mb-8 border-b border-zinc-800 bg-black py-3 sm:top-16 md:static md:mb-0 md:border-b-0 md:py-0">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CategoriaFilterBar
+              categoriaFiltro={categoriaFiltro}
+              categorias={categorias}
+              onCategoriaChange={handleCategoriaChange}
+              dropdownSide={dropdownSide}
+              triggerRef={selectTriggerRef}
+              onOpenChange={(open) => {
+                if (open) {
+                  checkDropdownSpace()
+                }
+              }}
+            />
+
+            {/* Advanced Filters Button & Clear Filters - DISABLED */}
+            {/* <div className="flex gap-2">
+              <Button
+                onClick={() => setFiltersOpen(true)}
+                variant="outline"
+                size="sm"
+                className="relative min-h-[44px] gap-2 border-zinc-800 bg-zinc-900 text-white hover:bg-zinc-800"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="hidden sm:inline">Filtros</span>
+                {(advancedFilters.priceMin !== null ||
+                  advancedFilters.priceMax !== null ||
+                  advancedFilters.batteryMin !== null ||
+                  advancedFilters.colors.length > 0 ||
+                  advancedFilters.storage.length > 0) && (
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-yellow-500 text-xs font-bold text-black">
+                    {(advancedFilters.priceMin !== null || advancedFilters.priceMax !== null
+                      ? 1
+                      : 0) +
+                      (advancedFilters.batteryMin !== null ? 1 : 0) +
+                      advancedFilters.colors.length +
+                      advancedFilters.storage.length}
+                  </span>
+                )}
+              </Button>
+            </div> */}
+
+            {/* Limpar Filtros */}
+            {(busca.trim() || categoriaFiltro !== 'todas') && (
+              <Button
+                variant="outline"
+                onClick={limparFiltros}
+                size="sm"
+                className="min-h-[44px] bg-black sm:w-auto"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Limpar
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 pb-8">
+        {/* Seções de Destaque (Promoções, Lançamentos, etc) */}
+        {secoes.map((secao) => {
+          const config = getSecaoConfig(secao.tipo)
+
+          return (
+            <section
+              key={secao.id}
+              className="mb-12 rounded-lg border-2 p-6"
+              style={{
+                borderColor: config.borderColor,
+                background: config.bgGradient,
+              }}
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{config.icon}</span>
+                  <div>
+                    <h2 className="text-2xl font-bold text-[var(--brand-yellow)]">
+                      {secao.titulo}
+                    </h2>
+                    {secao.subtitulo && <p className="text-sm text-zinc-400">{secao.subtitulo}</p>}
+                  </div>
+                </div>
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${config.badgeColor}`}
+                >
+                  {config.badge}
+                </span>
+              </div>
+              <div
+                className={
+                  viewMode === 'list'
+                    ? 'flex flex-col gap-3'
+                    : 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'
+                }
+              >
+                {secao.produtos.map((produto, index) => (
+                  <ProdutoCard
+                    key={produto.id}
+                    produto={produto}
+                    view={viewMode}
+                    priority={index < 3}
+                    returnParams={returnParams}
+                    custos={custosPorProduto[produto.id] || []}
+                    isAuthenticated={isAuthenticated}
+                  />
+                ))}
+              </div>
+            </section>
+          )
+        })}
+
+        {/* Resultados e Toggle de Visualização */}
+        <div className="mb-4 flex items-center justify-between">
+          <div className="text-sm text-zinc-400">
+            {loading
+              ? 'Carregando...'
+              : `${produtos.length} produto(s) encontrado(s) • Exibindo ${produtosAgrupados.reduce((acc, g) => acc + g.produtos.length, 0)} produtos`}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-zinc-500 sm:inline">Visualização:</span>
+            <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
+          </div>
+        </div>
+
+        {/* Grid de Produtos Agrupados por Categoria */}
+        {loading ? (
+          <div className="flex h-64 items-center justify-center">
+            <div className="text-center">
+              <div className="relative mx-auto h-8 w-8 animate-pulse">
+                <div className="h-full w-full rounded-full border-4 border-zinc-700 opacity-40 brightness-150 grayscale" />
+              </div>
+              <p className="mt-4 text-sm text-zinc-400">Carregando produtos...</p>
+            </div>
+          </div>
+        ) : produtos.length > 0 ? (
+          <>
+            <ProdutosPorCategoria
+              produtosAgrupados={produtosAgrupados}
+              viewMode={viewMode}
+              returnParams={returnParams}
+              custosPorProduto={custosPorProduto}
+              isAuthenticated={isAuthenticated}
+            />
+
+            <VerMaisButton
+              onClick={carregarMais}
+              loading={loadingMore}
+              temMaisProdutos={temMaisProdutos}
+            />
+          </>
+        ) : (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-12 text-center">
+            <p className="text-zinc-400">Nenhum produto encontrado com esses filtros.</p>
+            <Button onClick={limparFiltros} variant="outline" className="mt-4">
+              Limpar Filtros
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Filters Drawer - DISABLED */}
+      {/* <FiltersDrawer
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        filters={advancedFilters}
+        onFiltersChange={handleFiltersChange}
+        availableColors={availableColors}
+        availableStorage={availableStorage}
+        priceRange={priceRange}
+      /> */}
+
+      {/* Floating Filter Button - Mobile Only - DISABLED */}
+      {/* <button
+        onClick={() => setFiltersOpen(true)}
+        className="fixed right-6 bottom-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 text-black shadow-xl transition-transform hover:scale-110 active:scale-95 md:hidden"
+      >
+        <SlidersHorizontal className="h-6 w-6" />
+        {(advancedFilters.priceMin !== null ||
+          advancedFilters.priceMax !== null ||
+          advancedFilters.batteryMin !== null ||
+          advancedFilters.colors.length > 0 ||
+          advancedFilters.storage.length > 0) && (
+          <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ring-2 ring-black">
+            {(advancedFilters.priceMin !== null || advancedFilters.priceMax !== null ? 1 : 0) +
+              (advancedFilters.batteryMin !== null ? 1 : 0) +
+              advancedFilters.colors.length +
+              advancedFilters.storage.length}
+          </span>
+        )}
+      </button> */}
+    </>
+  )
+}

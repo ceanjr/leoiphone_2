@@ -1,0 +1,108 @@
+export interface OlxConfig {
+  id?: string
+  client_id: string
+  client_secret: string
+  access_token: string
+  refresh_token?: string
+  sync_enabled: boolean
+  auto_sync: boolean
+  sync_interval_minutes: number
+  token_expires_at?: string
+  last_sync_at?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface OlxAnuncio {
+  id: string
+  produto_id: string
+  olx_ad_id: string | null
+  titulo: string
+  descricao: string | null
+  preco: number
+  url_imagem: string | null
+  categoria_olx: string | null
+  status: 'pendente' | 'processando' | 'anunciado' | 'ativo' | 'erro' | 'pausado' | 'removido'
+  erro_mensagem: string | null
+  sincronizado_em: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface OlxAnuncioComProduto extends Omit<OlxAnuncio, 'status'> {
+  status: 'pendente' | 'processando' | 'anunciado' | 'ativo' | 'erro' | 'pausado' | 'removido'
+  produto_nome: string
+  codigo_produto: string
+  produto_slug: string
+  produto_imagem: string | null
+  produto_ativo: boolean
+  produto_estoque: number
+  produto_nivel_bateria: number | null
+  categoria_nome: string | null
+}
+
+export interface OlxSyncLog {
+  id: string
+  anuncio_id: string | null
+  acao: 'criar' | 'atualizar' | 'remover' | 'pausar' | 'reativar'
+  status: 'sucesso' | 'erro'
+  mensagem: string | null
+  request_payload: any
+  response_data: any
+  created_at: string
+}
+
+export interface CriarAnuncioOlxInput {
+  produto_id: string
+  titulo?: string
+  descricao?: string
+  categoria_olx?: string
+}
+
+export interface AtualizarAnuncioOlxInput {
+  anuncio_id: string
+  titulo?: string
+  descricao?: string
+  preco?: number
+}
+
+// Estrutura de anúncio OLX conforme API (formato correto)
+export interface OlxAdvert {
+  access_token: string
+  ad_list: Array<{
+    id: string // ID único do anúncio
+    operation: 'insert' | 'delete' // Operação a realizar
+    category: number // ID da categoria (3060 para celulares)
+    subject: string // Título (min 2, max 90 caracteres)
+    body: string // Descrição
+    phone?: number // Telefone de contato
+    type: string // 's' para venda
+    price: number // Preço em reais (não centavos!)
+    zipcode: string // CEP (formato: 12345678 ou 12345-678)
+    params?: Record<string, string> // Parâmetros específicos da categoria
+    images?: string[] // URLs das imagens
+  }>
+}
+
+export interface OlxCategory {
+  id: number
+  name: string
+  parent_id: number | null
+  has_children: boolean
+}
+
+export interface OlxApiResponse {
+  data?: any
+  error?: {
+    code: number | string
+    message: string
+    details?: any
+  }
+  status?: number
+}
+
+export interface OlxAdvertResponse {
+  uuid?: string // ID do anúncio criado
+  url?: string // URL do anúncio
+  status?: string // status do anúncio
+}

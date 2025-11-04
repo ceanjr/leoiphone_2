@@ -1,0 +1,7 @@
+[
+  {
+    "origin": ["http://localhost:3001", "https://www.leoiphone.com.br"],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]

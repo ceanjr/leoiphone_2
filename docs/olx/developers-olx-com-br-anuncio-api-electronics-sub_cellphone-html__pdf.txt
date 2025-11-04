@@ -1,0 +1,320 @@
+Integração
+
+Importação de Anúncios
+via API
+Autenticação na API olx.com.br
+Importação de Anúncios
+(Inserção/Edição/Deleção)
+Categorias de Autos
+Categorias de Celulares e
+Telefonia
+Celulares e Smartphones
+Subcategoria Celulares e
+Smartphones
+
+Listagem de Marcas e
+Modelos de Celulares e
+Smartphones na OLX
+
+Portal de integração OLX
+/ Documentação para a Importação de Anúncios da OLX
+/ Documentação da API de Integração de Anúncios da OLX
+/ Categoria de Celulares e Telefonia
+/ Celulares e Smartphones
+
+Celulares e
+Smartphones
+Por volta de 1 min
+
+Subcategoria Celulares e Smartphones
+Para esta subcategoria, é necessário preencher o
+parâmetro category com o valor 3060 .
+
+Categorias de Imóveis
+
+Além disso, há parâmetros específicos para esta
+
+Categorias de Agro e
+
+subcategoria,
+
+Indústria
+
+parâmetro params e preenchidos conforme a tabela
+
+via XML
+via JSON
+
+que
+
+devem
+
+constar
+
+dentro
+
+a seguir:
+Parâmetro
+
+Anúncios Publicados
+
+Valor
+1 para 512MB
+
+Destaques do anúncio
+
+2 para 1GB
+
+Integração de Leads
+
+4 para 4GB
+
+3 para 2GB
+5 para 8GB
+
+Integração de Chat
+Webhooks
+New
+
+Histórico Veicular
+
+New
+
+Renovação de Anúncios
+
+FAQ
+
+do
+
+6 para 16GB
+cellphone_storage
+
+7 para 32GB
+8 para 64GB
+
+9 para 128GB
+10 para
+
+256GB
+11 para
+512GB
+12 para 1TB
+1 para
+
+Como posso te ajudar?Perfeita (95%
+
+até 100%)
+2 para Boa
+
+3
+
+via JSON
+
+A ú
+
+i
+
+Parâmetro
+
+P bli d
+electronics_battery_health
+
+Valor
+(80% até 94%)
+3 para OK
+(60% até 79%)
+4 para Ruim
+(40% até 59%)
+5 para Muito
+Ruim (abaixo
+de 39%)
+
+electronics_brand
+
+electronics_model
+
+1 para Preto
+2 para Prata
+
+3 para Branco
+4 para Verde
+5 para
+
+electronics_color
+
+Amarelo
+6 para
+Vermelho
+7 para Rosa
+8 para
+Dourado
+9 para Azul
+10 para Cinza
+11 para
+Laranja
+12 para Roxo
+13 para
+Bronze
+14 para Outro
+
+via JSON
+
+A ú
+
+i
+
+Parâmetro
+
+Valor
+
+P bli d
+
+1 para Novo
+
+2 para Usado
+
+electronics_condition
+
+- Excelente
+3 para Usado
+- Bom
+4 para Usado
+Recondicionado
+5 para Usado
+- Com defeito
+
+Notas
+1 Se você não quer enviar um parâmetro não-
+
+obrigatório, deixe de enviar o parâmetro no
+payload. Se você enviar o parâmetro com valor
+vazio ou 0 , a operação vai falhar (a menos, é
+claro, que o valor 0 seja esperado para esse
+parâmetro).
+
+Aqui está um exemplo de JSON para inserção ou
+edição de anúncios na subcategoria
+
+Celulares
+
+e
+
+Smartphones :
+json
+
+1
+
+{
+
+2
+
+"access_token": "ca18abccaadd282490e75173
+
+3
+
+"ad_list": [
+
+4
+
+{
+
+5
+
+"id": "5555555555",
+
+6
+
+"operation": "insert",
+
+7
+
+"category": 3060,
+
+8
+
+"subject": "Celular à Venda Super
+
+9
+
+"body": "Descrição do anúncio\nNo
+
+10
+
+"phone": 2155555555,
+
+11
+
+"type": "s",
+
+12
+
+"price": 1000,
+
+13
+
+"zipcode": "24230090",
+
+14
+
+"params": {
+
+15
+
+"electronics_brand": "2",
+
+16
+
+"electronics_model": "3",
+
+17
+
+"electronics_condition": "5",
+
+18
+
+"cellphone_storage": "2",
+
+19
+
+"electronics_color": "2",
+
+20
+
+"electronics_battery_health":
+
+21
+
+},
+
+22
+
+"images": [
+
+23
+
+"http://www.a.com/image1.png"
+
+24
+
+"http://www.a.com/image2.png"
+]
+
+25
+}
+
+26
+]
+
+27
+28
+
+}
+
+Última atualização: 04/09/2024, 04:07:50
+
+Próximo
+
+Listagem de Marcas e Modelos de Celulares e
+Smartphones na OLX
+
+

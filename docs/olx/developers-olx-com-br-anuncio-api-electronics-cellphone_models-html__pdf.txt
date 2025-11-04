@@ -1,0 +1,400 @@
+Integração
+
+Importação de Anúncios
+via API
+Autenticação na API olx.com.br
+Importação de Anúncios
+(Inserção/Edição/Deleção)
+Categorias de Autos
+Categorias de Celulares e
+Telefonia
+Celulares e Smartphones
+Listagem de Marcas e
+Modelos de Celulares e
+Smartphones na OLX
+
+Portal de integração OLX
+/ Documentação para a Importação de Anúncios da OLX
+/ Documentação da API de Integração de Anúncios da OLX
+/ Categoria de Celulares e Telefonia
+/
+Listagem de Marcas e Modelos de Celulares e
+Smartphones na OLX
+
+Listagem de Marcas e
+Modelos de Celulares e
+Smartphones na OLX
+Por volta de 1 min
+
+Celulares e Smartphones
+
+Categorias de Imóveis
+
+Os endpoints disponíveis para consultar detalhes de
+
+Categorias de Agro e
+
+marcas e modelos para Celulares e Smartphones na
+
+Indústria
+via XML
+via JSON
+
+Anúncios Publicados
+Destaques do anúncio
+
+OLX são os seguintes:
+Subcategoria
+
+Descrição
+
+Celulares e
+Smartphones
+
+Marcas de
+celulares e
+smartphones
+disponíveis
+
+https://apps.olx
+
+Celulares e
+Smartphones
+
+Modelos de
+celulares e
+smartphones
+de uma
+determinada
+marca
+
+https://apps.olx
+
+Integração de Leads
+Integração de Chat
+Webhooks
+New
+
+Histórico Veicular
+
+New
+
+Renovação de Anúncios
+
+FAQ
+
+Nosso servidor deve receber a requisição com
+método do tipo
+
+POST , sendo que o formato do
+
+arquivo a ser enviado para nosso servidor deverá ser
+do tipo JSON.
+
+3
+
+Como posso te ajudar?
+
+Celulares e Smartphones
+
+Marcas de Celulares e Smartphones
+Disponíveis
+Exemplo
+
+de
+
+chamada:
+
+POST
+
+https://apps.olx.com.br/autoupload/cellphone_info:
+Utilizando o cURL:
+sh
+
+1
+
+$ curl -A Mozila -L -X POST 'https://apps.olx
+"access_token": "token"
+
+2
+3
+
+}'
+
+Utilizando postman/insomnia:
+json
+
+1
+
+{
+"access_token":"token"
+
+2
+3
+
+}
+
+Exemplo de retorno:
+json
+
+1
+
+{
+"data": {
+
+2
+3
+
+"APPLE": 2,
+
+4
+
+"SAMSUNG": 3,
+
+5
+
+"XIAOMI": 4,
+
+6
+
+"MOTOROLA": 5,
+
+7
+
+"LENOVO": 6,
+
+8
+
+"LG": 7,
+
+9
+
+"ASUS": 8,
+
+10
+
+"SONY": 9,
+
+11
+
+"HUAWEI": 10,
+
+12
+
+"INFINIX": 11
+
+13
+
+},
+
+14
+
+"status": "ok"
+
+15
+
+}
+
+Modelos de Celulares e Smartphones de
+Determinada Marca
+Exemplo
+
+de
+
+chamada:
+
+POST
+
+https://apps.olx.com.br/autoupload/cellphone_info/2
+(no caso, o id 2 é a marca APPLE , conforme visto no
+exemplo acima):
+Utilizando o cURL:
+sh
+
+1
+
+$ curl -A Mozila -L -X POST 'https://apps.olx
+"access_token": "token"
+
+2
+3
+
+}'
+
+Utilizando postman/insomnia:
+json
+
+1
+
+{
+"access_token": "token"
+
+2
+3
+
+}
+
+Exemplo de retorno:
+json
+
+1
+2
+
+{
+"data": {
+
+3
+
+"IPHONE 11": 1,
+
+4
+
+"IPHONE 11 PRO": 2,
+
+5
+
+"IPHONE 11 PRO MAX": 3,
+
+6
+
+"IPHONE 12": 4,
+
+7
+
+"IPHONE 12 MINI": 5,
+
+8
+
+"IPHONE 12 PRO": 6,
+
+9
+
+"IPHONE 12 PRO MAX": 7,
+
+10
+
+"IPHONE 13": 8,
+
+11
+
+"IPHONE 13 MINI": 9,
+
+12
+
+"IPHONE 13 PRO": 10,
+
+13
+
+"IPHONE 13 PRO MAX": 11,
+
+14
+
+"IPHONE 6": 12,
+
+15
+
+"IPHONE 6 PLUS": 13,
+
+16
+
+"IPHONE 6S": 14,
+
+17
+
+"IPHONE 6S PLUS": 15,
+
+18
+
+"IPHONE 7": 16,
+
+19
+
+"IPHONE 7 PLUS": 17,
+
+20
+
+"IPHONE 8": 18,
+
+21
+
+"IPHONE 8 PLUS": 19,
+
+22
+
+"IPHONE SE 2020": 20,
+
+23
+
+"IPHONE X": 21,
+
+24
+
+"IPHONE XR": 22,
+
+25
+
+"IPHONE XS": 23,
+
+26
+
+"IPHONE XS MAX": 24,
+
+27
+
+"OUTROS": 25,
+
+28
+
+"IPHONE 14": 26,
+
+29
+
+"IPHONE 14 PLUS": 27,
+
+30
+
+"IPHONE 14 PRO": 28,
+
+31
+
+"IPHONE 14 PRO MAX": 29,
+
+32
+
+"IPHONE 15": 30,
+
+33
+
+"IPHONE 15 PLUS": 31,
+
+34
+
+"IPHONE 15 PRO": 32,
+
+35
+
+"IPHONE 15 PRO MAX": 33,
+
+36
+
+"IPHONE SE 2022": 34
+
+37
+
+},
+
+38
+
+"status": "ok"
+
+39
+
+}
+
+Última atualização: 02/03/2024, 06:03:50
+
+Anterior
+
+Celulares e Smartphones
+
+

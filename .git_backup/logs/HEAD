@@ -1,0 +1,67 @@
+0000000000000000000000000000000000000000 b2c0b0e28af6721275de055e9c8570ef9a21d502 Célio Júnior <celiojunior0110@gmail.com> 1761451057 -0300	clone: from github.com:ceanjr/leoiphone_2.git
+b2c0b0e28af6721275de055e9c8570ef9a21d502 fb7ffc11c4a8baab056848e7f8aa64ef7f83f9b4 Célio Júnior <celiojunior0110@gmail.com> 1761538562 -0300	commit: site final
+fb7ffc11c4a8baab056848e7f8aa64ef7f83f9b4 b01a11609d1095c5e9344a39d88719d15bc11c7f Célio Júnior <celiojunior0110@gmail.com> 1761571255 -0300	commit: build corrigido
+b01a11609d1095c5e9344a39d88719d15bc11c7f 2c3047dfed8c88628acde3f5da9c35712d0a71a9 Célio Júnior <celiojunior0110@gmail.com> 1761572298 -0300	commit: otimização geral pelo lighthouse
+2c3047dfed8c88628acde3f5da9c35712d0a71a9 4e969e2edec72ce837942b50744d08f2649ee64e Célio Júnior <celiojunior0110@gmail.com> 1761572779 -0300	commit: começar testes no lighthouse
+4e969e2edec72ce837942b50744d08f2649ee64e dae5f99211f5d48569ea58aa0500e47b15f3ab7e Célio Júnior <celiojunior0110@gmail.com> 1761573520 -0300	commit: perf(phase2): optimize build config for modern browsers
+dae5f99211f5d48569ea58aa0500e47b15f3ab7e 761eb5fcbd4f526da83fcc14aa804c0a911780dc Célio Júnior <celiojunior0110@gmail.com> 1761573525 -0300	commit: perf(phase2): preload hero image for faster LCP
+761eb5fcbd4f526da83fcc14aa804c0a911780dc 5d515acdb349b4e209b8d1d797108f25f66d5397 Célio Júnior <celiojunior0110@gmail.com> 1761573531 -0300	commit: perf(phase2): add fetchPriority=high to LCP banner
+5d515acdb349b4e209b8d1d797108f25f66d5397 9639c65062889586777abd5ab6a4917c642c0651 Célio Júnior <celiojunior0110@gmail.com> 1761573537 -0300	commit: perf(phase2): implement singleton pattern for Supabase client
+9639c65062889586777abd5ab6a4917c642c0651 c25d897703254ae00f415562432c2ddb1f59e130 Célio Júnior <celiojunior0110@gmail.com> 1761573543 -0300	commit: docs: add Phase 2 performance optimization documentation
+c25d897703254ae00f415562432c2ddb1f59e130 6408af4b8b062f3fba33d8bb1d5ba80a95a18ef8 Célio Júnior <celiojunior0110@gmail.com> 1761574051 -0300	commit: perf(phase2+): add bundle analyzer for JS optimization
+6408af4b8b062f3fba33d8bb1d5ba80a95a18ef8 61c57eccde01c370cda3de1b92b83cb518fdd4f6 Célio Júnior <celiojunior0110@gmail.com> 1761574059 -0300	commit: perf(phase2+): implement Web Worker for product sorting
+61c57eccde01c370cda3de1b92b83cb518fdd4f6 386a1b633d680c9b3d8e2bf1e25c0e5dc9330c6f Célio Júnior <celiojunior0110@gmail.com> 1761574066 -0300	commit: perf(phase2+): aggressive code splitting on home page
+386a1b633d680c9b3d8e2bf1e25c0e5dc9330c6f fb2e99f1942e446a4aacc2bf9546ab13b689cefc Célio Júnior <celiojunior0110@gmail.com> 1761574073 -0300	commit: docs: add additional Phase 2 optimizations documentation
+fb2e99f1942e446a4aacc2bf9546ab13b689cefc 9898880d62b95715a3fd6d749a7ee2642aa17cd6 Célio Júnior <celiojunior0110@gmail.com> 1761574254 -0300	commit: package-lock atualizado
+9898880d62b95715a3fd6d749a7ee2642aa17cd6 9a34ad46de0ad30549f34ec61e93080c6c22beb2 Célio Júnior <celiojunior0110@gmail.com> 1761574836 -0300	commit: fix: revert optimizations causing performance regression
+9a34ad46de0ad30549f34ec61e93080c6c22beb2 ae0549e1ebeb975187994281971f33d8ea404ec5 Célio Júnior <celiojunior0110@gmail.com> 1761574894 -0300	commit: docs: add performance regression analysis
+ae0549e1ebeb975187994281971f33d8ea404ec5 940f4cd25a6841fbaee6556124b8412130ed55d8 Célio Júnior <celiojunior0110@gmail.com> 1761575292 -0300	commit: perf: optimize LCP (Largest Contentful Paint)
+940f4cd25a6841fbaee6556124b8412130ed55d8 d17c0800d24b6e6ef9c46d579920c60b4e61a012 Célio Júnior <celiojunior0110@gmail.com> 1761575305 -0300	commit (amend): perf: optimize LCP (Largest Contentful Paint)
+d17c0800d24b6e6ef9c46d579920c60b4e61a012 85af0ac74ddc48cd798f86bdb61d99a8799b4fcb Célio Júnior <celiojunior0110@gmail.com> 1761583204 -0300	commit: perf: aggressive LCP optimizations
+85af0ac74ddc48cd798f86bdb61d99a8799b4fcb 6078e1b64604dae013dd3d7f8031f37f14c672a7 Célio Júnior <celiojunior0110@gmail.com> 1761583296 -0300	commit: deletados arquivos md
+6078e1b64604dae013dd3d7f8031f37f14c672a7 abe920c92529b9302fea627326a961a77682ae1f Célio Júnior <celiojunior0110@gmail.com> 1761583678 -0300	commit: perf: final ultra-aggressive LCP optimizations
+abe920c92529b9302fea627326a961a77682ae1f 3bf8aad7e835aa963b87d32635f768604e2613ea Célio Júnior <celiojunior0110@gmail.com> 1761584044 -0300	commit: docs: add final performance optimization results
+3bf8aad7e835aa963b87d32635f768604e2613ea 7471025a4dcc28ef9850c263362682c38527681a Célio Júnior <celiojunior0110@gmail.com> 1761584698 -0300	commit: feat: implement PWA (Progressive Web App)
+7471025a4dcc28ef9850c263362682c38527681a a094ea87d1d20a6b607e261e0c5f859fc7de7c53 Célio Júnior <celiojunior0110@gmail.com> 1761584750 -0300	commit: docs: add PWA implementation documentation
+a094ea87d1d20a6b607e261e0c5f859fc7de7c53 ec9204b076701e969207b6db57ba3cd5342ff1ea Célio Júnior <celiojunior0110@gmail.com> 1761585034 -0300	commit: configuração do turbopack
+ec9204b076701e969207b6db57ba3cd5342ff1ea 026e14d1beb7503eb99e21fcdd88514eacee1fac Célio Júnior <celiojunior0110@gmail.com> 1761585476 -0300	commit: fix: add manual install button to dashboard
+026e14d1beb7503eb99e21fcdd88514eacee1fac 6584a94e180ce0dc692784c9d6e9d6511574abb0 Célio Júnior <celiojunior0110@gmail.com> 1761586026 -0300	commit: feat: update PWA icons to use app-icon.png
+6584a94e180ce0dc692784c9d6e9d6511574abb0 2c920df78bda091ff38cf81494c1224a70b7bc77 Célio Júnior <celiojunior0110@gmail.com> 1761586404 -0300	commit: feat: improve banner and catalog styling
+2c920df78bda091ff38cf81494c1224a70b7bc77 73646e2c6812d710b1e6be9929df647d7743249b Célio Júnior <celiojunior0110@gmail.com> 1761586880 -0300	commit: feat: apply brand yellow (#eab308) to key UI elements
+73646e2c6812d710b1e6be9929df647d7743249b a6c2841e259650719a2a5193bea3c6b2fb7b0ef6 Célio Júnior <celiojunior0110@gmail.com> 1761587766 -0300	commit: feat: add image export functionality in products admin
+a6c2841e259650719a2a5193bea3c6b2fb7b0ef6 24633bc242df8aed9eb13a79e345d51bfacd774e Célio Júnior <celiojunior0110@gmail.com> 1761588175 -0300	commit: feat: improve export images dialog UI/UX
+24633bc242df8aed9eb13a79e345d51bfacd774e e07e11255ee834d13a408f9a96db194d4dbcaa77 Célio Júnior <celiojunior0110@gmail.com> 1761588426 -0300	commit: feat: add catalog navigation button in admin panel
+e07e11255ee834d13a408f9a96db194d4dbcaa77 85b4c9d7c23ef93f3650f13c9f65099e6918ab22 Célio Júnior <celiojunior0110@gmail.com> 1761588517 -0300	commit: fix: change catalog link to homepage (/)
+85b4c9d7c23ef93f3650f13c9f65099e6918ab22 6253d3db84a0c8cf3475604d38c8e6ab131e1e18 Célio Júnior <celiojunior0110@gmail.com> 1761588737 -0300	commit: feat: add native share button on mobile product page
+6253d3db84a0c8cf3475604d38c8e6ab131e1e18 c2746425cf555b7913e93aa1c6c00c9369bcf80e Célio Júnior <celiojunior0110@gmail.com> 1761589026 -0300	commit: fix: use category order from admin/categorias in all filters
+c2746425cf555b7913e93aa1c6c00c9369bcf80e 4b70660239aad571a984a0010027986c8d59ea49 Célio Júnior <celiojunior0110@gmail.com> 1761590009 -0300	commit: site pronto para testes
+4b70660239aad571a984a0010027986c8d59ea49 c3f22524143383327d7d4d98fb077226142615cd Célio Júnior <celiojunior0110@gmail.com> 1761590553 -0300	commit: melhorias gerais
+c3f22524143383327d7d4d98fb077226142615cd 4b9a2e4c826a00f629088968f2c7e18c3ab0b7c5 Célio Júnior <celiojunior0110@gmail.com> 1761591073 -0300	commit: melhorias uplolad de imagens
+4b9a2e4c826a00f629088968f2c7e18c3ab0b7c5 e71b52a338b3278e4a2253931d60b7262606650d Célio Júnior <celiojunior0110@gmail.com> 1761606357 -0300	commit: correção thumbnails
+e71b52a338b3278e4a2253931d60b7262606650d f87cf985eabc6ebbb8be033ed72b773ac3b18cc9 Célio Júnior <celiojunior0110@gmail.com> 1761606935 -0300	commit: tentativa de deploy
+f87cf985eabc6ebbb8be033ed72b773ac3b18cc9 4b9a2e4c826a00f629088968f2c7e18c3ab0b7c5 Célio Júnior <celiojunior0110@gmail.com> 1761607188 -0300	reset: moving to 4b9a2e4
+4b9a2e4c826a00f629088968f2c7e18c3ab0b7c5 025f5a9ea7f408bc732da2e3b7f3a934919f20d8 Célio Júnior <celiojunior0110@gmail.com> 1761607323 -0300	commit: feat: adiciona Vercel Analytics
+025f5a9ea7f408bc732da2e3b7f3a934919f20d8 d4951778a9bb377bef9874d9777ace1652a43a2f Célio Júnior <celiojunior0110@gmail.com> 1761781493 -0300	commit: zoho
+d4951778a9bb377bef9874d9777ace1652a43a2f cb95e6e76d96338ad4919d13c488b62d246d0a81 Célio Júnior <celiojunior0110@gmail.com> 1761801155 -0300	commit: melhorias
+cb95e6e76d96338ad4919d13c488b62d246d0a81 02246ac3f3479d39f95a2eb49156ff3da3bc9c49 Célio Júnior <celiojunior0110@gmail.com> 1761832516 -0300	commit: ux
+02246ac3f3479d39f95a2eb49156ff3da3bc9c49 f56107b9c878ce894ba1a1dc1a64c466ec341f06 Célio Júnior <celiojunior0110@gmail.com> 1761853810 -0300	commit: commit final
+f56107b9c878ce894ba1a1dc1a64c466ec341f06 e57ee47e347f29f1b4c35f0ea1ab60bee50a977c Célio Júnior <celiojunior0110@gmail.com> 1761854284 -0300	commit: performance
+e57ee47e347f29f1b4c35f0ea1ab60bee50a977c d57fcebe38a9121e924c29d1d9646346ed2b667f Célio Júnior <celiojunior0110@gmail.com> 1761854851 -0300	commit: correção scroll admin/produtos
+d57fcebe38a9121e924c29d1d9646346ed2b667f a9b2659458cd1a938db6486b071566c8210ccc63 Célio Júnior <celiojunior0110@gmail.com> 1761855001 -0300	commit: correção
+a9b2659458cd1a938db6486b071566c8210ccc63 b9dce4b92c349b58a12def324f1a2a550185fd00 Célio Júnior <celiojunior0110@gmail.com> 1761856835 -0300	commit: test
+b9dce4b92c349b58a12def324f1a2a550185fd00 4947d06f39527be84fc146aae2a213601f1f9762 Célio Júnior <celiojunior0110@gmail.com> 1761857792 -0300	commit: upload
+4947d06f39527be84fc146aae2a213601f1f9762 7e2d840c5543fa57f3513d08f286cab061899cda Célio Júnior <celiojunior0110@gmail.com> 1761873586 -0300	commit: commit final 2
+7e2d840c5543fa57f3513d08f286cab061899cda b03fef71a00d48ae86659deec0ceb6a78bbcb42a Célio Júnior <celiojunior0110@gmail.com> 1761873907 -0300	commit: correção autofocus
+b03fef71a00d48ae86659deec0ceb6a78bbcb42a cbba60436cc4be807abbe99f55ccf8a0f49da1db Célio Júnior <celiojunior0110@gmail.com> 1761874063 -0300	commit: texto
+cbba60436cc4be807abbe99f55ccf8a0f49da1db 6319ba92a51351bdd1f55a529b12e3f1577bcc93 Célio Júnior <celiojunior0110@gmail.com> 1761889134 -0300	commit: correções finais
+6319ba92a51351bdd1f55a529b12e3f1577bcc93 002dd7d2750c20fa8496cf45b2f3a3ea92b250d6 Célio Júnior <celiojunior0110@gmail.com> 1761925524 -0300	commit: Melhora visual do botão Tenho Interesse e badges de cor + correção ordenação
+002dd7d2750c20fa8496cf45b2f3a3ea92b250d6 2728de631d3097e4ca58eee2ec23c65fa8d136a0 Célio Júnior <celiojunior0110@gmail.com> 1761943895 -0300	commit: commit final 3
+2728de631d3097e4ca58eee2ec23c65fa8d136a0 4d811f4ff24d39265d5e62a5cc54961b1c5c9c78 Célio Júnior <celiojunior0110@gmail.com> 1761955821 -0300	commit: site pronto
+4d811f4ff24d39265d5e62a5cc54961b1c5c9c78 2a4a723be67a63228615091e635dd30af755e5f3 Célio Júnior <celiojunior0110@gmail.com> 1762012305 -0300	commit: commit final 4
+2a4a723be67a63228615091e635dd30af755e5f3 b39a99d8503c2c619031bea9b853601049bc3989 Célio Júnior <celiojunior0110@gmail.com> 1762064076 -0300	commit: melhorias
+b39a99d8503c2c619031bea9b853601049bc3989 8d93180daf221494390bea2d94e9c96c6300307f Célio Júnior <celiojunior0110@gmail.com> 1762129334 -0300	commit: correções
+8d93180daf221494390bea2d94e9c96c6300307f 7658266386df7d86eb1c03ac07687bb036d808ad Célio Júnior <celiojunior0110@gmail.com> 1762138363 -0300	commit: ultimas melhorias
+7658266386df7d86eb1c03ac07687bb036d808ad fd5a1aaf79dd80ea7e46ee431b9a3b55f0b8939b Célio Júnior <celiojunior0110@gmail.com> 1762189049 -0300	commit: correções admin/anuncios
+fd5a1aaf79dd80ea7e46ee431b9a3b55f0b8939b da5d41e0b07e642b163378812cff1e25612cec9b Célio Júnior <celiojunior0110@gmail.com> 1762201256 -0300	commit: até antes do calculadora de taxas
+da5d41e0b07e642b163378812cff1e25612cec9b c0f9e68ddda3edb713f0d2f7919d7f8bf54b9e7a Célio Júnior <celiojunior0110@gmail.com> 1762207704 -0300	commit: preparação para destaques
+                                                                                                                                                          
