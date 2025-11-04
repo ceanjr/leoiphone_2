@@ -12,8 +12,8 @@ import { useHomeFilters } from '@/hooks/use-home-filters'
 import { useHomeData } from '@/hooks/use-home-data'
 import { useProdutosAgrupados } from '@/hooks/use-produtos-agrupados'
 import { getSecaoConfig } from '@/lib/config/secao-config'
-import { filtrarProdutos } from '@/lib/utils/produto-grouping'
-import { ordenarProdutosPorModelo } from '@/lib/utils/produto-helpers'
+import { filtrarProdutos } from '@/lib/utils/produtos/grouping'
+import { ordenarProdutosPorModelo } from '@/lib/utils/produtos/helpers'
 import { ProductsByCategorySkeleton } from '@/components/shared/loading-skeleton'
 import {
   BuscaForm,

@@ -1,6 +1,6 @@
 'use client'
 
-import { formatarMoeda } from '@/lib/utils/calcular-parcelas'
+import { formatarMoeda } from '@/lib/utils/produtos/parcelas'
 
 export interface ParcelaData {
   numero: number

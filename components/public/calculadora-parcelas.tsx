@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { TaxasConfig } from '@/lib/validations/taxas'
-import { calcularTodasParcelas, formatarMoeda } from '@/lib/utils/calcular-parcelas'
+import { calcularTodasParcelas, formatarMoeda } from '@/lib/utils/produtos/parcelas'
 
 interface CalculadoraParcelasProps {
   preco: number

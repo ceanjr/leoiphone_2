@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ExportImagesDialog } from '@/components/admin/produtos/export-images-dialog'
 import { Badge } from '@/components/ui/badge'
-import { getCorOficial, getContrastColor } from '@/lib/iphone-cores'
+import { getCorOficial, getContrastColor } from '@/lib/data/iphone-cores'
 import { BatteryIcon } from '@/components/shared/battery-icon'
 
 function parsePriceInput(value: string): number | null {

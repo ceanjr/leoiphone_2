@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { produtoToOlxAdvert } from '@/lib/olx/api-client'
+import { produtoToOlxAdvert } from '@/lib/api/olx/api-client'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://leoiphone.com.br'
 

@@ -14,7 +14,7 @@ import {
   BottomSheetTitle,
   BottomSheetTrigger,
 } from '@/components/ui/bottom-sheet'
-import { calcularTodasParcelas, formatarMoeda } from '@/lib/utils/calcular-parcelas'
+import { calcularTodasParcelas, formatarMoeda } from '@/lib/utils/produtos/parcelas'
 import { getConfiguracaoTaxas } from '@/app/admin/taxas/actions'
 import type { TaxasConfig } from '@/lib/validations/taxas'
 import { TAXAS_PADRAO } from '@/lib/validations/taxas'

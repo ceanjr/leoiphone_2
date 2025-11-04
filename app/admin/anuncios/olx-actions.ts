@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { OlxAPIClient, produtoToOlxAdvert } from '@/lib/olx/api-client'
+import { OlxAPIClient, produtoToOlxAdvert } from '@/lib/api/olx/api-client'
 import { revalidatePath } from 'next/cache'
 import type { CriarAnuncioOlxInput, AtualizarAnuncioOlxInput, OlxConfig } from '@/types/olx'
 

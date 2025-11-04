@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { FacebookMarketplaceAPI, produtoToMarketplaceProduct } from '@/lib/facebook/graph-api'
+import { FacebookMarketplaceAPI, produtoToMarketplaceProduct } from '@/lib/api/facebook/graph-api'
 import { revalidatePath } from 'next/cache'
 import type { CriarAnuncioInput, AtualizarAnuncioInput, FacebookConfig } from '@/types/facebook'
 
@@ -512,7 +512,7 @@ export async function buscarConfig() {
  */
 export async function diagnosticarFacebook() {
   try {
-    const { diagnosticarFacebookAPI } = await import('@/lib/facebook/diagnostics')
+    const { diagnosticarFacebookAPI } = await import('@/lib/api/facebook/diagnostics')
     const diagnostico = await diagnosticarFacebookAPI()
     return { success: true, data: diagnostico }
   } catch (error: any) {

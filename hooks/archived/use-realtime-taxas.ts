@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { createLogger } from '@/lib/utils/logger'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { TaxasConfig } from '@/lib/validations/taxas'
+
+const logger = createLogger('useRealtimeTaxas')
 
 interface ConfiguracaoTaxas {
   ativo: boolean
@@ -21,11 +24,11 @@ export function useRealtimeTaxas(options: UseRealtimeTaxasOptions = {}) {
 
   useEffect(() => {
     if (!enabled) {
-      console.log('[useRealtimeTaxas] Realtime desabilitado')
+      logger.log('Realtime desabilitado')
       return
     }
 
-    console.log('[useRealtimeTaxas] Iniciando subscrição de taxas...')
+    logger.log('Iniciando subscrição de taxas...')
     const supabase = createClient()
 
     // Criar canal de realtime para configurações de taxas
@@ -39,8 +42,8 @@ export function useRealtimeTaxas(options: UseRealtimeTaxasOptions = {}) {
           table: 'configuracoes_taxas',
         },
         async (payload) => {
-          console.log('[useRealtimeTaxas] Evento recebido:', payload.eventType)
-          console.log('[useRealtimeTaxas] Payload:', payload)
+          logger.log('Evento recebido:', payload.eventType)
+          logger.log('Payload:', payload)
 
           // Buscar configuração mais recente
           const { data, error } = await supabase
@@ -51,13 +54,13 @@ export function useRealtimeTaxas(options: UseRealtimeTaxasOptions = {}) {
             .single()
 
           if (error) {
-            console.error('[useRealtimeTaxas] Erro ao buscar taxas:', error)
+            logger.error('Erro ao buscar taxas:', error)
             return
           }
 
           if (data) {
             const typedData = data as any
-            console.log('[useRealtimeTaxas] Taxas atualizadas:', {
+            logger.log('Taxas atualizadas:', {
               ativo: typedData.ativo,
               taxas: typedData.taxas,
             })
@@ -72,14 +75,14 @@ export function useRealtimeTaxas(options: UseRealtimeTaxasOptions = {}) {
         }
       )
       .subscribe((status) => {
-        console.log('[useRealtimeTaxas] Status da subscrição:', status)
+        logger.log('Status da subscrição:', status)
       })
 
     setChannel(taxasChannel)
 
     // Cleanup
     return () => {
-      console.log('[useRealtimeTaxas] Removendo subscrição de taxas')
+      logger.log('Removendo subscrição de taxas')
       supabase.removeChannel(taxasChannel)
     }
   }, [enabled, onUpdate])

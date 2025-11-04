@@ -30,7 +30,7 @@ import {
   applyPreset,
 } from './actions'
 import { TAXAS_PADRAO, type TaxasConfig, type PresetTaxas } from '@/lib/validations/taxas'
-import { calcularTodasParcelas, formatarMoeda } from '@/lib/utils/calcular-parcelas'
+import { calcularTodasParcelas, formatarMoeda } from '@/lib/utils/produtos/parcelas'
 
 const EXEMPLO_PRECO = 2800 // Preço exemplo para preview
 

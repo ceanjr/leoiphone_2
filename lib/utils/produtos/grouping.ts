@@ -2,7 +2,7 @@
  * Utilitários para agrupar e filtrar produtos
  */
 
-import { ordenarProdutosPorModelo } from './produto-helpers'
+import { ordenarProdutosPorModelo } from './helpers'
 import type { Produto } from '@/types/produto'
 
 export interface Categoria {

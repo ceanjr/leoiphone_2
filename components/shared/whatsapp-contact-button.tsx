@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { logger } from '@/lib/utils/logger'
 import { MessageCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/cn'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import {
   BottomSheet,

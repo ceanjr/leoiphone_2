@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { createLogger } from '@/lib/utils/logger'
+
+const logger = createLogger('useAuth')
 
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -16,7 +19,7 @@ export function useAuth() {
         const { data: { session } } = await supabase.auth.getSession()
         setIsAuthenticated(!!session)
       } catch (error) {
-        console.error('Erro ao verificar sessão:', error)
+        logger.error('Erro ao verificar sessão:', error)
         setIsAuthenticated(false)
       } finally {
         setLoading(false)

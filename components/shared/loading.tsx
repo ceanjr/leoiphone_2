@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/cn'
 
 interface LoadingProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'

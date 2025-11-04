@@ -4,6 +4,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createLogger } from '@/lib/utils/logger'
+
+const logger = createLogger('BannersActions')
 
 export async function getBanners() {
   const supabase = await createClient()
@@ -14,7 +17,7 @@ export async function getBanners() {
     .order('ordem', { ascending: true })
 
   if (error) {
-    console.error('Erro ao buscar banners:', error)
+    logger.error('Erro ao buscar banners:', error)
     return { banners: [], error: 'Erro ao carregar banners' }
   }
 

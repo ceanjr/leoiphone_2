@@ -1,7 +1,7 @@
 import { memo } from 'react'
-import { getColorStyles, normalizeColorName } from '@/lib/color-utils'
-import { getCorOficial, getContrastColor } from '@/lib/iphone-cores'
-import { cn } from '@/lib/utils'
+import { getColorStyles, normalizeColorName } from '@/lib/utils/colors'
+import { getCorOficial, getContrastColor } from '@/lib/data/iphone-cores'
+import { cn } from '@/lib/utils/cn'
 
 interface ColorBadgeProps {
   color: string

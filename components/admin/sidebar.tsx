@@ -14,7 +14,7 @@ import {
   Calculator,
   Store,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils/cn'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { logout } from '@/app/(auth)/login/actions'

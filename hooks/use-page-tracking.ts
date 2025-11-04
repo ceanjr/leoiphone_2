@@ -3,6 +3,9 @@
 import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { createLogger } from '@/lib/utils/logger'
+
+const logger = createLogger('usePageTracking')
 
 // Gerar ou recuperar ID único do visitante
 function getVisitorId(): string {
@@ -34,7 +37,7 @@ export function usePageTracking() {
 
   useEffect(() => {
     if (!shouldTrack()) {
-      console.log('[Tracking] Desabilitado em desenvolvimento')
+      logger.log('Desabilitado em desenvolvimento')
       return
     }
 
@@ -44,15 +47,15 @@ export function usePageTracking() {
     // Registrar page view inicial
     const trackView = async () => {
       try {
-        console.log('[Tracking] Registrando view:', { pathname, visitorId: visitorId.current })
+        logger.log('Registrando view:', { pathname, visitorId: visitorId.current })
         await (supabase as any).rpc('track_page_view', {
           p_visitor_id: visitorId.current,
           p_path: pathname
         })
         tracked.current = true
-        console.log('[Tracking] View registrada com sucesso')
+        logger.log('View registrada com sucesso')
       } catch (error) {
-        console.error('[Tracking] Erro ao rastrear page view:', error)
+        logger.error('Erro ao rastrear page view:', error)
       }
     }
 
@@ -68,7 +71,7 @@ export function usePageTracking() {
           .update({ last_seen: new Date().toISOString(), page_path: pathname })
           .eq('visitor_id', visitorId.current)
       } catch (error) {
-        console.error('[Tracking] Erro ao atualizar sessão:', error)
+        logger.error('Erro ao atualizar sessão:', error)
       }
     }, 30000)
 

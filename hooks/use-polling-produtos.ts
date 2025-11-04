@@ -2,7 +2,10 @@
 
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { createLogger } from '@/lib/utils/logger'
 import type { ProdutoComCategoria } from '@/types/produto'
+
+const logger = createLogger('usePollingProdutos')
 
 interface UsePollingProdutosOptions {
   enabled?: boolean
@@ -28,11 +31,11 @@ export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
 
   useEffect(() => {
     if (!enabled) {
-      console.log('[usePollingProdutos] Polling desabilitado')
+      logger.log('Polling desabilitado')
       return
     }
 
-    console.log('[usePollingProdutos] Iniciando polling (intervalo:', interval, 'ms)')
+    logger.log('Iniciando polling (intervalo:', interval, 'ms)')
 
     const supabase = createClient()
 
@@ -55,7 +58,7 @@ export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
           .order('updated_at', { ascending: false })
 
         if (error) {
-          console.error('[usePollingProdutos] Erro ao buscar produtos:', error)
+          logger.error('Erro ao buscar produtos:', error)
           return
         }
 
@@ -67,7 +70,7 @@ export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
 
           // Se os dados mudaram desde a última verificação
           if (lastHashRef.current !== null && lastHashRef.current !== currentHash) {
-            console.log('[usePollingProdutos] Mudança detectada nos produtos!', {
+            logger.log('Mudança detectada nos produtos!', {
               antes: lastHashRef.current?.slice(0, 100),
               depois: currentHash.slice(0, 100),
             })
@@ -91,7 +94,7 @@ export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
           lastHashRef.current = currentHash
         }
       } catch (error) {
-        console.error('[usePollingProdutos] Erro no polling:', error)
+        logger.error('Erro no polling:', error)
       }
     }
 
@@ -103,7 +106,7 @@ export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
 
     // Cleanup
     return () => {
-      console.log('[usePollingProdutos] Parando polling')
+      logger.log('Parando polling')
       if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current)
       }

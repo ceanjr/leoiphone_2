@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { Database } from '@/types/database.types'
+import { logger } from '@/lib/utils/logger'
 
 // Optimization Phase 2: Lazy singleton instance to reduce initial bundle impact
 let clientInstance: ReturnType<typeof createBrowserClient<Database>> | null = null
@@ -49,7 +50,7 @@ export function createClient() {
           try {
             localStorage.setItem(name, value)
           } catch (e) {
-            console.error('Failed to save to localStorage:', e)
+            logger.error('[Supabase] Failed to save to localStorage:', e)
           }
         },
         remove(name: string, options: any) {
@@ -62,7 +63,7 @@ export function createClient() {
           try {
             localStorage.removeItem(name)
           } catch (e) {
-            console.error('Failed to remove from localStorage:', e)
+            logger.error('[Supabase] Failed to remove from localStorage:', e)
           }
         },
       },

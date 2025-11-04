@@ -1,3 +1,5 @@
+import { logger } from '@/lib/utils/logger'
+
 export interface OlxResponse<T = any> {
   data?: T
   error?: {
@@ -23,7 +25,7 @@ export class OlxAPIClient {
     try {
       const url = `${this.baseUrl}${endpoint}`
 
-      console.log('[OLX-API] Requisição:', {
+      logger.info('[OLX-API] Requisição:', {
         method: options.method || 'GET',
         url,
       })
@@ -39,19 +41,19 @@ export class OlxAPIClient {
         cache: 'no-store',
       })
 
-      console.log('[OLX-API] Status:', response.status)
+      logger.info('[OLX-API] Status:', response.status)
 
       const contentType = response.headers.get('content-type')
 
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json()
-        console.log('[OLX-API] Resposta:', data)
+        logger.info('[OLX-API] Resposta:', data)
 
         // IMPORTANTE: Verificar statusCode interno da OLX (pode ser -6, -1, etc)
         if (data.statusCode && data.statusCode < 0) {
-          console.error('[OLX-API] ❌ Erro interno da OLX:', data.statusCode)
-          console.error('[OLX-API] Mensagem:', data.statusMessage)
-          console.error('[OLX-API] Errors:', data.errors)
+          logger.error('[OLX-API] ❌ Erro interno da OLX:', data.statusCode)
+          logger.error('[OLX-API] Mensagem:', data.statusMessage)
+          logger.error('[OLX-API] Errors:', data.errors)
 
           // Mapear códigos de erro da OLX
           let errorMessage = data.statusMessage || 'Erro da OLX'
@@ -87,7 +89,7 @@ export class OlxAPIClient {
 
         // Verificar se token é null com erros (outro formato de erro)
         if (data.token === null && data.errors && data.errors.length > 0) {
-          console.error('[OLX-API] ❌ Erro de validação:', data.errors)
+          logger.error('[OLX-API] ❌ Erro de validação:', data.errors)
 
           return {
             error: {
@@ -114,7 +116,7 @@ export class OlxAPIClient {
         return { data, status: response.status }
       } else {
         const text = await response.text()
-        console.error('[OLX-API] Resposta não é JSON:', text.substring(0, 200))
+        logger.error('[OLX-API] Resposta não é JSON:', text.substring(0, 200))
 
         if (text.includes('Cloudflare')) {
           return {
@@ -137,7 +139,7 @@ export class OlxAPIClient {
         }
       }
     } catch (error: any) {
-      console.error('[OLX-API] Erro:', error)
+      logger.error('[OLX-API] Erro:', error)
       return {
         error: {
           code: 'NETWORK_ERROR',
@@ -152,7 +154,7 @@ export class OlxAPIClient {
    * Este endpoint retorna info do plano e confirma que o token é válido
    */
   async getBalance(): Promise<OlxResponse> {
-    console.log('[OLX-API] Consultando saldo/plano...')
+    logger.info('[OLX-API] Consultando saldo/plano...')
     return this.request('/autoupload/balance', { method: 'GET' })
   }
 
@@ -160,7 +162,7 @@ export class OlxAPIClient {
    * Listar anúncios publicados (também valida token)
    */
   async listPublishedAds(): Promise<OlxResponse> {
-    console.log('[OLX-API] Listando anúncios publicados...')
+    logger.info('[OLX-API] Listando anúncios publicados...')
     return this.request('/autoupload/v1/published', { method: 'GET' })
   }
 
@@ -169,7 +171,7 @@ export class OlxAPIClient {
    * IMPORTANTE: Método PUT, não POST!
    */
   async createAd(adData: any): Promise<OlxResponse> {
-    console.log('[OLX-API] Criando anúncio...')
+    logger.info('[OLX-API] Criando anúncio...')
 
     return this.request('/autoupload/import', {
       method: 'PUT', // ← CORREÇÃO: OLX usa PUT!
@@ -181,7 +183,7 @@ export class OlxAPIClient {
    * Consultar status da importação
    */
   async getImportStatus(token: string): Promise<OlxResponse> {
-    console.log('[OLX-API] Consultando status da importação:', token)
+    logger.info('[OLX-API] Consultando status da importação:', token)
     return this.request(`/autoupload/import/${token}`, { method: 'GET' })
   }
 
@@ -189,7 +191,7 @@ export class OlxAPIClient {
    * Consultar status de anúncio publicado
    */
   async getAdStatus(listId: string): Promise<OlxResponse> {
-    console.log('[OLX-API] Consultando status do anúncio:', listId)
+    logger.info('[OLX-API] Consultando status do anúncio:', listId)
     return this.request(`/autoupload/ads/${listId}`, { method: 'GET' })
   }
 
@@ -197,7 +199,7 @@ export class OlxAPIClient {
    * Deletar anúncio (via import com operation: delete)
    */
   async deleteAd(adId: string): Promise<OlxResponse> {
-    console.log('[OLX-API] Deletando anúncio:', adId)
+    logger.info('[OLX-API] Deletando anúncio:', adId)
 
     const payload = {
       access_token: this.accessToken,
@@ -220,7 +222,7 @@ export class OlxAPIClient {
  * Converter produto para formato OLX
  */
 export function produtoToOlxAdvert(produto: any, siteUrl: string, accessToken: string) {
-  console.log('[OLX-CONVERTER] Convertendo produto:', produto.id)
+  logger.info('[OLX-CONVERTER] Convertendo produto:', produto.id)
 
   const images: string[] = []
 
@@ -291,7 +293,7 @@ export function produtoToOlxAdvert(produto: any, siteUrl: string, accessToken: s
     ],
   }
 
-  console.log('[OLX-CONVERTER] Anúncio montado com', images.length, 'imagens')
+  logger.info('[OLX-CONVERTER] Anúncio montado com', images.length, 'imagens')
   return advert
 }
 

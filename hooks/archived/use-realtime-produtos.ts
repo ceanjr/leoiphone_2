@@ -2,8 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { createLogger } from '@/lib/utils/logger'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { ProdutoComCategoria } from '@/types/produto'
+
+const logger = createLogger('useRealtimeProdutos')
 
 interface UseRealtimeProdutosOptions {
   enabled?: boolean
@@ -18,11 +21,11 @@ export function useRealtimeProdutos(options: UseRealtimeProdutosOptions = {}) {
 
   useEffect(() => {
     if (!enabled) {
-      console.log('[useRealtimeProdutos] Realtime desabilitado')
+      logger.log('Realtime desabilitado')
       return
     }
 
-    console.log('[useRealtimeProdutos] Iniciando subscrição de produtos...')
+    logger.log('Iniciando subscrição de produtos...')
     const supabase = createClient()
 
     // Criar canal de realtime para produtos
@@ -36,7 +39,7 @@ export function useRealtimeProdutos(options: UseRealtimeProdutosOptions = {}) {
           table: 'produtos',
         },
         async (payload) => {
-          console.log('[useRealtimeProdutos] INSERT recebido:', payload.new.id)
+          logger.log('INSERT recebido:', payload.new.id)
 
           // Buscar produto completo com categoria
           const { data, error } = await supabase
@@ -49,12 +52,12 @@ export function useRealtimeProdutos(options: UseRealtimeProdutosOptions = {}) {
             .single()
 
           if (error) {
-            console.error('[useRealtimeProdutos] Erro ao buscar produto:', error)
+            logger.error('Erro ao buscar produto:', error)
             return
           }
 
           if (data && onInsert) {
-            console.log('[useRealtimeProdutos] Produto inserido:', (data as any).nome)
+            logger.log('Produto inserido:', (data as any).nome)
             onInsert(data as ProdutoComCategoria)
           }
         }
@@ -67,7 +70,7 @@ export function useRealtimeProdutos(options: UseRealtimeProdutosOptions = {}) {
           table: 'produtos',
         },
         async (payload) => {
-          console.log('[useRealtimeProdutos] UPDATE recebido:', payload.new.id)
+          logger.log('UPDATE recebido:', payload.new.id)
 
           // Buscar produto completo com categoria
           const { data, error } = await supabase
@@ -80,12 +83,12 @@ export function useRealtimeProdutos(options: UseRealtimeProdutosOptions = {}) {
             .single()
 
           if (error) {
-            console.error('[useRealtimeProdutos] Erro ao buscar produto:', error)
+            logger.error('Erro ao buscar produto:', error)
             return
           }
 
           if (data && onUpdate) {
-            console.log('[useRealtimeProdutos] Produto atualizado:', (data as any).nome)
+            logger.log('Produto atualizado:', (data as any).nome)
             onUpdate(data as ProdutoComCategoria)
           }
         }
@@ -98,7 +101,7 @@ export function useRealtimeProdutos(options: UseRealtimeProdutosOptions = {}) {
           table: 'produtos',
         },
         (payload) => {
-          console.log('[useRealtimeProdutos] DELETE recebido:', payload.old.id)
+          logger.log('DELETE recebido:', payload.old.id)
 
           if (onDelete) {
             onDelete(payload.old.id)
@@ -106,14 +109,14 @@ export function useRealtimeProdutos(options: UseRealtimeProdutosOptions = {}) {
         }
       )
       .subscribe((status) => {
-        console.log('[useRealtimeProdutos] Status da subscrição:', status)
+        logger.log('Status da subscrição:', status)
       })
 
     setChannel(produtosChannel)
 
     // Cleanup
     return () => {
-      console.log('[useRealtimeProdutos] Removendo subscrição de produtos')
+      logger.log('Removendo subscrição de produtos')
       supabase.removeChannel(produtosChannel)
     }
   }, [enabled, onInsert, onUpdate, onDelete])

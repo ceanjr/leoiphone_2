@@ -6,6 +6,9 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { produtoSchema } from '@/lib/validations/produto'
 import type { ProdutoFormData } from '@/types/produto'
+import { createLogger } from '@/lib/utils/logger'
+
+const logger = createLogger('ProdutosActions')
 
 function generateSlug(nome: string): string {
   const baseSlug = nome
@@ -32,7 +35,7 @@ export async function getProdutos() {
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Erro ao buscar produtos:', error)
+    logger.error('Erro ao buscar produtos:', error)
     return { produtos: [], error: 'Erro ao carregar produtos' }
   }
 
@@ -50,7 +53,7 @@ export async function getProdutoById(id: string) {
     .single()
 
   if (error) {
-    console.error('Erro ao buscar produto:', error)
+    logger.error('Erro ao buscar produto:', error)
     return { produto: null, error: 'Produto não encontrado' }
   }
 
@@ -88,7 +91,7 @@ export async function createProduto(data: ProdutoFormData) {
 
   // Debug: ver o que está sendo inserido
   if (process.env.NODE_ENV === 'development') {
-    console.log('[createProduto] Inserindo:', {
+    logger.log('[createProduto] Inserindo:', {
       nome: insertData.nome,
       cores: insertData.cores,
       cor_oficial: insertData.cor_oficial
@@ -103,7 +106,7 @@ export async function createProduto(data: ProdutoFormData) {
     .single()
 
   if (error) {
-    console.error('❌ Erro ao criar produto:', error)
+    logger.error('❌ Erro ao criar produto:', error)
     return {
       success: false,
       error: error.message || 'Erro ao criar produto',
@@ -112,7 +115,7 @@ export async function createProduto(data: ProdutoFormData) {
 
   // Debug: ver o que foi inserido
   if (process.env.NODE_ENV === 'development') {
-    console.log('[createProduto] Produto criado:', {
+    logger.log('[createProduto] Produto criado:', {
       id: produto.id,
       nome: produto.nome,
       cores: produto.cores,
@@ -183,7 +186,7 @@ export async function updateProduto(id: string, data: ProdutoFormData) {
 
   // Debug: ver o que está sendo atualizado
   if (process.env.NODE_ENV === 'development') {
-    console.log('[updateProduto] Atualizando produto:', {
+    logger.log('[updateProduto] Atualizando produto:', {
       id,
       nome: updateData.nome,
       slug: updateData.slug,
@@ -204,7 +207,7 @@ export async function updateProduto(id: string, data: ProdutoFormData) {
     .single()
 
   if (error) {
-    console.error('❌ Erro ao atualizar produto:', {
+    logger.error('❌ Erro ao atualizar produto:', {
       error: error.message,
       code: error.code,
       details: error.details,
@@ -224,7 +227,7 @@ export async function updateProduto(id: string, data: ProdutoFormData) {
 
   // Debug: ver o que foi atualizado
   if (process.env.NODE_ENV === 'development') {
-    console.log('[updateProduto] Produto atualizado:', {
+    logger.log('[updateProduto] Produto atualizado:', {
       id: produto.id,
       nome: produto.nome,
       cores: produto.cores,
@@ -255,7 +258,7 @@ export async function deleteProduto(id: string) {
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao deletar produto:', error)
+    logger.error('Erro ao deletar produto:', error)
     return {
       success: false,
       error: 'Erro ao deletar produto',
@@ -287,7 +290,7 @@ export async function updateProdutoPreco(id: string, preco: number) {
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao atualizar preço do produto:', error)
+    logger.error('Erro ao atualizar preço do produto:', error)
     return {
       success: false,
       error: 'Erro ao atualizar preço',
@@ -313,7 +316,7 @@ export async function toggleProdutoAtivo(id: string, ativo: boolean) {
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao alterar status do produto:', error)
+    logger.error('Erro ao alterar status do produto:', error)
     return {
       success: false,
       error: 'Erro ao alterar status',
@@ -336,7 +339,7 @@ export async function getCategorias() {
     .order('ordem', { ascending: true })
 
   if (error) {
-    console.error('Erro ao buscar categorias:', error)
+    logger.error('Erro ao buscar categorias:', error)
     return { categorias: [], error: 'Erro ao carregar categorias' }
   }
 

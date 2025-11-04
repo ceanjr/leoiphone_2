@@ -2,6 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createLogger } from '@/lib/utils/logger'
+
+const logger = createLogger('DashboardActions')
 
 /**
  * Zerar visualizações de todos os produtos
@@ -23,7 +26,7 @@ export async function zerarVisualizacoes() {
     const { error } = await supabase.rpc('zerar_visualizacoes_produtos')
 
     if (error) {
-      console.error('Erro ao zerar visualizações:', error)
+      logger.error('Erro ao zerar visualizações:', error)
       return { success: false, error: error.message }
     }
 
@@ -35,7 +38,7 @@ export async function zerarVisualizacoes() {
       message: 'Visualizações zeradas com sucesso!',
     }
   } catch (error: any) {
-    console.error('Erro ao zerar visualizações:', error)
+    logger.error('Erro ao zerar visualizações:', error)
     return {
       success: false,
       error: error.message || 'Erro desconhecido',
@@ -63,7 +66,7 @@ export async function aleatorizarProdutosRelacionados() {
     const { error } = await supabase.rpc('aleatorizar_produtos_relacionados')
 
     if (error) {
-      console.error('Erro ao aleatorizar produtos relacionados:', error)
+      logger.error('Erro ao aleatorizar produtos relacionados:', error)
       return { success: false, error: error.message }
     }
 
@@ -75,7 +78,7 @@ export async function aleatorizarProdutosRelacionados() {
       message: 'Produtos relacionados aleatorizados com sucesso!',
     }
   } catch (error: any) {
-    console.error('Erro ao aleatorizar produtos relacionados:', error)
+    logger.error('Erro ao aleatorizar produtos relacionados:', error)
     return {
       success: false,
       error: error.message || 'Erro desconhecido',

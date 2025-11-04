@@ -31,9 +31,9 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'Léo iPhone - iPhones Novos e Seminovos com Garantia',
+    title: 'CatálogoLéo iPhone',
     description:
-      'Encontre iPhones novos e seminovos com os melhores preços. Entrega rápida, garantia e atendimento especializado.',
+      'Veja os modelos disponíveis de iPhones com preços, imagens e informações detalhadas.',
     type: 'website',
     locale: 'pt_BR',
     url: '/',
@@ -49,9 +49,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Léo iPhone - iPhones Novos e Seminovos com Garantia',
+    title: 'Catálogo Léo iPhone',
     description:
-      'Encontre iPhones novos e seminovos com os melhores preços. Confira nosso catálogo!',
+      'Veja os modelos disponíveis de iPhones com preços, imagens e informações detalhadas.',
     creator: '@leoiphone',
     site: '@leoiphone',
   },

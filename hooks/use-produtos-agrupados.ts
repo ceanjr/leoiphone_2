@@ -3,9 +3,9 @@
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { agruparProdutosPorCategoria, filtrarProdutos } from '@/lib/utils/produto-grouping'
-import { ordenarProdutosPorModelo } from '@/lib/utils/produto-helpers'
-import type { ProdutosAgrupados } from '@/lib/utils/produto-grouping'
+import { agruparProdutosPorCategoria, filtrarProdutos } from '@/lib/utils/produtos/grouping'
+import { ordenarProdutosPorModelo } from '@/lib/utils/produtos/helpers'
+import type { ProdutosAgrupados } from '@/lib/utils/produtos/grouping'
 import type { ProdutoComCategoria } from '@/types/produto'
 
 const MINIMO_PRODUTOS_INICIAIS = 20

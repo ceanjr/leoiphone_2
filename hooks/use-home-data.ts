@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ordenarProdutosPorModelo } from '@/lib/utils/produto-helpers'
+import { ordenarProdutosPorModelo } from '@/lib/utils/produtos/helpers'
 import type { Produto, ProdutoComCategoria, ProdutoCusto } from '@/types/produto'
 
 export interface Categoria {

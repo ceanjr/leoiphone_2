@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { logger } from '@/lib/utils/logger'
 
 function isProduction(): boolean {
   if (typeof window === 'undefined') return false
@@ -30,7 +31,7 @@ interface TrackMetricOptions {
 
 export async function trackMetric({ metricType, metadata = {} }: TrackMetricOptions): Promise<void> {
   if (!isProduction()) {
-    console.log('[Metrics] Tracking disabled in development:', metricType, metadata)
+    logger.info('[Metrics] Tracking disabled in development:', metricType, metadata)
     return
   }
 
@@ -46,7 +47,7 @@ export async function trackMetric({ metricType, metadata = {} }: TrackMetricOpti
     } as any)
 
   if (error) {
-    console.error('[Metrics] Failed to track metric:', error.message)
+    logger.error('[Metrics] Failed to track metric:', error.message)
   }
 }
 
@@ -59,7 +60,7 @@ export async function resetMetric(metricType: string): Promise<{ success: boolea
     .eq('metric_type', metricType)
 
   if (error) {
-    console.error('[Metrics] Failed to reset metric:', error.message)
+    logger.error('[Metrics] Failed to reset metric:', error.message)
     return { success: false, error: error.message }
   }
 
@@ -89,7 +90,7 @@ export async function getMetricsStats(period: 'today' | 'week' | 'month' | 'all'
   const { data, error } = await query
 
   if (error) {
-    console.error('[Metrics] Failed to fetch metrics:', error.message)
+    logger.error('[Metrics] Failed to fetch metrics:', error.message)
     return {}
   }
 

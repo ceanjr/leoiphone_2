@@ -2,7 +2,10 @@
 
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { createLogger } from '@/lib/utils/logger'
 import type { TaxasConfig } from '@/lib/validations/taxas'
+
+const logger = createLogger('usePollingTaxas')
 
 interface ConfiguracaoTaxas {
   ativo: boolean
@@ -33,11 +36,11 @@ export function usePollingTaxas(options: UsePollingTaxasOptions = {}) {
 
   useEffect(() => {
     if (!enabled) {
-      console.log('[usePollingTaxas] Polling desabilitado')
+      logger.log('Polling desabilitado')
       return
     }
 
-    console.log('[usePollingTaxas] Iniciando polling (intervalo:', interval, 'ms)')
+    logger.log('Iniciando polling (intervalo:', interval, 'ms)')
 
     const supabase = createClient()
 
@@ -51,7 +54,7 @@ export function usePollingTaxas(options: UsePollingTaxasOptions = {}) {
           .single()
 
         if (error) {
-          console.error('[usePollingTaxas] Erro ao buscar taxas:', error)
+          logger.error('Erro ao buscar taxas:', error)
           return
         }
 
@@ -93,7 +96,7 @@ export function usePollingTaxas(options: UsePollingTaxasOptions = {}) {
           lastDataRef.current = currentHash
         }
       } catch (error) {
-        console.error('[usePollingTaxas] Erro no polling:', error)
+        logger.error('Erro no polling:', error)
       }
     }
 
@@ -105,7 +108,7 @@ export function usePollingTaxas(options: UsePollingTaxasOptions = {}) {
 
     // Cleanup
     return () => {
-      console.log('[usePollingTaxas] Parando polling')
+      logger.log('Parando polling')
       if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current)
       }
