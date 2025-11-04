@@ -87,32 +87,8 @@ function sortOnMainThread(produtos: Produto[], ordenacao: OrdenacaoType): Produt
       )
     case 'modelo':
     default:
+      // Importar dinamicamente para evitar circular dependency
+      const { ordenarProdutosPorModelo } = require('@/lib/utils/produtos/helpers')
       return ordenarProdutosPorModelo(produtosOrdenados)
   }
-}
-
-function ordenarProdutosPorModelo(produtos: Produto[]): Produto[] {
-  return produtos.sort((a, b) => {
-    const extrairNumero = (nome: string): number => {
-      if (
-        nome.toLowerCase().includes('iphone x') &&
-        !nome.toLowerCase().includes('xr') &&
-        !nome.toLowerCase().includes('xs')
-      )
-        return 10
-      if (nome.toLowerCase().includes('iphone xr')) return 10.3
-      if (nome.toLowerCase().includes('iphone xs')) return 10.5
-
-      const match = nome.match(/iphone\s+(\d+)/i)
-      if (match) return parseInt(match[1])
-
-      return 9999
-    }
-
-    const numA = extrairNumero(a.nome)
-    const numB = extrairNumero(b.nome)
-
-    if (numA !== numB) return numA - numB
-    return a.nome.localeCompare(b.nome)
-  })
 }
