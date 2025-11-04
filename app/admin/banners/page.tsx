@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/utils/logger'
 
 import { useCallback, useEffect, useState } from 'react'
 import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, Search, X, Download } from 'lucide-react'
@@ -282,7 +283,7 @@ export default function BannersPage() {
       .filter('deleted_at', 'is', null)
 
     if (error) {
-      console.error('Erro ao carregar produtos:', error)
+      logger.error('Erro ao carregar produtos:', error)
       toast.error('Erro ao carregar produtos: ' + error.message)
       return
     }

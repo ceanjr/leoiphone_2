@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/utils/logger'
 
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -190,7 +191,7 @@ export default function DashboardPage() {
     }>
 
     if (bannersDestaqueRes.error) {
-      console.error('[Dashboard] Erro ao carregar banners de destaque:', bannersDestaqueRes.error)
+      logger.error('[Dashboard] Erro ao carregar banners de destaque:', bannersDestaqueRes.error)
     }
 
     let bannersDestaque: BannerHighlight[] = []
@@ -227,11 +228,11 @@ export default function DashboardPage() {
       const [clicksStatsRes, produtosInfoRes] = await Promise.all([clicksPromise, produtosPromise])
 
       if (clicksStatsRes.error) {
-        console.error('[Dashboard] Erro ao carregar estatísticas de cliques:', clicksStatsRes.error)
+        logger.error('[Dashboard] Erro ao carregar estatísticas de cliques:', clicksStatsRes.error)
       }
 
       if (produtosInfoRes.error) {
-        console.error('[Dashboard] Erro ao carregar produtos destacados:', produtosInfoRes.error)
+        logger.error('[Dashboard] Erro ao carregar produtos destacados:', produtosInfoRes.error)
       }
 
       const statsMap = new Map<string, Map<string, { totalClicks: number; uniqueVisitors: number }>>()

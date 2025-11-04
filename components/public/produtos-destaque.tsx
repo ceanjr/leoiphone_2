@@ -1,24 +1,24 @@
 'use client'
 
-import { logger } from '@/lib/utils/logger'
-import { useCallback, memo } from 'react'
+import { memo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Flame } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { CountdownTimer } from '@/components/ui/countdown-timer'
-import { createClient } from '@/lib/supabase/client'
+import { trackBannerProductClick } from '@/app/admin/dashboard/actions'
+import { logger } from '@/lib/utils/logger'
 
 function getOrCreateVisitorId(): string {
   if (typeof window === 'undefined') return ''
-  
+
   const stored = localStorage.getItem('visitor_id')
   if (stored) return stored
-  
+
   // Criar novo visitor_id (UUID simples)
   const newVisitorId = `v_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
   localStorage.setItem('visitor_id', newVisitorId)
-  
+
   return newVisitorId
 }
 
@@ -51,36 +51,26 @@ function ProdutosDestaqueComponent({
   bannerId,
   countdownEndsAt,
 }: ProdutosDestaqueProps) {
-  const trackClick = useCallback(
-    async (produtoId: string) => {
-      try {
-        const supabase = createClient()
-        const visitorId = getOrCreateVisitorId()
+  const [isTracking, setIsTracking] = useState(false)
 
-        // Type assertion necessária pois banner_produto_clicks não está em database.types.ts
-        const { error } = await (supabase as any)
-          .from('banner_produto_clicks')
-          .insert({
-            banner_id: bannerId,
-            produto_id: produtoId,
-            visitor_id: visitorId,
-          })
+  const handleClick = async (productId: string) => {
+    // Não bloquear a navegação
+    if (isTracking) return
 
-        if (error) {
-          logger.error('[BannerClicks] Erro ao registrar clique:', error)
-        } else {
-          logger.info('[BannerClicks] Clique registrado:', {
-            bannerId,
-            produtoId,
-            visitorId,
-          })
-        }
-      } catch (error) {
-        logger.error('[BannerClicks] Exceção ao registrar clique:', error)
-      }
-    },
-    [bannerId]
-  )
+    setIsTracking(true)
+
+    try {
+      // Pegar ou criar visitor_id
+      const visitorId = getOrCreateVisitorId()
+      
+      // Registrar o clique em background
+      await trackBannerProductClick(bannerId, productId, visitorId)
+    } catch (error) {
+      logger.error('Erro ao registrar clique:', error)
+    } finally {
+      setIsTracking(false)
+    }
+  }
 
   return (
     <div className="mb-8 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
@@ -106,9 +96,7 @@ function ProdutosDestaqueComponent({
             <Flame className="h-8 w-8 text-zinc-600" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-zinc-300">
-              Produtos Esgotados
-            </h3>
+            <h3 className="text-lg font-semibold text-zinc-300">Produtos Esgotados</h3>
             <p className="text-sm text-zinc-500">
               Todos os produtos em oferta dessa semana esgotaram
             </p>
@@ -126,87 +114,87 @@ function ProdutosDestaqueComponent({
 
             return (
               <Link
-              key={produto.id}
-              href={`/produto/${produto.slug}?preco_promo=${produto.preco_promocional}`}
-              onClick={() => trackClick(produto.id)}
-              className="group min-w-[240px] flex-shrink-0 rounded-lg border border-zinc-800 bg-zinc-950 p-3 transition-all hover:border-[var(--brand-yellow)] hover:shadow-[var(--brand-yellow)]/10 hover:shadow-lg md:min-w-0 md:p-4"
-            >
-              {/* Badge de Desconto */}
-              {desconto > 0 && (
-                <div className="mb-2 flex items-center justify-center gap-1.5 rounded-md bg-orange-600/20 px-2 py-1">
-                  <Flame className="h-4 w-4 animate-pulse text-orange-500" />
-                  <span className="w-full text-center text-xs font-bold text-orange-500">
-                    -{desconto}% OFF
-                  </span>
-                </div>
-              )}
-
-              {/* Imagem do Produto */}
-              <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-lg bg-zinc-900">
-                <Image
-                  src={produto.foto_principal}
-                  alt={produto.nome}
-                  fill
-                  className="object-cover transition-transform group-hover:scale-105"
-                  sizes="(max-width: 768px) 280px, (max-width: 1024px) 50vw, 25vw"
-                />
-              </div>
-
-              {/* Informações do Produto */}
-              <div className="space-y-2">
-                <h3 className="line-clamp-2 text-sm font-medium text-white group-hover:text-[var(--brand-yellow)]">
-                  {produto.nome}
-                </h3>
-
-                {produto.codigo_produto && (
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-[10px] text-zinc-500">Código:</span>
-                    <span className="font-mono text-zinc-400">{produto.codigo_produto}</span>
+                key={produto.id}
+                href={`/produto/${produto.slug}?preco_promo=${produto.preco_promocional}`}
+                onClick={() => handleClick(produto.id)}
+                className="group min-w-[240px] flex-shrink-0 rounded-lg border border-zinc-800 bg-zinc-950 p-3 transition-all hover:border-[var(--brand-yellow)] hover:shadow-[var(--brand-yellow)]/10 hover:shadow-lg md:min-w-0 md:p-4"
+              >
+                {/* Badge de Desconto */}
+                {desconto > 0 && (
+                  <div className="mb-2 flex items-center justify-center gap-1.5 rounded-md bg-orange-600/20 px-2 py-1">
+                    <Flame className="h-4 w-4 animate-pulse text-orange-500" />
+                    <span className="w-full text-center text-xs font-bold text-orange-500">
+                      -{desconto}% OFF
+                    </span>
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  {produto.condicao === 'novo' && (
-                    <Badge className="bg-green-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-green-700">
-                      Novo
-                    </Badge>
-                  )}
-                  {produto.condicao === 'seminovo' && (
-                    <Badge className="bg-amber-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-amber-700">
-                      Seminovo
-                    </Badge>
-                  )}
-                  {produto.garantia !== 'nenhuma' && (
-                    <Badge className="bg-purple-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-purple-700">
-                      Com Garantia
-                    </Badge>
-                  )}
+                {/* Imagem do Produto */}
+                <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-lg bg-zinc-900">
+                  <Image
+                    src={produto.foto_principal}
+                    alt={produto.nome}
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105"
+                    sizes="(max-width: 768px) 280px, (max-width: 1024px) 50vw, 25vw"
+                  />
                 </div>
 
-                {/* Preços */}
-                <div className="border-t border-zinc-800 pt-2">
-                  {produto.preco_promocional < produto.preco ? (
-                    <div className="space-y-1">
-                      <div className="text-xs text-zinc-500 line-through">
-                        R$ {produto.preco.toFixed(2)}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Flame className="h-5 w-5 animate-pulse text-orange-500" />
-                        <div className="text-2xl font-bold text-[var(--brand-yellow)]">
-                          R$ {produto.preco_promocional.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-2xl font-bold text-[var(--brand-yellow)]">
-                      R$ {produto.preco_promocional.toFixed(2)}
+                {/* Informações do Produto */}
+                <div className="space-y-2">
+                  <h3 className="line-clamp-2 text-sm font-medium text-white group-hover:text-[var(--brand-yellow)]">
+                    {produto.nome}
+                  </h3>
+
+                  {produto.codigo_produto && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-[10px] text-zinc-500">Código:</span>
+                      <span className="font-mono text-zinc-400">{produto.codigo_produto}</span>
                     </div>
                   )}
+
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                    {produto.condicao === 'novo' && (
+                      <Badge className="bg-green-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-green-700">
+                        Novo
+                      </Badge>
+                    )}
+                    {produto.condicao === 'seminovo' && (
+                      <Badge className="bg-amber-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-amber-700">
+                        Seminovo
+                      </Badge>
+                    )}
+                    {produto.garantia !== 'nenhuma' && (
+                      <Badge className="bg-purple-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-purple-700">
+                        Com Garantia
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Preços */}
+                  <div className="border-t border-zinc-800 pt-2">
+                    {produto.preco_promocional < produto.preco ? (
+                      <div className="space-y-1">
+                        <div className="text-xs text-zinc-500 line-through">
+                          R$ {produto.preco.toFixed(2)}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Flame className="h-5 w-5 animate-pulse text-orange-500" />
+                          <div className="text-2xl font-bold text-[var(--brand-yellow)]">
+                            R$ {produto.preco_promocional.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-2xl font-bold text-[var(--brand-yellow)]">
+                        R$ {produto.preco_promocional.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          )
-        })}
+              </Link>
+            )
+          })}
         </div>
       )}
 

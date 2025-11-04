@@ -73,12 +73,12 @@ export function usePollingTaxas(options: UsePollingTaxasOptions = {}) {
 
           if (isFirstLoad || hasChanged) {
             if (isFirstLoad) {
-              console.log('[usePollingTaxas] Carga inicial:', {
+              logger.log('[usePollingTaxas] Carga inicial:', {
                 ativo: typedData.ativo,
                 taxas: typedData.taxas,
               })
             } else {
-              console.log('[usePollingTaxas] Mudança detectada!', {
+              logger.log('[usePollingTaxas] Mudança detectada!', {
                 ativo: typedData.ativo,
                 taxas: typedData.taxas,
               })

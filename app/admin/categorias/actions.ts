@@ -4,6 +4,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { logger } from '@/lib/utils/logger'
 
 function generateSlug(nome: string): string {
   return nome
@@ -25,7 +26,7 @@ export async function getCategorias() {
     .order('ordem', { ascending: true })
 
   if (error) {
-    console.error('Erro ao buscar categorias:', error)
+    logger.error('Erro ao buscar categorias:', error)
     return { categorias: [], error: 'Erro ao carregar categorias' }
   }
 
@@ -76,7 +77,7 @@ export async function createCategoria(data: { nome: string; descricao?: string; 
     .single()
 
   if (error) {
-    console.error('Erro ao criar categoria:', error)
+    logger.error('Erro ao criar categoria:', error)
     return { success: false, error: 'Erro ao criar categoria' }
   }
 
@@ -116,7 +117,7 @@ export async function updateCategoria(id: string, data: { nome: string; descrica
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao atualizar categoria:', error)
+    logger.error('Erro ao atualizar categoria:', error)
     return { success: false, error: 'Erro ao atualizar categoria' }
   }
 
@@ -144,7 +145,7 @@ export async function deleteCategoria(id: string) {
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao deletar categoria:', error)
+    logger.error('Erro ao deletar categoria:', error)
     return { success: false, error: 'Erro ao deletar categoria' }
   }
 
@@ -161,7 +162,7 @@ export async function updateOrdemCategoria(id: string, novaOrdem: number) {
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao atualizar ordem:', error)
+    logger.error('Erro ao atualizar ordem:', error)
     return { success: false, error: 'Erro ao atualizar ordem' }
   }
 
@@ -178,7 +179,7 @@ export async function toggleCategoriaAtivo(id: string, ativo: boolean) {
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao alterar status da categoria:', error)
+    logger.error('Erro ao alterar status da categoria:', error)
     return { success: false, error: 'Erro ao alterar status' }
   }
 

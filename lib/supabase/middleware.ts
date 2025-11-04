@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { logger } from '@/lib/utils/logger'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -56,7 +57,7 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
       }
     } catch (error) {
-      console.warn('Auth check timeout, allowing access with token', error)
+      logger.warn('Auth check timeout, allowing access with token', error)
     }
   }
 

@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/utils/logger'
 
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,7 @@ export default function AdminError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('Admin area error:', error)
+    logger.error('Admin area error:', error)
   }, [error])
 
   return (

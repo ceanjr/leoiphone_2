@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/utils/logger'
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,7 @@ export default function OAuthOlxPage() {
     setLoading(true)
     
     try {
-      console.log('[OAUTH] Tentando fluxo client_credentials via backend...')
+      logger.log('[OAUTH] Tentando fluxo client_credentials via backend...')
       
       // Usar nossa API backend para evitar CORS
       const response = await fetch('/api/olx-token', {
@@ -47,7 +48,7 @@ export default function OAuthOlxPage() {
 
       const data = await response.json()
       
-      console.log('[OAUTH] Resposta:', { status: response.status, success: data.success })
+      logger.log('[OAUTH] Resposta:', { status: response.status, success: data.success })
 
       if (!response.ok || !data.success) {
         const errorMsg = data.error || data.message || 'Erro ao obter token'
@@ -55,16 +56,16 @@ export default function OAuthOlxPage() {
         // Mostrar erro com mais detalhes
         toast.error(`Erro: ${errorMsg}`, { duration: 5000 })
         
-        console.error('[OAUTH] Erro completo:', data)
+        logger.error('[OAUTH] Erro completo:', data)
         
         // Mostrar detalhes do erro se disponível
         if (data.details) {
-          console.error('[OAUTH] Detalhes:', data.details)
+          logger.error('[OAUTH] Detalhes:', data.details)
         }
         
         // Mostrar sugestões se disponíveis
         if (data.suggestions) {
-          console.log('[OAUTH] Sugestões:', data.suggestions)
+          logger.log('[OAUTH] Sugestões:', data.suggestions)
           setTimeout(() => {
             data.suggestions.forEach((s: string, i: number) => {
               setTimeout(() => {
@@ -84,7 +85,7 @@ export default function OAuthOlxPage() {
         return
       }
 
-      console.log('[OAUTH] ✅ Token obtido com sucesso!')
+      logger.log('[OAUTH] ✅ Token obtido com sucesso!')
 
       // Salvar no banco
       const saveResult = await salvarConfigOlx({
@@ -105,7 +106,7 @@ export default function OAuthOlxPage() {
         toast.error(saveResult.error || 'Erro ao salvar configuração')
       }
     } catch (error: any) {
-      console.error('[OAUTH] Erro:', error)
+      logger.error('[OAUTH] Erro:', error)
       toast.error('Erro de rede: ' + error.message)
     }
     
@@ -155,7 +156,7 @@ export default function OAuthOlxPage() {
 
       const data = await response.json()
       
-      console.log('Resposta do token:', data)
+      logger.log('Resposta do token:', data)
 
       if (!response.ok) {
         toast.error(`Erro: ${data.error_description || data.error || 'Erro ao trocar código'}`)
@@ -180,7 +181,7 @@ export default function OAuthOlxPage() {
         toast.error(saveResult.error || 'Erro ao salvar configuração')
       }
     } catch (error: any) {
-      console.error('Erro ao trocar código:', error)
+      logger.error('Erro ao trocar código:', error)
       toast.error('Erro de rede: ' + error.message)
     }
     
@@ -211,7 +212,7 @@ export default function OAuthOlxPage() {
         toast.error(saveResult.error || 'Erro ao salvar configuração')
       }
     } catch (error: any) {
-      console.error('Erro ao salvar token:', error)
+      logger.error('Erro ao salvar token:', error)
       toast.error('Erro: ' + error.message)
     }
     

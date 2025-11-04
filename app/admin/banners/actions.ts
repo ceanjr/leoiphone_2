@@ -76,8 +76,8 @@ export async function createBanner(data: {
     .single()
 
   if (error) {
-    console.error('Erro ao criar banner:', error)
-    console.error('Detalhes do erro:', JSON.stringify(error, null, 2))
+    logger.error('Erro ao criar banner:', error)
+    logger.error('Detalhes do erro:', JSON.stringify(error, null, 2))
     return { success: false, error: `Erro ao criar banner: ${error.message || 'Erro desconhecido'}` }
   }
 
@@ -125,7 +125,7 @@ export async function updateBanner(
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao atualizar banner:', error)
+    logger.error('Erro ao atualizar banner:', error)
     return { success: false, error: 'Erro ao atualizar banner' }
   }
 
@@ -140,7 +140,7 @@ export async function deleteBanner(id: string) {
   const { error } = await (supabase as any).from('banners').delete().eq('id', id)
 
   if (error) {
-    console.error('Erro ao deletar banner:', error)
+    logger.error('Erro ao deletar banner:', error)
     return { success: false, error: 'Erro ao deletar banner' }
   }
 
@@ -158,7 +158,7 @@ export async function updateOrdemBanner(id: string, novaOrdem: number) {
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao atualizar ordem:', error)
+    logger.error('Erro ao atualizar ordem:', error)
     return { success: false, error: 'Erro ao atualizar ordem' }
   }
 
@@ -176,7 +176,7 @@ export async function toggleBannerAtivo(id: string, ativo: boolean) {
     .eq('id', id)
 
   if (error) {
-    console.error('Erro ao alterar status do banner:', error)
+    logger.error('Erro ao alterar status do banner:', error)
     return { success: false, error: 'Erro ao alterar status' }
   }
 

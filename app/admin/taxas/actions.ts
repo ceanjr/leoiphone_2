@@ -1,4 +1,5 @@
 'use server'
+import { logger } from '@/lib/utils/logger'
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
@@ -49,7 +50,7 @@ export async function getConfiguracaoTaxas() {
       }
     }
 
-    console.error('Erro ao buscar configuração de taxas:', error)
+    logger.error('Erro ao buscar configuração de taxas:', error)
     return {
       configuracao: null,
       error: 'Erro ao carregar configurações',
@@ -125,7 +126,7 @@ export async function updateConfiguracaoTaxas(config: ConfiguracaoTaxas) {
   }
 
   if (result.error) {
-    console.error('Erro ao salvar configuração:', result.error)
+    logger.error('Erro ao salvar configuração:', result.error)
     return {
       success: false,
       error: result.error.message || 'Erro ao salvar configurações',
@@ -188,7 +189,7 @@ export async function getPresets() {
     .order('created_at', { ascending: true })
 
   if (error) {
-    console.error('Erro ao buscar presets:', error)
+    logger.error('Erro ao buscar presets:', error)
     return {
       presets: [],
       error: 'Erro ao carregar presets',
@@ -233,7 +234,7 @@ export async function createPreset(preset: Omit<PresetTaxas, 'id'>) {
     .single()
 
   if (error) {
-    console.error('Erro ao criar preset:', error)
+    logger.error('Erro ao criar preset:', error)
     return {
       success: false,
       error: error.message || 'Erro ao criar preset',
@@ -270,7 +271,7 @@ export async function updatePreset(id: string, preset: Partial<PresetTaxas>) {
     .single()
 
   if (error) {
-    console.error('Erro ao atualizar preset:', error)
+    logger.error('Erro ao atualizar preset:', error)
     return {
       success: false,
       error: error.message || 'Erro ao atualizar preset',
@@ -294,7 +295,7 @@ export async function deletePreset(id: string) {
   const { error } = await (supabase as any).from('presets_taxas').delete().eq('id', id)
 
   if (error) {
-    console.error('Erro ao deletar preset:', error)
+    logger.error('Erro ao deletar preset:', error)
     return {
       success: false,
       error: error.message || 'Erro ao deletar preset',

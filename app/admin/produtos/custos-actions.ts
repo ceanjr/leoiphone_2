@@ -1,4 +1,5 @@
 'use server'
+import { logger } from '@/lib/utils/logger'
 
 import { createClient } from '@/lib/supabase/server'
 import { produtoCustoSchema } from '@/lib/validations/produto'
@@ -18,13 +19,13 @@ export async function getProdutoCustos(produtoId: string): Promise<{ data: Produ
       .order('created_at', { ascending: true })
 
     if (error) {
-      console.error('Erro ao buscar custos do produto:', error)
+      logger.error('Erro ao buscar custos do produto:', error)
       return { data: null, error: error.message }
     }
 
     return { data, error: null }
   } catch (error) {
-    console.error('Erro ao buscar custos do produto:', error)
+    logger.error('Erro ao buscar custos do produto:', error)
     return { data: null, error: 'Erro ao buscar custos do produto' }
   }
 }
@@ -54,13 +55,13 @@ export async function createProdutoCusto(
       .single()
 
     if (error) {
-      console.error('Erro ao criar custo do produto:', error)
+      logger.error('Erro ao criar custo do produto:', error)
       return { data: null, error: error.message }
     }
 
     return { data, error: null }
   } catch (error) {
-    console.error('Erro ao criar custo do produto:', error)
+    logger.error('Erro ao criar custo do produto:', error)
     if (error instanceof Error) {
       return { data: null, error: error.message }
     }
@@ -94,13 +95,13 @@ export async function updateProdutoCusto(
       .single()
 
     if (error) {
-      console.error('Erro ao atualizar custo do produto:', error)
+      logger.error('Erro ao atualizar custo do produto:', error)
       return { data: null, error: error.message }
     }
 
     return { data, error: null }
   } catch (error) {
-    console.error('Erro ao atualizar custo do produto:', error)
+    logger.error('Erro ao atualizar custo do produto:', error)
     if (error instanceof Error) {
       return { data: null, error: error.message }
     }
@@ -121,13 +122,13 @@ export async function deleteProdutoCusto(custoId: string): Promise<{ success: bo
       .eq('id', custoId)
 
     if (error) {
-      console.error('Erro ao deletar custo do produto:', error)
+      logger.error('Erro ao deletar custo do produto:', error)
       return { success: false, error: error.message }
     }
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('Erro ao deletar custo do produto:', error)
+    logger.error('Erro ao deletar custo do produto:', error)
     if (error instanceof Error) {
       return { success: false, error: error.message }
     }
@@ -144,14 +145,14 @@ export async function createProdutosCustosEmLote(
 ): Promise<{ data: ProdutoCusto[] | null; error: string | null }> {
   try {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[createProdutosCustosEmLote] Iniciando validação:', custosData)
+      logger.log('[createProdutosCustosEmLote] Iniciando validação:', custosData)
     }
 
     // Validar todos os custos
     const validated = custosData.map((custo) => produtoCustoSchema.parse(custo))
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('[createProdutosCustosEmLote] Custos validados:', validated)
+      logger.log('[createProdutosCustosEmLote] Custos validados:', validated)
     }
 
     const supabase = await createClient()
@@ -164,7 +165,7 @@ export async function createProdutosCustosEmLote(
     }))
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('[createProdutosCustosEmLote] Dados para inserir:', insertData)
+      logger.log('[createProdutosCustosEmLote] Dados para inserir:', insertData)
     }
 
     const { data, error } = await (supabase as any)
@@ -173,17 +174,17 @@ export async function createProdutosCustosEmLote(
       .select()
 
     if (error) {
-      console.error('❌ Erro ao criar custos em lote:', error)
+      logger.error('❌ Erro ao criar custos em lote:', error)
       return { data: null, error: error.message }
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Custos inseridos no banco:', data)
+      logger.log('✅ Custos inseridos no banco:', data)
     }
 
     return { data, error: null }
   } catch (error) {
-    console.error('❌ Erro ao criar custos em lote:', error)
+    logger.error('❌ Erro ao criar custos em lote:', error)
     if (error instanceof Error) {
       return { data: null, error: error.message }
     }
@@ -200,7 +201,7 @@ export async function substituirProdutoCustos(
 ): Promise<{ data: ProdutoCusto[] | null; error: string | null }> {
   try {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[substituirProdutoCustos] Iniciando:', {
+      logger.log('[substituirProdutoCustos] Iniciando:', {
         produtoId,
         quantidadeCustos: novosCustos.length,
         custos: novosCustos,
@@ -216,18 +217,18 @@ export async function substituirProdutoCustos(
       .eq('produto_id', produtoId)
 
     if (deleteError) {
-      console.error('❌ Erro ao deletar custos existentes:', deleteError)
+      logger.error('❌ Erro ao deletar custos existentes:', deleteError)
       return { data: null, error: deleteError.message }
     }
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Custos existentes deletados com sucesso')
+      logger.log('✅ Custos existentes deletados com sucesso')
     }
 
     // Se não há novos custos, retornar array vazio
     if (novosCustos.length === 0) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('ℹ️ Nenhum custo novo para adicionar')
+        logger.log('ℹ️ Nenhum custo novo para adicionar')
       }
       return { data: [], error: null }
     }
@@ -237,15 +238,15 @@ export async function substituirProdutoCustos(
 
     if (process.env.NODE_ENV === 'development') {
       if (result.error) {
-        console.error('❌ Erro ao criar novos custos:', result.error)
+        logger.error('❌ Erro ao criar novos custos:', result.error)
       } else {
-        console.log('✅ Novos custos criados com sucesso:', result.data)
+        logger.log('✅ Novos custos criados com sucesso:', result.data)
       }
     }
 
     return result
   } catch (error) {
-    console.error('❌ Erro ao substituir custos do produto:', error)
+    logger.error('❌ Erro ao substituir custos do produto:', error)
     if (error instanceof Error) {
       return { data: null, error: error.message }
     }

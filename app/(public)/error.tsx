@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/utils/logger'
 
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,7 @@ export default function PublicError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('Public page error:', error)
+    logger.error('Public page error:', error)
   }, [error])
 
   return (

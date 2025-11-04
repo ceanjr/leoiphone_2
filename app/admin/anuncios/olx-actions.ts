@@ -1,4 +1,5 @@
 'use server'
+import { logger } from '@/lib/utils/logger'
 
 import { createClient } from '@/lib/supabase/server'
 import { OlxAPIClient, produtoToOlxAdvert } from '@/lib/api/olx/api-client'
@@ -78,7 +79,7 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
     }
 
     // VALIDAR PERMISSÕES ANTES DE CRIAR
-    console.log('[OLX-ACTION] Validando permissões do token...')
+    logger.log('[OLX-ACTION] Validando permissões do token...')
     const validation = await validarPermissoesToken()
 
     if (!validation.success) {
@@ -95,20 +96,20 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       }
     }
 
-    console.log('[OLX-ACTION] ✅ Token validado com sucesso')
+    logger.log('[OLX-ACTION] ✅ Token validado com sucesso')
     if (validation.plan === 'professional') {
-      console.log(
+      logger.log(
         `[OLX-ACTION] Plano: Profissional (${validation.ads_available} anúncios disponíveis)`
       )
     } else if (validation.plan === 'basic') {
-      console.log('[OLX-ACTION] Plano: Básico')
+      logger.log('[OLX-ACTION] Plano: Básico')
     }
 
     // Converter produto para formato OLX
     const olxAdvert = produtoToOlxAdvert(produto, SITE_URL, config.access_token)
 
-    console.log('[OLX-ACTION] Produto convertido para OLX:', olxAdvert)
-    console.log('[OLX-ACTION] Produto raw:', JSON.stringify(produto, null, 2))
+    logger.log('[OLX-ACTION] Produto convertido para OLX:', olxAdvert)
+    logger.log('[OLX-ACTION] Produto raw:', JSON.stringify(produto, null, 2))
 
     // Sobrescrever com dados personalizados se fornecidos
     if (input.titulo) {
@@ -121,16 +122,16 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       olxAdvert.ad_list[0].category = parseInt(input.categoria_olx)
     }
 
-    console.log('[OLX-ACTION] Dados finais para envio:', olxAdvert)
+    logger.log('[OLX-ACTION] Dados finais para envio:', olxAdvert)
 
     // Criar anúncio na OLX
     const olxResponse = await olxClient.createAd(olxAdvert)
 
-    console.log('[OLX-ACTION] Resposta completa da OLX:', olxResponse)
+    logger.log('[OLX-ACTION] Resposta completa da OLX:', olxResponse)
 
     if (olxResponse.error) {
-      console.error('[OLX-ACTION] Erro detectado:', olxResponse.error)
-      console.error(
+      logger.error('[OLX-ACTION] Erro detectado:', olxResponse.error)
+      logger.error(
         '[OLX-ACTION] Detalhes completos do erro:',
         JSON.stringify(olxResponse.error, null, 2)
       )
@@ -173,7 +174,7 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
         errorMessage += 'Erro de validação da OLX (543). '
         if (olxResponse.error.details) {
           const details = olxResponse.error.details
-          console.error('[OLX-ACTION] Detalhes do erro 543:', JSON.stringify(details, null, 2))
+          logger.error('[OLX-ACTION] Detalhes do erro 543:', JSON.stringify(details, null, 2))
 
           if (details.message) {
             errorMessage += details.message
@@ -193,7 +194,7 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
         errorMessage += `Erro no servidor da OLX (${errorCode}). Tente novamente mais tarde.`
         if (olxResponse.error.details) {
           const details = JSON.stringify(olxResponse.error.details)
-          console.error('[OLX-ACTION] Detalhes do erro 5xx:', details)
+          logger.error('[OLX-ACTION] Detalhes do erro 5xx:', details)
           if (olxResponse.error.details.message) {
             errorMessage += ` Detalhes: ${olxResponse.error.details.message}`
           }
@@ -226,9 +227,9 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       olxResponse.data?.statusCode === -6 ||
       olxResponse.data?.statusMessage === 'Without permission'
     ) {
-      console.error('[OLX-ACTION] ❌ Erro de permissão detectado')
-      console.error('[OLX-ACTION] Status:', olxResponse.data?.statusMessage)
-      console.error('[OLX-ACTION] Errors:', olxResponse.data?.errors)
+      logger.error('[OLX-ACTION] ❌ Erro de permissão detectado')
+      logger.error('[OLX-ACTION] Status:', olxResponse.data?.statusMessage)
+      logger.error('[OLX-ACTION] Errors:', olxResponse.data?.errors)
 
       const errorDetails = olxResponse.data?.errors?.[0] || {}
 
@@ -279,8 +280,8 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       olxResponse.data?.errors &&
       olxResponse.data.errors.length > 0
     ) {
-      console.error('[OLX-ACTION] ❌ Erro nos dados do anúncio')
-      console.error('[OLX-ACTION] Errors:', JSON.stringify(olxResponse.data.errors, null, 2))
+      logger.error('[OLX-ACTION] ❌ Erro nos dados do anúncio')
+      logger.error('[OLX-ACTION] Errors:', JSON.stringify(olxResponse.data.errors, null, 2))
 
       const firstError = olxResponse.data.errors[0] || {}
       const errorMessage = firstError.message || 'Erro desconhecido ao criar anúncio'
@@ -318,8 +319,8 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
     }
 
     // Sucesso - OLX pode retornar diferentes estruturas
-    console.log('[OLX-ACTION] ✅ Anúncio criado com sucesso!')
-    console.log(
+    logger.log('[OLX-ACTION] ✅ Anúncio criado com sucesso!')
+    logger.log(
       '[OLX-ACTION] Dados completos da resposta:',
       JSON.stringify(olxResponse.data, null, 2)
     )
@@ -337,31 +338,31 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       // Prioridade: list_id (ID público) > id (ID interno) > external_id
       if (firstAd?.list_id) {
         adUuid = String(firstAd.list_id)
-        console.log('[OLX-ACTION] ✅ list_id encontrado:', adUuid)
+        logger.log('[OLX-ACTION] ✅ list_id encontrado:', adUuid)
       } else if (firstAd?.id) {
         adUuid = String(firstAd.id)
-        console.log('[OLX-ACTION] ⚠️ Usando id interno:', adUuid)
+        logger.log('[OLX-ACTION] ⚠️ Usando id interno:', adUuid)
       } else if (firstAd?.external_id) {
         adUuid = String(firstAd.external_id)
-        console.log('[OLX-ACTION] ⚠️ Usando external_id:', adUuid)
+        logger.log('[OLX-ACTION] ⚠️ Usando external_id:', adUuid)
       }
 
       // Status do anúncio
       if (firstAd?.status) {
-        console.log('[OLX-ACTION] Status:', firstAd.status)
+        logger.log('[OLX-ACTION] Status:', firstAd.status)
       }
     } else if (olxResponse.data?.token) {
       // Retornou token de importação - precisamos consultar depois
       importToken = olxResponse.data.token
-      console.log('[OLX-ACTION] Token de importação recebido:', importToken)
+      logger.log('[OLX-ACTION] Token de importação recebido:', importToken)
 
       // Tentar consultar o status da importação IMEDIATAMENTE
       try {
-        console.log('[OLX-ACTION] Aguardando 2 segundos antes de consultar status...')
+        logger.log('[OLX-ACTION] Aguardando 2 segundos antes de consultar status...')
         await new Promise((resolve) => setTimeout(resolve, 2000))
 
         const statusResponse = await olxClient.getImportStatus(importToken)
-        console.log(
+        logger.log(
           '[OLX-ACTION] Status da importação:',
           JSON.stringify(statusResponse.data, null, 2)
         )
@@ -375,11 +376,11 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
             if (ad.external_id === (produto.codigo_produto || produto.id)) {
               if (ad.list_id) {
                 adUuid = String(ad.list_id)
-                console.log('[OLX-ACTION] ✅ list_id obtido do status:', adUuid)
+                logger.log('[OLX-ACTION] ✅ list_id obtido do status:', adUuid)
                 break
               } else if (ad.id) {
                 adUuid = String(ad.id)
-                console.log('[OLX-ACTION] ⚠️ Usando id do status:', adUuid)
+                logger.log('[OLX-ACTION] ⚠️ Usando id do status:', adUuid)
                 break
               }
             }
@@ -389,10 +390,10 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
           if (!adUuid && ads[0]) {
             if (ads[0].list_id) {
               adUuid = String(ads[0].list_id)
-              console.log('[OLX-ACTION] ⚠️ Usando primeiro list_id disponível:', adUuid)
+              logger.log('[OLX-ACTION] ⚠️ Usando primeiro list_id disponível:', adUuid)
             } else if (ads[0].id) {
               adUuid = String(ads[0].id)
-              console.log('[OLX-ACTION] ⚠️ Usando primeiro id disponível:', adUuid)
+              logger.log('[OLX-ACTION] ⚠️ Usando primeiro id disponível:', adUuid)
             }
           }
         }
@@ -400,42 +401,42 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
         // Se ainda não tem ID, salvar o token como fallback
         if (!adUuid) {
           adUuid = importToken
-          console.log('[OLX-ACTION] ⚠️ Usando token como ID temporário:', adUuid)
+          logger.log('[OLX-ACTION] ⚠️ Usando token como ID temporário:', adUuid)
         }
       } catch (err) {
-        console.error('[OLX-ACTION] ❌ Erro ao consultar status:', err)
+        logger.error('[OLX-ACTION] ❌ Erro ao consultar status:', err)
         // Usar token como ID temporário
         adUuid = importToken
-        console.log('[OLX-ACTION] ⚠️ Usando token como ID (erro ao consultar):', adUuid)
+        logger.log('[OLX-ACTION] ⚠️ Usando token como ID (erro ao consultar):', adUuid)
       }
     } else if (olxResponse.data?.uuid) {
       // Retornou UUID direto
       adUuid = String(olxResponse.data.uuid)
-      console.log('[OLX-ACTION] UUID direto:', adUuid)
+      logger.log('[OLX-ACTION] UUID direto:', adUuid)
     } else if (olxResponse.data?.id) {
       // Retornou apenas ID
       adUuid = String(olxResponse.data.id)
-      console.log('[OLX-ACTION] ID direto:', adUuid)
+      logger.log('[OLX-ACTION] ID direto:', adUuid)
     } else {
       // Última tentativa: verificar se tem algum campo numérico que pode ser o ID
       const responseKeys = Object.keys(olxResponse.data || {})
-      console.log('[OLX-ACTION] ⚠️ Estrutura desconhecida, campos disponíveis:', responseKeys)
+      logger.log('[OLX-ACTION] ⚠️ Estrutura desconhecida, campos disponíveis:', responseKeys)
 
       // Procurar por campos que parecem IDs
       for (const key of responseKeys) {
         const value = olxResponse.data[key]
         if (typeof value === 'string' || typeof value === 'number') {
-          console.log(`[OLX-ACTION] Campo ${key}:`, value)
+          logger.log(`[OLX-ACTION] Campo ${key}:`, value)
         }
       }
     }
 
-    console.log('[OLX-ACTION] ID final a ser salvo:', adUuid)
+    logger.log('[OLX-ACTION] ID final a ser salvo:', adUuid)
 
     // Se não conseguiu extrair nenhum ID, retornar erro
     if (!adUuid) {
-      console.error('[OLX-ACTION] ❌ ERRO: Não foi possível extrair o ID do anúncio da resposta')
-      console.error('[OLX-ACTION] Resposta completa:', JSON.stringify(olxResponse, null, 2))
+      logger.error('[OLX-ACTION] ❌ ERRO: Não foi possível extrair o ID do anúncio da resposta')
+      logger.error('[OLX-ACTION] Resposta completa:', JSON.stringify(olxResponse, null, 2))
 
       await (supabase.from('olx_sync_log') as any).insert({
         acao: 'criar',
@@ -459,7 +460,7 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
     if (adUuid && !importToken) {
       // Formato: https://www.olx.com.br/vi/{list_id}.htm
       adUrl = `https://www.olx.com.br/vi/${adUuid}.htm`
-      console.log('[OLX-ACTION] URL do anúncio:', adUrl)
+      logger.log('[OLX-ACTION] URL do anúncio:', adUrl)
     }
 
     // Salvar anúncio no banco
@@ -479,13 +480,13 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       .single()
 
     if (anuncioError) {
-      console.error('[OLX-ACTION] ❌ Erro ao salvar no banco:', anuncioError)
+      logger.error('[OLX-ACTION] ❌ Erro ao salvar no banco:', anuncioError)
       return { success: false, error: 'Erro ao salvar anúncio no banco de dados' }
     }
 
-    console.log('[OLX-ACTION] ✅ Anúncio salvo no banco:', anuncio)
-    console.log('[OLX-ACTION] ID do anúncio:', anuncio.id)
-    console.log('[OLX-ACTION] olx_ad_id salvo:', anuncio.olx_ad_id)
+    logger.log('[OLX-ACTION] ✅ Anúncio salvo no banco:', anuncio)
+    logger.log('[OLX-ACTION] ID do anúncio:', anuncio.id)
+    logger.log('[OLX-ACTION] olx_ad_id salvo:', anuncio.olx_ad_id)
 
     // Log de sucesso
     await (supabase.from('olx_sync_log') as any).insert({
@@ -513,8 +514,8 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       adUrl,
     }
   } catch (error: any) {
-    console.error('[OLX-ACTION] ERRO FATAL ao criar anúncio:', error)
-    console.error('[OLX-ACTION] Stack trace:', error.stack)
+    logger.error('[OLX-ACTION] ERRO FATAL ao criar anúncio:', error)
+    logger.error('[OLX-ACTION] Stack trace:', error.stack)
     return {
       success: false,
       error: `Erro ao criar anúncio: ${error.message || 'Erro desconhecido'}`,
@@ -574,7 +575,7 @@ export async function atualizarAnuncioOlx(input: AtualizarAnuncioOlxInput) {
       error: 'Atualização de anúncios não está implementada. Por favor, remova e recrie o anúncio.',
     }
   } catch (error: any) {
-    console.error('Erro ao atualizar anúncio OLX:', error)
+    logger.error('Erro ao atualizar anúncio OLX:', error)
     return { success: false, error: error.message || 'Erro desconhecido' }
   }
 }
@@ -860,7 +861,7 @@ export async function diagnosticarTokenOlx() {
       },
     }
 
-    console.log('[DIAGNÓSTICO-OLX]', diagnostico)
+    logger.log('[DIAGNÓSTICO-OLX]', diagnostico)
 
     // Tentar validar token
     const olxClient = new OlxAPIClient(config.access_token)
@@ -922,26 +923,26 @@ export async function testarConexaoOlx() {
       return { success: false, error: 'Access Token não configurado' }
     }
 
-    console.log('[TEST-OLX] Testando conexão...')
-    console.log('[TEST-OLX] Token prefix:', config.access_token.substring(0, 20))
+    logger.log('[TEST-OLX] Testando conexão...')
+    logger.log('[TEST-OLX] Token prefix:', config.access_token.substring(0, 20))
 
     const olxClient = new OlxAPIClient(config.access_token)
 
     // Tentar balance
     const balanceResponse = await olxClient.getBalance()
-    console.log('[TEST-OLX] Resposta balance:', JSON.stringify(balanceResponse, null, 2))
+    logger.log('[TEST-OLX] Resposta balance:', JSON.stringify(balanceResponse, null, 2))
 
     // CASO ESPECIAL: Erro 410 = Token VÁLIDO, mas plano básico
     if (balanceResponse.error?.code === 410) {
       const reason = balanceResponse.error?.details?.reason
 
       if (reason === 'PRODUCT_NOT_FOUND_BY_ACCOUNT') {
-        console.log('[TEST-OLX] ✅ Token válido! Plano básico detectado.')
-        console.log('[TEST-OLX] Tentando listar anúncios como teste alternativo...')
+        logger.log('[TEST-OLX] ✅ Token válido! Plano básico detectado.')
+        logger.log('[TEST-OLX] Tentando listar anúncios como teste alternativo...')
 
         // Teste alternativo: listar anúncios
         const listResponse = await olxClient.listPublishedAds()
-        console.log('[TEST-OLX] Resposta listagem:', JSON.stringify(listResponse, null, 2))
+        logger.log('[TEST-OLX] Resposta listagem:', JSON.stringify(listResponse, null, 2))
 
         if (!listResponse.error || listResponse.error.code === 404) {
           // 404 também é OK - significa que não há anúncios, mas token é válido
@@ -1038,7 +1039,7 @@ export async function testarConexaoOlx() {
       },
     }
   } catch (error: any) {
-    console.error('[TEST-OLX] ERRO FATAL:', error)
+    logger.error('[TEST-OLX] ERRO FATAL:', error)
     return {
       success: false,
       error: error.message,
@@ -1102,7 +1103,7 @@ export async function atualizarStatusAnuncioOlx(anuncioId: string) {
       return { success: false, error: 'Cliente OLX não configurado' }
     }
 
-    console.log('[OLX-STATUS] Consultando status para:', anuncio.olx_ad_id)
+    logger.log('[OLX-STATUS] Consultando status para:', anuncio.olx_ad_id)
 
     // Tentar consultar como import token primeiro
     const statusResponse = await olxClient.getImportStatus(anuncio.olx_ad_id)
@@ -1150,7 +1151,7 @@ export async function atualizarStatusAnuncioOlx(anuncioId: string) {
 
     // Atualizar no banco se temos um list_id novo
     if (adData.list_id && adData.list_id !== anuncio.olx_ad_id) {
-      console.log('[OLX-STATUS] ✅ Atualizando com list_id:', adData.list_id)
+      logger.log('[OLX-STATUS] ✅ Atualizando com list_id:', adData.list_id)
 
       await (supabase.from('olx_anuncios') as any)
         .update({
@@ -1183,7 +1184,7 @@ export async function atualizarStatusAnuncioOlx(anuncioId: string) {
         adData.status === 'active' ? 'Anúncio está ativo na OLX' : 'Anúncio ainda em processamento',
     }
   } catch (error: any) {
-    console.error('[OLX-STATUS] Erro:', error)
+    logger.error('[OLX-STATUS] Erro:', error)
     return {
       success: false,
       error: error.message || 'Erro desconhecido',
@@ -1258,7 +1259,7 @@ export async function migrarAnunciosAntigos() {
       return { success: false, error: 'Não autorizado' }
     }
 
-    console.log('[OLX-MIGRATION] 🔄 Iniciando migração de anúncios antigos...')
+    logger.log('[OLX-MIGRATION] 🔄 Iniciando migração de anúncios antigos...')
 
     // Criar cliente OLX
     const olxClient = await createOlxClient()
@@ -1287,7 +1288,7 @@ export async function migrarAnunciosAntigos() {
       .or('olx_ad_id.is.null,status.eq.processando') as any)
 
     if (!anunciosLocais || anunciosLocais.length === 0) {
-      console.log('[OLX-MIGRATION] ✅ Nenhum anúncio para migrar')
+      logger.log('[OLX-MIGRATION] ✅ Nenhum anúncio para migrar')
       return {
         success: true,
         message: 'Nenhum anúncio antigo encontrado',
@@ -1299,13 +1300,13 @@ export async function migrarAnunciosAntigos() {
       }
     }
 
-    console.log(`[OLX-MIGRATION] 📋 Encontrados ${anunciosLocais.length} anúncios locais sem ID`)
+    logger.log(`[OLX-MIGRATION] 📋 Encontrados ${anunciosLocais.length} anúncios locais sem ID`)
 
     // Listar anúncios publicados na OLX
     const olxResponse = await olxClient.listPublishedAds()
 
     if (olxResponse.error) {
-      console.error('[OLX-MIGRATION] ❌ Erro ao listar anúncios da OLX:', olxResponse.error)
+      logger.error('[OLX-MIGRATION] ❌ Erro ao listar anúncios da OLX:', olxResponse.error)
       return {
         success: false,
         error: `Erro ao buscar anúncios da OLX: ${olxResponse.error.message}`,
@@ -1329,7 +1330,7 @@ export async function migrarAnunciosAntigos() {
         .filter(Boolean)
     }
 
-    console.log(
+    logger.log(
       `[OLX-MIGRATION] 📋 Encontrados ${anunciosListIds.length} anúncios ativos (de ${olxResponse.data?.data?.length || 0} totais)`
     )
 
@@ -1346,7 +1347,7 @@ export async function migrarAnunciosAntigos() {
     }
 
     // Buscar detalhes de cada anúncio ativo
-    console.log('[OLX-MIGRATION] 🔍 Buscando detalhes dos anúncios ativos...')
+    logger.log('[OLX-MIGRATION] 🔍 Buscando detalhes dos anúncios ativos...')
     const anunciosOlx: any[] = []
 
     for (const listId of anunciosListIds.slice(0, 50)) {
@@ -1366,11 +1367,11 @@ export async function migrarAnunciosAntigos() {
           await new Promise((resolve) => setTimeout(resolve, 200))
         }
       } catch (err) {
-        console.warn(`[OLX-MIGRATION] ⚠️ Erro ao buscar detalhes de ${listId}:`, err)
+        logger.warn(`[OLX-MIGRATION] ⚠️ Erro ao buscar detalhes de ${listId}:`, err)
       }
     }
 
-    console.log(`[OLX-MIGRATION] ✅ Detalhes carregados de ${anunciosOlx.length} anúncios`)
+    logger.log(`[OLX-MIGRATION] ✅ Detalhes carregados de ${anunciosOlx.length} anúncios`)
 
     if (anunciosOlx.length === 0) {
       return {
@@ -1380,9 +1381,9 @@ export async function migrarAnunciosAntigos() {
     }
 
     // Log de alguns anúncios da OLX para debug
-    console.log('[OLX-MIGRATION] 📋 Primeiros 3 anúncios da OLX:')
+    logger.log('[OLX-MIGRATION] 📋 Primeiros 3 anúncios da OLX:')
     anunciosOlx.slice(0, 3).forEach((ad: any) => {
-      console.log(`  - "${ad.subject}" | R$ ${ad.price / 100} | ID: ${ad.list_id}`)
+      logger.log(`  - "${ad.subject}" | R$ ${ad.price / 100} | ID: ${ad.list_id}`)
     })
 
     let atualizados = 0
@@ -1427,7 +1428,7 @@ export async function migrarAnunciosAntigos() {
         const precoLocal = anuncioLocal.preco || 0
         const produtoNome = anuncioLocal.produtos?.nome || ''
 
-        console.log(`\n[OLX-MIGRATION] 🔍 Buscando match para: "${tituloLocal}" (R$ ${precoLocal})`)
+        logger.log(`\n[OLX-MIGRATION] 🔍 Buscando match para: "${tituloLocal}" (R$ ${precoLocal})`)
 
         // Procurar anúncio correspondente na OLX
         let bestMatch: any = null
@@ -1456,7 +1457,7 @@ export async function migrarAnunciosAntigos() {
 
           // Debug dos top 3 matches
           if (score > 0.3) {
-            console.log(
+            logger.log(
               `  [OLX-MIGRATION] 🎯 Candidato: "${tituloOlx}" | R$ ${precoOlx} | Score: ${(score * 100).toFixed(1)}%`
             )
           }
@@ -1472,14 +1473,14 @@ export async function migrarAnunciosAntigos() {
         if (bestMatch && bestScore > 0.5) {
           const listId = bestMatch.list_id
 
-          console.log(
+          logger.log(
             `[OLX-MIGRATION] ✅ Match encontrado! Score: ${(bestScore * 100).toFixed(1)}%`
           )
-          console.log(`[OLX-MIGRATION]    Local: "${tituloLocal}" - R$ ${precoLocal}`)
-          console.log(
+          logger.log(`[OLX-MIGRATION]    Local: "${tituloLocal}" - R$ ${precoLocal}`)
+          logger.log(
             `[OLX-MIGRATION]    OLX: "${bestMatch.subject}" - R$ ${bestMatch.price / 100}`
           )
-          console.log(`[OLX-MIGRATION]    list_id: ${listId}`)
+          logger.log(`[OLX-MIGRATION]    list_id: ${listId}`)
 
           matches.push({
             anuncio_id: anuncioLocal.id,
@@ -1501,32 +1502,32 @@ export async function migrarAnunciosAntigos() {
             .eq('id', anuncioLocal.id)
 
           if (updateError) {
-            console.error(`[OLX-MIGRATION] ❌ Erro ao atualizar ${anuncioLocal.id}:`, updateError)
+            logger.error(`[OLX-MIGRATION] ❌ Erro ao atualizar ${anuncioLocal.id}:`, updateError)
             erros++
           } else {
             atualizados++
-            console.log(`[OLX-MIGRATION] ✅ Anúncio ${anuncioLocal.id} atualizado com sucesso`)
+            logger.log(`[OLX-MIGRATION] ✅ Anúncio ${anuncioLocal.id} atualizado com sucesso`)
           }
         } else {
-          console.log(
+          logger.log(
             `[OLX-MIGRATION] ⚠️ Nenhum match confiável para "${tituloLocal}" (melhor score: ${(bestScore * 100).toFixed(1)}%)`
           )
 
           if (bestMatch) {
-            console.log(
+            logger.log(
               `[OLX-MIGRATION]    Melhor candidato: "${bestMatch.subject}" - R$ ${bestMatch.price / 100}`
             )
           }
         }
       } catch (error: any) {
-        console.error(`[OLX-MIGRATION] ❌ Erro ao processar anúncio:`, error)
+        logger.error(`[OLX-MIGRATION] ❌ Erro ao processar anúncio:`, error)
         erros++
       }
     }
 
-    console.log('\n[OLX-MIGRATION] 📊 Resumo de matches encontrados:')
+    logger.log('\n[OLX-MIGRATION] 📊 Resumo de matches encontrados:')
     matches.forEach((m) => {
-      console.log(`  ✅ "${m.titulo_local}" → "${m.titulo_olx}" (${(m.score * 100).toFixed(1)}%)`)
+      logger.log(`  ✅ "${m.titulo_local}" → "${m.titulo_olx}" (${(m.score * 100).toFixed(1)}%)`)
     })
 
     // Log de resultado
@@ -1558,7 +1559,7 @@ export async function migrarAnunciosAntigos() {
       matches,
     }
   } catch (error: any) {
-    console.error('[OLX-MIGRATION] ❌ ERRO FATAL:', error)
+    logger.error('[OLX-MIGRATION] ❌ ERRO FATAL:', error)
     return {
       success: false,
       error: error.message || 'Erro desconhecido na migração',
@@ -1576,7 +1577,7 @@ export async function buscarDetalhesAnuncioOlx(listId: string) {
       return { success: false, error: 'Cliente OLX não configurado' }
     }
 
-    console.log('[OLX-DETAILS] Buscando detalhes do anúncio:', listId)
+    logger.log('[OLX-DETAILS] Buscando detalhes do anúncio:', listId)
     const response = await olxClient.getAdStatus(listId)
 
     if (response.error) {
@@ -1616,11 +1617,11 @@ export async function validarPermissoesToken() {
 
     const olxClient = new OlxAPIClient(config.access_token)
 
-    console.log('[OLX-VALIDATE] 📋 Iniciando validação completa do token...')
-    console.log('[OLX-VALIDATE] Token prefix:', config.access_token.substring(0, 20))
+    logger.log('[OLX-VALIDATE] 📋 Iniciando validação completa do token...')
+    logger.log('[OLX-VALIDATE] Token prefix:', config.access_token.substring(0, 20))
 
     // TESTE 1: Listar anúncios publicados (valida autenticação básica)
-    console.log('[OLX-VALIDATE] 1️⃣ Testando autenticação básica...')
+    logger.log('[OLX-VALIDATE] 1️⃣ Testando autenticação básica...')
     const listResponse = await olxClient.listPublishedAds()
 
     if (listResponse.error) {
@@ -1652,10 +1653,10 @@ export async function validarPermissoesToken() {
       }
     }
 
-    console.log('[OLX-VALIDATE] ✅ Token válido para autenticação básica')
+    logger.log('[OLX-VALIDATE] ✅ Token válido para autenticação básica')
 
     // TESTE 2: Verificar balance (plano e limites)
-    console.log('[OLX-VALIDATE] 2️⃣ Verificando plano e limites...')
+    logger.log('[OLX-VALIDATE] 2️⃣ Verificando plano e limites...')
     const balanceResponse = await olxClient.getBalance()
 
     if (!balanceResponse.error) {
@@ -1663,8 +1664,8 @@ export async function validarPermissoesToken() {
       const adsAvailable = balanceResponse.data?.ads?.available || 0
       const adsTotal = balanceResponse.data?.ads?.total || 0
 
-      console.log('[OLX-VALIDATE] ✅ Plano profissional detectado')
-      console.log(`[OLX-VALIDATE] 📊 Anúncios: ${adsAvailable}/${adsTotal} disponíveis`)
+      logger.log('[OLX-VALIDATE] ✅ Plano profissional detectado')
+      logger.log(`[OLX-VALIDATE] 📊 Anúncios: ${adsAvailable}/${adsTotal} disponíveis`)
 
       if (adsAvailable === 0) {
         return {
@@ -1690,10 +1691,10 @@ export async function validarPermissoesToken() {
 
     // Erro 410 = Plano básico (sem acesso à API de balance)
     if (balanceResponse.error?.code === 410) {
-      console.log('[OLX-VALIDATE] ℹ️ Plano básico detectado (erro 410)')
+      logger.log('[OLX-VALIDATE] ℹ️ Plano básico detectado (erro 410)')
 
       // TESTE 3: Tentar criar anúncio de teste (dry-run)
-      console.log('[OLX-VALIDATE] 3️⃣ Testando permissão "autoupload"...')
+      logger.log('[OLX-VALIDATE] 3️⃣ Testando permissão "autoupload"...')
 
       // Criar payload mínimo de teste
       const testPayload = {
@@ -1723,7 +1724,7 @@ export async function validarPermissoesToken() {
       const testResponse = await olxClient.createAd(testPayload)
 
       if (testResponse.error?.code === -6) {
-        console.error('[OLX-VALIDATE] ❌ Erro -6: Sem permissão "autoupload"')
+        logger.error('[OLX-VALIDATE] ❌ Erro -6: Sem permissão "autoupload"')
 
         return {
           success: false,
@@ -1746,7 +1747,7 @@ export async function validarPermissoesToken() {
       }
 
       // Se não deu erro -6, pode criar anúncios
-      console.log('[OLX-VALIDATE] ✅ Token COM permissão "autoupload"')
+      logger.log('[OLX-VALIDATE] ✅ Token COM permissão "autoupload"')
 
       return {
         success: true,
@@ -1759,7 +1760,7 @@ export async function validarPermissoesToken() {
     }
 
     // Outro erro ao buscar balance - assumir que token é válido
-    console.log('[OLX-VALIDATE] ⚠️ Não foi possível verificar plano')
+    logger.log('[OLX-VALIDATE] ⚠️ Não foi possível verificar plano')
     return {
       success: true,
       can_create_ads: true,
@@ -1768,7 +1769,7 @@ export async function validarPermissoesToken() {
       message: '⚠️ Token válido, mas não foi possível verificar plano',
     }
   } catch (error: any) {
-    console.error('[OLX-VALIDATE] Erro fatal:', error)
+    logger.error('[OLX-VALIDATE] Erro fatal:', error)
     return {
       success: false,
       error: `❌ ${error.message || 'Erro desconhecido'}`,

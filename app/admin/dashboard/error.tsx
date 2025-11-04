@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/utils/logger'
 
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,7 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('Dashboard Error:', error)
+    logger.error('Dashboard Error:', error)
   }, [error])
 
   return (

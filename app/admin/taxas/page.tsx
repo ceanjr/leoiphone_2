@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/utils/logger'
 
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
@@ -102,7 +103,7 @@ export default function TaxasPage() {
         toast.error(result.error || 'Erro ao salvar configurações')
       }
     } catch (error) {
-      console.error('Erro ao salvar:', error)
+      logger.error('Erro ao salvar:', error)
       toast.error('Erro inesperado ao salvar')
     } finally {
       setSaving(false)
@@ -128,7 +129,7 @@ export default function TaxasPage() {
         toast.error(result.error || 'Erro ao restaurar taxas')
       }
     } catch (error) {
-      console.error('Erro ao restaurar:', error)
+      logger.error('Erro ao restaurar:', error)
       toast.error('Erro inesperado ao restaurar')
     } finally {
       setSaving(false)
@@ -158,7 +159,7 @@ export default function TaxasPage() {
         toast.error(result.error || 'Erro ao criar preset')
       }
     } catch (error) {
-      console.error('Erro ao criar preset:', error)
+      logger.error('Erro ao criar preset:', error)
       toast.error('Erro inesperado ao criar preset')
     } finally {
       setSavingPreset(false)
@@ -180,7 +181,7 @@ export default function TaxasPage() {
         toast.error(result.error || 'Erro ao aplicar preset')
       }
     } catch (error) {
-      console.error('Erro ao aplicar preset:', error)
+      logger.error('Erro ao aplicar preset:', error)
       toast.error('Erro inesperado ao aplicar preset')
     } finally {
       setSaving(false)
@@ -204,7 +205,7 @@ export default function TaxasPage() {
         toast.error(result.error || 'Erro ao deletar preset')
       }
     } catch (error) {
-      console.error('Erro ao deletar preset:', error)
+      logger.error('Erro ao deletar preset:', error)
       toast.error('Erro inesperado ao deletar preset')
     } finally {
       setSaving(false)

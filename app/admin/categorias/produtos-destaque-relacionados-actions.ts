@@ -1,4 +1,5 @@
 'use server'
+import { logger } from '@/lib/utils/logger'
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
@@ -35,13 +36,13 @@ export async function getConfigProdutosRelacionadosDestaque() {
           error: null,
         }
       }
-      console.error('Erro ao buscar config produtos relacionados destaque:', error)
+      logger.error('Erro ao buscar config produtos relacionados destaque:', error)
       return { data: null, error: error.message }
     }
 
     return { data, error: null }
   } catch (error) {
-    console.error('Erro ao buscar config produtos relacionados destaque:', error)
+    logger.error('Erro ao buscar config produtos relacionados destaque:', error)
     return { data: null, error: 'Erro ao buscar configuração' }
   }
 }
@@ -99,7 +100,7 @@ export async function updateConfigProdutosRelacionadosDestaque(
     }
 
     if (error) {
-      console.error('Erro ao salvar config produtos relacionados destaque:', error)
+      logger.error('Erro ao salvar config produtos relacionados destaque:', error)
       return { success: false, error: error.message }
     }
 
@@ -108,7 +109,7 @@ export async function updateConfigProdutosRelacionadosDestaque(
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('Erro ao salvar config produtos relacionados destaque:', error)
+    logger.error('Erro ao salvar config produtos relacionados destaque:', error)
     return { success: false, error: 'Erro ao salvar configuração' }
   }
 }
@@ -174,7 +175,7 @@ export async function aplicarConfigIndividualProdutosDestaque(
       count: successCount,
     }
   } catch (error) {
-    console.error('Erro ao aplicar config individual:', error)
+    logger.error('Erro ao aplicar config individual:', error)
     return { success: false, error: 'Erro ao aplicar configuração individual' }
   }
 }
@@ -197,13 +198,13 @@ export async function buscarProdutosParaRelacionados() {
       .limit(100)
 
     if (error) {
-      console.error('Erro ao buscar produtos para relacionados:', error)
+      logger.error('Erro ao buscar produtos para relacionados:', error)
       return { data: [], error: error.message }
     }
 
     return { data: data || [], error: null }
   } catch (error) {
-    console.error('Erro ao buscar produtos para relacionados:', error)
+    logger.error('Erro ao buscar produtos para relacionados:', error)
     return { data: [], error: 'Erro ao buscar produtos' }
   }
 }
@@ -225,7 +226,7 @@ export async function listarProdutosEmDestaque() {
       .order('ordem', { ascending: true })
 
     if (bannersError) {
-      console.error('Erro ao buscar banners:', bannersError)
+      logger.error('Erro ao buscar banners:', bannersError)
       return { data: [], error: bannersError.message }
     }
 
@@ -256,7 +257,7 @@ export async function listarProdutosEmDestaque() {
       .is('deleted_at', null)
 
     if (produtosError) {
-      console.error('Erro ao buscar produtos:', produtosError)
+      logger.error('Erro ao buscar produtos:', produtosError)
       return { data: [], error: produtosError.message }
     }
 
@@ -284,7 +285,7 @@ export async function listarProdutosEmDestaque() {
 
     return { data: produtosComConfig, error: null }
   } catch (error) {
-    console.error('Erro ao listar produtos em destaque:', error)
+    logger.error('Erro ao listar produtos em destaque:', error)
     return { data: [], error: 'Erro ao listar produtos' }
   }
 }
@@ -302,7 +303,7 @@ export async function deleteConfigProdutoDestaqueIndividual(produtoId: string) {
       .eq('categoria_id', produtoId)
 
     if (error) {
-      console.error('Erro ao deletar config individual:', error)
+      logger.error('Erro ao deletar config individual:', error)
       return { success: false, error: error.message }
     }
 
@@ -311,7 +312,7 @@ export async function deleteConfigProdutoDestaqueIndividual(produtoId: string) {
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('Erro ao deletar config individual:', error)
+    logger.error('Erro ao deletar config individual:', error)
     return { success: false, error: 'Erro ao deletar configuração' }
   }
 }
@@ -364,7 +365,7 @@ export async function updateConfigProdutoDestaqueIndividual(
     }
 
     if (error) {
-      console.error('Erro ao salvar config individual:', error)
+      logger.error('Erro ao salvar config individual:', error)
       return { success: false, error: error.message }
     }
 
@@ -373,7 +374,7 @@ export async function updateConfigProdutoDestaqueIndividual(
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('Erro ao salvar config individual:', error)
+    logger.error('Erro ao salvar config individual:', error)
     return { success: false, error: 'Erro ao salvar configuração' }
   }
 }

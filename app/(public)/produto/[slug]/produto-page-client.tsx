@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/utils/logger'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { notFound, useSearchParams } from 'next/navigation'
@@ -85,7 +86,7 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
           setProdutosRelacionadosInfo(data)
         }
       } catch (error) {
-        console.error('Erro ao buscar informações dos produtos relacionados:', error)
+        logger.error('Erro ao buscar informações dos produtos relacionados:', error)
       }
     }
 
@@ -94,7 +95,7 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
 
   // Polling: callback para atualizar taxas quando mudar no admin
   const handleTaxasUpdate = useCallback((config: { ativo: boolean; taxas: TaxasConfig }) => {
-    console.log('[ProdutoPage] Taxas atualizadas via polling:', config)
+    logger.log('[ProdutoPage] Taxas atualizadas via polling:', config)
     setCalculadoraAtiva(config.ativo)
     setTaxas(config.taxas)
   }, [])
@@ -126,7 +127,7 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
 
         if (error || !data) {
           // Produto não encontrado ou erro, redirecionar
-          console.log('[ProdutoPage] Produto não encontrado, redirecionando...')
+          logger.log('[ProdutoPage] Produto não encontrado, redirecionando...')
           window.location.href = backUrl
           return
         }
@@ -135,18 +136,18 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
 
         // Se foi desativado ou deletado, redirecionar
         if (!produtoAtualizado.ativo || produtoAtualizado.deleted_at) {
-          console.log('[ProdutoPage] Produto desativado/deletado, redirecionando...')
+          logger.log('[ProdutoPage] Produto desativado/deletado, redirecionando...')
           window.location.href = backUrl
           return
         }
 
         // Verificar se houve mudança (comparar updated_at)
         if (produto.updated_at !== produtoAtualizado.updated_at) {
-          console.log('[ProdutoPage] Produto atualizado via polling')
+          logger.log('[ProdutoPage] Produto atualizado via polling')
           setProduto(produtoAtualizado)
         }
       } catch (error) {
-        console.error('[ProdutoPage] Erro no polling do produto:', error)
+        logger.error('[ProdutoPage] Erro no polling do produto:', error)
       }
     }
 
@@ -193,7 +194,7 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
           await supabase.rpc('increment_visualizacoes', payload as any)
         }
       } catch (incrementError) {
-        console.warn('Não foi possível contabilizar a visualização do produto:', incrementError)
+        logger.warn('Não foi possível contabilizar a visualização do produto:', incrementError)
       }
 
       // Preload de TODAS as imagens para garantir transições instantâneas
@@ -213,10 +214,10 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
             img.src = fotoUrl
             // Opcional: adicionar onload para debug
             if (process.env.NODE_ENV === 'development') {
-              img.onload = () => console.log(`[Performance] Imagem ${index + 2} carregada`)
+              img.onload = () => logger.log(`[Performance] Imagem ${index + 2} carregada`)
             }
           })
-          console.log(
+          logger.log(
             `[Performance] Preload de ${produtoData.fotos.length - 1} imagens adicionais iniciado`
           )
         }
@@ -236,7 +237,7 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
           setTaxas(configData.taxas as TaxasConfig)
         }
       } catch (error) {
-        console.warn('Não foi possível carregar configuração de taxas:', error)
+        logger.warn('Não foi possível carregar configuração de taxas:', error)
       }
     }
 
@@ -350,7 +351,7 @@ ${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`)
         })
       } catch (error) {
         // User cancelled or error occurred
-        console.log('Share cancelled or failed', error)
+        logger.log('Share cancelled or failed', error)
       }
     }
   }

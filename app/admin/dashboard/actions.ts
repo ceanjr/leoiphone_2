@@ -85,3 +85,29 @@ export async function aleatorizarProdutosRelacionados() {
     }
   }
 }
+
+export async function trackBannerProductClick(bannerId: string, produtoId: string, visitorId?: string) {
+  try {
+    const supabase = await createClient()
+    
+    // Se não receber visitor_id, criar um baseado no timestamp
+    const finalVisitorId = visitorId || `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+    // Usar RPC function criada na migration
+    const { error } = await supabase.rpc('record_banner_click', {
+      p_banner_id: bannerId,
+      p_produto_id: produtoId,
+      p_visitor_id: finalVisitorId,
+    })
+
+    if (error) {
+      logger.error('Erro ao registrar clique no banner:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, visitorId: finalVisitorId }
+  } catch (error: any) {
+    logger.error('Erro ao registrar clique no banner:', error)
+    return { success: false, error: error.message }
+  }
+}

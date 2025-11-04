@@ -1,4 +1,5 @@
 'use client'
+import { logger } from '@/lib/utils/logger'
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -48,12 +49,12 @@ export function RealtimeTest() {
         },
         (payload) => {
           const evento = `${payload.eventType} às ${new Date().toLocaleTimeString()}`
-          console.log('[RealtimeTest] Evento de produtos:', evento, payload)
+          logger.log('[RealtimeTest] Evento de produtos:', evento, payload)
           setProdutosEventos((prev) => [evento, ...prev].slice(0, 5))
         }
       )
       .subscribe((status) => {
-        console.log('[RealtimeTest] Status produtos:', status)
+        logger.log('[RealtimeTest] Status produtos:', status)
         if (status === 'SUBSCRIBED') {
           setProdutosStatus('connected')
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
@@ -73,12 +74,12 @@ export function RealtimeTest() {
         },
         (payload) => {
           const evento = `${payload.eventType} às ${new Date().toLocaleTimeString()}`
-          console.log('[RealtimeTest] Evento de taxas:', evento, payload)
+          logger.log('[RealtimeTest] Evento de taxas:', evento, payload)
           setTaxasEventos((prev) => [evento, ...prev].slice(0, 5))
         }
       )
       .subscribe((status) => {
-        console.log('[RealtimeTest] Status taxas:', status)
+        logger.log('[RealtimeTest] Status taxas:', status)
         if (status === 'SUBSCRIBED') {
           setTaxasStatus('connected')
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {

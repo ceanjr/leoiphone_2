@@ -4,20 +4,22 @@
  * Script para corrigir slugs duplicados ou sem sufixo aleatório
  */
 
-const { createClient } = require('@supabase/supabase-js')
-require('dotenv').config({ path: '.env.local' })
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import * as dotenv from 'dotenv'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+dotenv.config({ path: '.env.local' })
 
-if (!supabaseUrl || !supabaseServiceKey) {
+const supabaseUrlDuplicados = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKeyDuplicados = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrlDuplicados || !supabaseServiceKeyDuplicados) {
   console.error('❌ Erro: Variáveis de ambiente não configuradas')
   process.exit(1)
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabaseDuplicados = createSupabaseClient(supabaseUrlDuplicados, supabaseServiceKeyDuplicados)
 
-function generateSlug(nome) {
+function generateSlugDuplicados(nome: string): string {
   const baseSlug = nome
     .toLowerCase()
     .normalize('NFD')
@@ -32,19 +34,19 @@ function generateSlug(nome) {
   return `${baseSlug}-${randomSuffix}`
 }
 
-function slugTemSufixo(slug) {
+function slugTemSufixo(slug: string): boolean {
   // Verificar se o slug termina com um padrão de 6 caracteres aleatórios
   const parts = slug.split('-')
   const lastPart = parts[parts.length - 1]
 
   // Um sufixo aleatório tem 6 caracteres alfanuméricos
-  return lastPart && lastPart.length === 6 && /^[a-z0-9]{6}$/.test(lastPart)
+  return !!(lastPart && lastPart.length === 6 && /^[a-z0-9]{6}$/.test(lastPart))
 }
 
-async function main() {
+async function mainDuplicados() {
   console.log('🔍 Buscando todos os produtos...\n')
 
-  const { data: produtos, error } = await supabase
+  const { data: produtos, error } = await supabaseDuplicados
     .from('produtos')
     .select('*')
     .is('deleted_at', null)
@@ -63,15 +65,15 @@ async function main() {
   console.log(`📦 Encontrados ${produtos.length} produto(s)\n`)
 
   // Agrupar produtos por slug para detectar duplicatas
-  const slugMap = new Map()
+  const slugMap = new Map<string, any[]>()
   for (const produto of produtos) {
     if (!slugMap.has(produto.slug)) {
       slugMap.set(produto.slug, [])
     }
-    slugMap.get(produto.slug).push(produto)
+    slugMap.get(produto.slug)!.push(produto)
   }
 
-  const produtosParaCorrigir = []
+  const produtosParaCorrigir: any[] = []
 
   // Verificar duplicatas
   for (const [slug, produtosComMesmoSlug] of slugMap) {
@@ -106,13 +108,13 @@ async function main() {
   console.log(`\n🔧 Corrigindo ${produtosParaCorrigir.length} produto(s)...\n`)
 
   for (const produto of produtosParaCorrigir) {
-    const novoSlug = generateSlug(produto.nome)
+    const novoSlug = generateSlugDuplicados(produto.nome)
 
     console.log(`🔧 ${produto.nome}`)
     console.log(`   Slug antigo: ${produto.slug}`)
     console.log(`   Slug novo: ${novoSlug}`)
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseDuplicados
       .from('produtos')
       .update({ slug: novoSlug })
       .eq('id', produto.id)
@@ -129,4 +131,4 @@ async function main() {
   console.log('✅ Processo concluído!\n')
 }
 
-main().catch(console.error)
+mainDuplicados().catch(console.error)

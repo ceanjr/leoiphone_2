@@ -1,4 +1,5 @@
 'use server'
+import { logger } from '@/lib/utils/logger'
 
 import { createClient } from '@/lib/supabase/server'
 import { FacebookMarketplaceAPI, produtoToMarketplaceProduct } from '@/lib/api/facebook/graph-api'
@@ -173,7 +174,7 @@ export async function criarAnuncio(input: CriarAnuncioInput) {
       message: 'Anúncio criado com sucesso no Facebook Marketplace!',
     }
   } catch (error: any) {
-    console.error('Erro ao criar anúncio:', error)
+    logger.error('Erro ao criar anúncio:', error)
     return {
       success: false,
       error: error.message || 'Erro desconhecido ao criar anúncio',
@@ -262,7 +263,7 @@ export async function atualizarAnuncio(input: AtualizarAnuncioInput) {
 
     return { success: true, message: 'Anúncio atualizado com sucesso!' }
   } catch (error: any) {
-    console.error('Erro ao atualizar anúncio:', error)
+    logger.error('Erro ao atualizar anúncio:', error)
     return { success: false, error: error.message || 'Erro desconhecido' }
   }
 }

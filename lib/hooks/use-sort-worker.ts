@@ -3,6 +3,7 @@
 
 import { useCallback, useRef } from 'react'
 import type { Produto } from '@/types/produto'
+import { logger } from '@/lib/utils/logger'
 
 type OrdenacaoType = 'menor_preco' | 'maior_preco' | 'recentes' | 'modelo'
 
@@ -15,7 +16,7 @@ export function useSortWorker() {
         // Check if Web Workers are supported
         if (typeof Worker === 'undefined') {
           // Fallback: sort on main thread
-          console.warn('Web Workers not supported, sorting on main thread')
+          logger.warn('Web Workers not supported, sorting on main thread')
           resolve(sortOnMainThread(produtos, ordenacao))
           return
         }
@@ -41,7 +42,7 @@ export function useSortWorker() {
 
           worker.addEventListener('message', handleMessage)
           worker.addEventListener('error', (error) => {
-            console.error('Worker error:', error)
+            logger.error('Worker error:', error)
             reject(error)
           })
 
@@ -52,7 +53,7 @@ export function useSortWorker() {
             ordenacao,
           })
         } catch (error) {
-          console.error('Error creating worker:', error)
+          logger.error('Error creating worker:', error)
           // Fallback to main thread
           resolve(sortOnMainThread(produtos, ordenacao))
         }

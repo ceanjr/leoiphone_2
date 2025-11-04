@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/utils/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[OLX-TOKEN-API] Requisitando token...', {
+    logger.log('[OLX-TOKEN-API] Requisitando token...', {
       client_id: client_id.substring(0, 10) + '...',
       grant_type,
     })
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     let lastError: any = null
 
     for (const attempt of attempts) {
-      console.log(`[OLX-TOKEN-API] Tentando com: ${attempt.name}`)
+      logger.log(`[OLX-TOKEN-API] Tentando com: ${attempt.name}`)
 
       try {
         const tokenResponse = await fetch('https://auth.olx.com.br/oauth/token', {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
         const tokenData = await tokenResponse.json()
 
-        console.log('[OLX-TOKEN-API] Resposta da OLX:', {
+        logger.log('[OLX-TOKEN-API] Resposta da OLX:', {
           attempt: attempt.name,
           status: tokenResponse.status,
           ok: tokenResponse.ok,
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
 
         if (tokenResponse.ok && tokenData.access_token) {
           // Sucesso!
-          console.log('[OLX-TOKEN-API] ✅ Token obtido com sucesso!')
+          logger.log('[OLX-TOKEN-API] ✅ Token obtido com sucesso!')
           return NextResponse.json({
             success: true,
             access_token: tokenData.access_token,
@@ -87,13 +88,13 @@ export async function POST(request: NextRequest) {
         // Guardar erro para tentar próximo método
         lastError = tokenData
       } catch (err: any) {
-        console.error(`[OLX-TOKEN-API] Erro na tentativa ${attempt.name}:`, err.message)
+        logger.error(`[OLX-TOKEN-API] Erro na tentativa ${attempt.name}:`, err.message)
         lastError = { error: err.message }
       }
     }
 
     // Se chegou aqui, todas as tentativas falharam
-    console.error('[OLX-TOKEN-API] ❌ Todas as tentativas falharam')
+    logger.error('[OLX-TOKEN-API] ❌ Todas as tentativas falharam')
     
     return NextResponse.json(
       {
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   } catch (error: any) {
-    console.error('[OLX-TOKEN-API] Erro fatal:', error)
+    logger.error('[OLX-TOKEN-API] Erro fatal:', error)
     return NextResponse.json(
       {
         success: false,

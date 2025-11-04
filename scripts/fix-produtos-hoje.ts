@@ -25,8 +25,25 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-function generateSlug(nome) {
-  const baseSlug = nome
+interface SlugGenerator {
+  (nome: string): string
+}
+
+interface Correcoes {
+  slug?: string
+  ativo?: boolean
+  deleted_at?: null
+}
+
+interface ProdutoProblema {
+  id: string
+  nome: string
+  problemas: string[]
+  correcoes: Correcoes
+}
+
+function generateSlug(nome: string): string {
+  const baseSlug: string = nome
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -36,7 +53,7 @@ function generateSlug(nome) {
     .trim()
 
   // Adicionar sufixo aleatório para garantir unicidade
-  const randomSuffix = Math.random().toString(36).substring(2, 8)
+  const randomSuffix: string = Math.random().toString(36).substring(2, 8)
   return `${baseSlug}-${randomSuffix}`
 }
 
@@ -66,14 +83,14 @@ async function main() {
 
   console.log(`📦 Encontrados ${produtos.length} produto(s) criado(s) hoje:\n`)
 
-  const problemasEncontrados = []
+  const problemasEncontrados: ProdutoProblema[] = []
 
   for (const produto of produtos) {
     console.log(`\n📋 Produto: ${produto.nome} (ID: ${produto.id})`)
     console.log(`   Criado em: ${new Date(produto.created_at).toLocaleString('pt-BR')}`)
 
-    const problemas = []
-    const correcoes = {}
+    const problemas: string[] = []
+    const correcoes = {} as Correcoes
 
     // Verificar slug
     if (!produto.slug || produto.slug === '') {

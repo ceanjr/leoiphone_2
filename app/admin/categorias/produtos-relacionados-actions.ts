@@ -1,4 +1,5 @@
 'use server'
+import { logger } from '@/lib/utils/logger'
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
@@ -37,13 +38,13 @@ export async function getConfigGlobalProdutosRelacionados(): Promise<{
           error: null,
         }
       }
-      console.error('Erro ao buscar configuração global:', error)
+      logger.error('Erro ao buscar configuração global:', error)
       return { data: null, error: error.message }
     }
 
     return { data, error: null }
   } catch (error) {
-    console.error('Erro ao buscar configuração global:', error)
+    logger.error('Erro ao buscar configuração global:', error)
     if (error instanceof Error) {
       return { data: null, error: error.message }
     }
@@ -101,7 +102,7 @@ export async function updateConfigGlobalProdutosRelacionados(
     }
 
     if (error) {
-      console.error('Erro ao salvar configuração global:', error)
+      logger.error('Erro ao salvar configuração global:', error)
       return { success: false, error: error.message }
     }
 
@@ -110,7 +111,7 @@ export async function updateConfigGlobalProdutosRelacionados(
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('Erro ao salvar configuração global:', error)
+    logger.error('Erro ao salvar configuração global:', error)
     if (error instanceof Error) {
       return { success: false, error: error.message }
     }
@@ -148,7 +149,7 @@ export async function aplicarDescontoGlobalTodasCategorias(
       .neq('id', '00000000-0000-0000-0000-000000000000') // Atualizar todas
 
     if (error) {
-      console.error('Erro ao aplicar desconto global:', error)
+      logger.error('Erro ao aplicar desconto global:', error)
       return { success: false, error: error.message, count: 0 }
     }
 
@@ -157,7 +158,7 @@ export async function aplicarDescontoGlobalTodasCategorias(
 
     return { success: true, error: null, count: count || 0 }
   } catch (error) {
-    console.error('Erro ao aplicar desconto global:', error)
+    logger.error('Erro ao aplicar desconto global:', error)
     if (error instanceof Error) {
       return { success: false, error: error.message, count: 0 }
     }
@@ -197,13 +198,13 @@ export async function getCategoriaProdutosRelacionados(
           error: null,
         }
       }
-      console.error('Erro ao buscar configuração de produtos relacionados:', error)
+      logger.error('Erro ao buscar configuração de produtos relacionados:', error)
       return { data: null, error: error.message }
     }
 
     return { data, error: null }
   } catch (error) {
-    console.error('Erro ao buscar configuração de produtos relacionados:', error)
+    logger.error('Erro ao buscar configuração de produtos relacionados:', error)
     if (error instanceof Error) {
       return { data: null, error: error.message }
     }
@@ -265,7 +266,7 @@ export async function updateCategoriaProdutosRelacionados(
     }
 
     if (error) {
-      console.error('Erro ao salvar configuração de produtos relacionados:', error)
+      logger.error('Erro ao salvar configuração de produtos relacionados:', error)
       return { success: false, error: error.message }
     }
 
@@ -274,7 +275,7 @@ export async function updateCategoriaProdutosRelacionados(
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('Erro ao salvar configuração de produtos relacionados:', error)
+    logger.error('Erro ao salvar configuração de produtos relacionados:', error)
     if (error instanceof Error) {
       return { success: false, error: error.message }
     }
@@ -301,7 +302,7 @@ export async function resetProdutosRelacionados(
       .eq('categoria_id', categoriaId)
 
     if (error) {
-      console.error('Erro ao resetar produtos relacionados:', error)
+      logger.error('Erro ao resetar produtos relacionados:', error)
       return { success: false, error: error.message }
     }
 
@@ -310,7 +311,7 @@ export async function resetProdutosRelacionados(
 
     return { success: true, error: null }
   } catch (error) {
-    console.error('Erro ao resetar produtos relacionados:', error)
+    logger.error('Erro ao resetar produtos relacionados:', error)
     if (error instanceof Error) {
       return { success: false, error: error.message }
     }
@@ -373,15 +374,15 @@ export async function getProdutosRelacionados(
     // Verificar se o sistema está ativo globalmente (com fallback)
     const { data: configGlobal } = await getConfigGlobalProdutosRelacionados()
 
-    console.log('[getProdutosRelacionados] Config global:', configGlobal)
+    logger.log('[getProdutosRelacionados] Config global:', configGlobal)
 
     // Se a tabela não existe ou não está configurada, assumir que está ativo por padrão
     const sistemaAtivo = configGlobal ? configGlobal.ativo : true
 
-    console.log('[getProdutosRelacionados] Sistema ativo:', sistemaAtivo)
+    logger.log('[getProdutosRelacionados] Sistema ativo:', sistemaAtivo)
 
     if (!sistemaAtivo) {
-      console.log('[getProdutosRelacionados] Sistema desativado, retornando vazio')
+      logger.log('[getProdutosRelacionados] Sistema desativado, retornando vazio')
       return { data: [], error: null }
     }
 
@@ -404,13 +405,13 @@ export async function getProdutosRelacionados(
       banner.produtos_destaque?.some((pd: any) => pd.produto_id === produtoId)
     )
     
-    console.log('[getProdutosRelacionados] Produto está em destaque?', estEmDestaque)
+    logger.log('[getProdutosRelacionados] Produto está em destaque?', estEmDestaque)
     
     // Se está em destaque e não tem config individual, buscar config global de destaque
     if (estEmDestaque && !configIndividual?.id) {
       const { data } = await getCategoriaProdutosRelacionados(CATEGORIA_DESTAQUE_ID)
       configGlobalDestaque = data
-      console.log('[getProdutosRelacionados] Config global destaque:', configGlobalDestaque)
+      logger.log('[getProdutosRelacionados] Config global destaque:', configGlobalDestaque)
     }
     
     // Se não tem config individual, buscar configuração da categoria
@@ -421,13 +422,13 @@ export async function getProdutosRelacionados(
       ? configIndividual 
       : (configGlobalDestaque?.id ? configGlobalDestaque : configCategoria)
 
-    console.log('[getProdutosRelacionados] Config individual:', configIndividual)
-    console.log('[getProdutosRelacionados] Config global destaque:', configGlobalDestaque)
-    console.log('[getProdutosRelacionados] Config categoria:', configCategoria)
-    console.log('[getProdutosRelacionados] Config final usada:', config)
+    logger.log('[getProdutosRelacionados] Config individual:', configIndividual)
+    logger.log('[getProdutosRelacionados] Config global destaque:', configGlobalDestaque)
+    logger.log('[getProdutosRelacionados] Config categoria:', configCategoria)
+    logger.log('[getProdutosRelacionados] Config final usada:', config)
 
     if (!config) {
-      console.log('[getProdutosRelacionados] Sem config, retornando vazio')
+      logger.log('[getProdutosRelacionados] Sem config, retornando vazio')
       return { data: [], error: null }
     }
 
@@ -438,7 +439,7 @@ export async function getProdutosRelacionados(
       .eq('id', categoriaId)
       .single()
 
-    console.log('[getProdutosRelacionados] Categoria atual:', categoriaAtual)
+    logger.log('[getProdutosRelacionados] Categoria atual:', categoriaAtual)
 
     let produtosRelacionados: any[] = []
 
@@ -558,7 +559,7 @@ export async function getProdutosRelacionados(
       }
     })
 
-    console.log(
+    logger.log(
       '[getProdutosRelacionados] Retornando',
       produtosComDesconto.length,
       'produtos relacionados'
@@ -566,7 +567,7 @@ export async function getProdutosRelacionados(
 
     return { data: produtosComDesconto, error: null }
   } catch (error) {
-    console.error('[getProdutosRelacionados] Erro:', error)
+    logger.error('[getProdutosRelacionados] Erro:', error)
     if (error instanceof Error) {
       return { data: null, error: error.message }
     }
