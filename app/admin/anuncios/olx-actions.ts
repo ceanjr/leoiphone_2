@@ -32,14 +32,15 @@ async function createOlxClient(): Promise<OlxAPIClient | null> {
 /**
  * Criar anúncio na OLX
  */
+/**
+ * ✅ CORREÇÃO 2: Criar anúncio com validação prévia e estrutura correta
+ */
 export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
   try {
     const supabase = await createClient()
 
     // Verificar autenticação
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return { success: false, error: 'Não autorizado' }
     }
@@ -55,16 +56,19 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       return { success: false, error: 'Produto não encontrado' }
     }
 
-    // Verificar se já existe anúncio para este produto
-    const { data: anuncioExistente } = await supabase
-      .from('olx_anuncios')
-      .select('id, status')
-      .eq('produto_id', input.produto_id)
-      .maybeSingle()
+    // ✅ VALIDAÇÃO PRÉVIA (evita criar anúncio com token inválido)
+    logger.log('[OLX-ACTION] 🔍 Validando token antes de criar anúncio...')
+    const validation = await validarPermissoesToken()
 
-    if (anuncioExistente && (anuncioExistente as any).status === 'anunciado') {
-      return { success: false, error: 'Este produto já está anunciado na OLX' }
+    if (!validation.success || !validation.can_create_ads) {
+      return {
+        success: false,
+        error: validation.error || 'Token não pode criar anúncios',
+        recommendation: validation.recommendation,
+      }
     }
+
+    logger.log('[OLX-ACTION] ✅ Token validado! Criando anúncio...')
 
     // Criar cliente OLX
     const olxClient = await createOlxClient()
@@ -72,69 +76,34 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       return { success: false, error: 'Cliente OLX não configurado' }
     }
 
-    // Buscar config para pegar o access_token
     const config = await getConfig()
     if (!config || !config.access_token) {
       return { success: false, error: 'Access Token não configurado' }
     }
 
-    // VALIDAR PERMISSÕES ANTES DE CRIAR
-    logger.log('[OLX-ACTION] Validando permissões do token...')
-    const validation = await validarPermissoesToken()
-
-    if (!validation.success) {
-      return {
-        success: false,
-        error: `❌ Token inválido: ${validation.error}\n\n💡 Gere um novo token no portal OLX com permissão "autoupload"`,
-      }
-    }
-
-    if (!validation.can_create_ads) {
-      return {
-        success: false,
-        error: validation.warning || 'Não é possível criar anúncios no momento',
-      }
-    }
-
-    logger.log('[OLX-ACTION] ✅ Token validado com sucesso')
-    if (validation.plan === 'professional') {
-      logger.log(
-        `[OLX-ACTION] Plano: Profissional (${validation.ads_available} anúncios disponíveis)`
-      )
-    } else if (validation.plan === 'basic') {
-      logger.log('[OLX-ACTION] Plano: Básico')
-    }
-
-    // Converter produto para formato OLX
+    // ✅ CORREÇÃO: Converter produto com TODOS os campos obrigatórios
     const olxAdvert = produtoToOlxAdvert(produto, SITE_URL, config.access_token)
 
-    logger.log('[OLX-ACTION] Produto convertido para OLX:', olxAdvert)
-    logger.log('[OLX-ACTION] Produto raw:', JSON.stringify(produto, null, 2))
-
-    // Sobrescrever com dados personalizados se fornecidos
+    // Personalizar campos se fornecidos
     if (input.titulo) {
       olxAdvert.ad_list[0].subject = input.titulo.substring(0, 90)
     }
     if (input.descricao) {
-      olxAdvert.ad_list[0].body = input.descricao
+      olxAdvert.ad_list[0].body = input.descricao.substring(0, 6000)
     }
     if (input.categoria_olx) {
       olxAdvert.ad_list[0].category = parseInt(input.categoria_olx)
     }
 
-    logger.log('[OLX-ACTION] Dados finais para envio:', olxAdvert)
+    logger.log('[OLX-ACTION] 📤 Enviando anúncio para OLX...')
+    logger.log('[OLX-ACTION] Payload:', JSON.stringify(olxAdvert, null, 2))
 
-    // Criar anúncio na OLX
+    // ✅ CRIAR ANÚNCIO (com validações internas no client)
     const olxResponse = await olxClient.createAd(olxAdvert)
 
-    logger.log('[OLX-ACTION] Resposta completa da OLX:', olxResponse)
-
+    // ✅ TRATAMENTO DE ERROS APRIMORADO
     if (olxResponse.error) {
-      logger.error('[OLX-ACTION] Erro detectado:', olxResponse.error)
-      logger.error(
-        '[OLX-ACTION] Detalhes completos do erro:',
-        JSON.stringify(olxResponse.error, null, 2)
-      )
+      logger.error('[OLX-ACTION] ❌ Erro da OLX:', olxResponse.error)
 
       // Salvar erro no banco
       await (supabase.from('olx_anuncios') as any).insert({
@@ -142,8 +111,6 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
         titulo: input.titulo || produto.nome,
         descricao: input.descricao || produto.descricao,
         preco: produto.preco,
-        url_imagem: produto.foto_principal,
-        categoria_olx: input.categoria_olx || '23',
         status: 'erro',
         erro_mensagem: olxResponse.error.message,
       })
@@ -152,327 +119,61 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       await (supabase.from('olx_sync_log') as any).insert({
         acao: 'criar',
         status: 'erro',
-        mensagem: `${olxResponse.error.message} (Code: ${olxResponse.error.code || 'N/A'})`,
+        mensagem: olxResponse.error.message,
         request_payload: olxAdvert,
         response_data: olxResponse,
       })
 
-      // Mensagem de erro amigável
-      let errorMessage = 'Erro da OLX: '
-
-      const errorCode = typeof olxResponse.error.code === 'number' ? olxResponse.error.code : 0
-
-      if (errorCode === 401 || olxResponse.error.code === 401) {
-        errorMessage += 'Token inválido ou expirado. Gere um novo token nas configurações.'
-      } else if (errorCode === 403 || olxResponse.error.code === 403) {
-        errorMessage += 'Sem permissão. Verifique suas credenciais.'
-      } else if (errorCode === 400 || olxResponse.error.code === 400) {
-        errorMessage += 'Dados inválidos. Verifique o payload nos logs do console.'
-      } else if (errorCode === 404 || olxResponse.error.code === 404) {
-        errorMessage += 'Endpoint não encontrado. Verifique a URL da API.'
-      } else if (errorCode === 543) {
-        errorMessage += 'Erro de validação da OLX (543). '
-        if (olxResponse.error.details) {
-          const details = olxResponse.error.details
-          logger.error('[OLX-ACTION] Detalhes do erro 543:', JSON.stringify(details, null, 2))
-
-          if (details.message) {
-            errorMessage += details.message
-          } else if (details.error_description) {
-            errorMessage += details.error_description
-          } else if (typeof details === 'string') {
-            errorMessage += details
-          } else {
-            errorMessage +=
-              'Verifique: imagens acessíveis, localização completa (CEP), parâmetros da categoria.'
-          }
-        } else {
-          errorMessage +=
-            'Possíveis causas: imagens inacessíveis, falta de CEP, ou parâmetros inválidos. Verifique os logs.'
-        }
-      } else if (errorCode >= 500 && errorCode < 600) {
-        errorMessage += `Erro no servidor da OLX (${errorCode}). Tente novamente mais tarde.`
-        if (olxResponse.error.details) {
-          const details = JSON.stringify(olxResponse.error.details)
-          logger.error('[OLX-ACTION] Detalhes do erro 5xx:', details)
-          if (olxResponse.error.details.message) {
-            errorMessage += ` Detalhes: ${olxResponse.error.details.message}`
-          }
-        }
-      } else if (olxResponse.error.code === 'TIMEOUT_ERROR') {
-        errorMessage += 'Requisição demorou muito. Tente novamente.'
-      } else if (olxResponse.error.code === 'CONNECTION_ERROR') {
-        errorMessage += 'Não foi possível conectar à API da OLX. Verifique se a API está acessível.'
-      } else if (olxResponse.error.code === 'NETWORK_ERROR') {
-        errorMessage += 'Erro de rede. Verifique sua conexão com a internet.'
-      } else if (olxResponse.error.code === 'PARSE_ERROR') {
-        errorMessage += 'Resposta inválida da OLX (não é JSON). Verifique os logs do console.'
-      } else {
-        errorMessage += olxResponse.error.message || 'Erro desconhecido'
-      }
-
       return {
         success: false,
-        error: errorMessage,
+        error: olxResponse.error.message,
         code: olxResponse.error.code,
-        debug: {
-          payload: olxAdvert,
-          responseError: olxResponse.error,
-        },
+        details: olxResponse.error.details,
       }
     }
 
-    // Verificar se a resposta indica erro de permissão (statusCode: -6)
-    if (
-      olxResponse.data?.statusCode === -6 ||
-      olxResponse.data?.statusMessage === 'Without permission'
-    ) {
-      logger.error('[OLX-ACTION] ❌ Erro de permissão detectado')
-      logger.error('[OLX-ACTION] Status:', olxResponse.data?.statusMessage)
-      logger.error('[OLX-ACTION] Errors:', olxResponse.data?.errors)
-
-      const errorDetails = olxResponse.data?.errors?.[0] || {}
-
-      // Salvar erro no banco
-      await (supabase.from('olx_anuncios') as any).insert({
-        produto_id: input.produto_id,
-        titulo: input.titulo || produto.nome,
-        descricao: input.descricao || produto.descricao,
-        preco: produto.preco,
-        url_imagem: produto.foto_principal,
-        categoria_olx: input.categoria_olx || '23',
-        status: 'erro',
-        erro_mensagem: 'Sem permissão (statusCode: -6)',
-      })
-
-      // Log de erro
-      await (supabase.from('olx_sync_log') as any).insert({
-        acao: 'criar',
-        status: 'erro',
-        mensagem: `Sem permissão para criar anúncio (statusCode: -6)`,
-        request_payload: olxAdvert,
-        response_data: olxResponse,
-      })
-
+    // ✅ SUCESSO - Extrair token de importação
+    const importToken = olxResponse.data?.token
+    
+    if (!importToken) {
+      logger.error('[OLX-ACTION] ❌ Resposta sem token:', olxResponse.data)
       return {
         success: false,
-        error:
-          '🚫 Sem permissão para criar anúncios.\n\n' +
-          'Possíveis causas:\n' +
-          '1. Token sem permissão "autoupload"\n' +
-          '2. Conta OLX sem plano ativo\n' +
-          '3. Limite de anúncios atingido\n' +
-          '4. Token expirado ou inválido\n\n' +
-          '💡 Solução: Gere um novo token no portal OLX com as permissões corretas.',
-        code: -6,
-        debug: {
-          payload: olxAdvert,
-          responseData: olxResponse.data,
-          statusMessage: olxResponse.data?.statusMessage,
-          errors: olxResponse.data?.errors,
-        },
+        error: 'OLX não retornou token de importação',
+        debug: olxResponse.data,
       }
     }
 
-    // Verificar se há token null (outro tipo de erro de permissão)
-    if (
-      olxResponse.data?.token === null &&
-      olxResponse.data?.errors &&
-      olxResponse.data.errors.length > 0
-    ) {
-      logger.error('[OLX-ACTION] ❌ Erro nos dados do anúncio')
-      logger.error('[OLX-ACTION] Errors:', JSON.stringify(olxResponse.data.errors, null, 2))
+    logger.log('[OLX-ACTION] ✅ Anúncio enviado! Token:', importToken)
 
-      const firstError = olxResponse.data.errors[0] || {}
-      const errorMessage = firstError.message || 'Erro desconhecido ao criar anúncio'
+    // Aguardar 2 segundos e consultar status
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // Salvar erro no banco
-      await (supabase.from('olx_anuncios') as any).insert({
-        produto_id: input.produto_id,
-        titulo: input.titulo || produto.nome,
-        descricao: input.descricao || produto.descricao,
-        preco: produto.preco,
-        url_imagem: produto.foto_principal,
-        categoria_olx: input.categoria_olx || '23',
-        status: 'erro',
-        erro_mensagem: errorMessage,
-      })
+    const statusResponse = await olxClient.getImportStatus(importToken)
+    logger.log('[OLX-ACTION] Status:', JSON.stringify(statusResponse.data, null, 2))
 
-      // Log de erro
-      await (supabase.from('olx_sync_log') as any).insert({
-        acao: 'criar',
-        status: 'erro',
-        mensagem: errorMessage,
-        request_payload: olxAdvert,
-        response_data: olxResponse,
-      })
+    let adUuid = importToken
+    let adUrl = null
 
-      return {
-        success: false,
-        error: `❌ Erro ao criar anúncio: ${errorMessage}`,
-        debug: {
-          payload: olxAdvert,
-          responseData: olxResponse.data,
-          errors: olxResponse.data.errors,
-        },
-      }
-    }
-
-    // Sucesso - OLX pode retornar diferentes estruturas
-    logger.log('[OLX-ACTION] ✅ Anúncio criado com sucesso!')
-    logger.log(
-      '[OLX-ACTION] Dados completos da resposta:',
-      JSON.stringify(olxResponse.data, null, 2)
-    )
-
-    // A OLX pode retornar:
-    // 1. { token: "xxx" } - token de importação para consultar depois
-    // 2. { ad_list: [{ id: "xxx", list_id: "xxx", ... }] } - dados do anúncio diretamente
-    // 3. { uuid: "xxx" } - UUID direto (menos comum)
-    let adUuid = null
-    let importToken = null
-
-    if (olxResponse.data?.ad_list && Array.isArray(olxResponse.data.ad_list)) {
-      const firstAd = olxResponse.data.ad_list[0]
-
-      // Prioridade: list_id (ID público) > id (ID interno) > external_id
+    // Extrair list_id se disponível
+    if (statusResponse.data?.ad_list && Array.isArray(statusResponse.data.ad_list)) {
+      const firstAd = statusResponse.data.ad_list[0]
       if (firstAd?.list_id) {
         adUuid = String(firstAd.list_id)
-        logger.log('[OLX-ACTION] ✅ list_id encontrado:', adUuid)
-      } else if (firstAd?.id) {
-        adUuid = String(firstAd.id)
-        logger.log('[OLX-ACTION] ⚠️ Usando id interno:', adUuid)
-      } else if (firstAd?.external_id) {
-        adUuid = String(firstAd.external_id)
-        logger.log('[OLX-ACTION] ⚠️ Usando external_id:', adUuid)
+        adUrl = `https://www.olx.com.br/vi/${adUuid}.htm`
+        logger.log('[OLX-ACTION] ✅ list_id obtido:', adUuid)
       }
-
-      // Status do anúncio
-      if (firstAd?.status) {
-        logger.log('[OLX-ACTION] Status:', firstAd.status)
-      }
-    } else if (olxResponse.data?.token) {
-      // Retornou token de importação - precisamos consultar depois
-      importToken = olxResponse.data.token
-      logger.log('[OLX-ACTION] Token de importação recebido:', importToken)
-
-      // Tentar consultar o status da importação IMEDIATAMENTE
-      try {
-        logger.log('[OLX-ACTION] Aguardando 2 segundos antes de consultar status...')
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-
-        const statusResponse = await olxClient.getImportStatus(importToken)
-        logger.log(
-          '[OLX-ACTION] Status da importação:',
-          JSON.stringify(statusResponse.data, null, 2)
-        )
-
-        // Extrair list_id da resposta de status
-        if (statusResponse.data?.ad_list && Array.isArray(statusResponse.data.ad_list)) {
-          const ads = statusResponse.data.ad_list
-
-          for (const ad of ads) {
-            // Procurar pelo nosso produto usando o external_id
-            if (ad.external_id === (produto.codigo_produto || produto.id)) {
-              if (ad.list_id) {
-                adUuid = String(ad.list_id)
-                logger.log('[OLX-ACTION] ✅ list_id obtido do status:', adUuid)
-                break
-              } else if (ad.id) {
-                adUuid = String(ad.id)
-                logger.log('[OLX-ACTION] ⚠️ Usando id do status:', adUuid)
-                break
-              }
-            }
-          }
-
-          // Se não encontrou pelo external_id, pegar o primeiro
-          if (!adUuid && ads[0]) {
-            if (ads[0].list_id) {
-              adUuid = String(ads[0].list_id)
-              logger.log('[OLX-ACTION] ⚠️ Usando primeiro list_id disponível:', adUuid)
-            } else if (ads[0].id) {
-              adUuid = String(ads[0].id)
-              logger.log('[OLX-ACTION] ⚠️ Usando primeiro id disponível:', adUuid)
-            }
-          }
-        }
-
-        // Se ainda não tem ID, salvar o token como fallback
-        if (!adUuid) {
-          adUuid = importToken
-          logger.log('[OLX-ACTION] ⚠️ Usando token como ID temporário:', adUuid)
-        }
-      } catch (err) {
-        logger.error('[OLX-ACTION] ❌ Erro ao consultar status:', err)
-        // Usar token como ID temporário
-        adUuid = importToken
-        logger.log('[OLX-ACTION] ⚠️ Usando token como ID (erro ao consultar):', adUuid)
-      }
-    } else if (olxResponse.data?.uuid) {
-      // Retornou UUID direto
-      adUuid = String(olxResponse.data.uuid)
-      logger.log('[OLX-ACTION] UUID direto:', adUuid)
-    } else if (olxResponse.data?.id) {
-      // Retornou apenas ID
-      adUuid = String(olxResponse.data.id)
-      logger.log('[OLX-ACTION] ID direto:', adUuid)
-    } else {
-      // Última tentativa: verificar se tem algum campo numérico que pode ser o ID
-      const responseKeys = Object.keys(olxResponse.data || {})
-      logger.log('[OLX-ACTION] ⚠️ Estrutura desconhecida, campos disponíveis:', responseKeys)
-
-      // Procurar por campos que parecem IDs
-      for (const key of responseKeys) {
-        const value = olxResponse.data[key]
-        if (typeof value === 'string' || typeof value === 'number') {
-          logger.log(`[OLX-ACTION] Campo ${key}:`, value)
-        }
-      }
-    }
-
-    logger.log('[OLX-ACTION] ID final a ser salvo:', adUuid)
-
-    // Se não conseguiu extrair nenhum ID, retornar erro
-    if (!adUuid) {
-      logger.error('[OLX-ACTION] ❌ ERRO: Não foi possível extrair o ID do anúncio da resposta')
-      logger.error('[OLX-ACTION] Resposta completa:', JSON.stringify(olxResponse, null, 2))
-
-      await (supabase.from('olx_sync_log') as any).insert({
-        acao: 'criar',
-        status: 'erro',
-        mensagem: 'Anúncio possivelmente criado, mas não foi possível extrair o ID da resposta',
-        request_payload: olxAdvert,
-        response_data: olxResponse,
-      })
-
-      return {
-        success: false,
-        error: 'Não foi possível obter o ID do anúncio. Verifique os logs.',
-        debug: {
-          response: olxResponse.data,
-        },
-      }
-    }
-
-    // Criar URL do anúncio (se temos o list_id)
-    let adUrl = null
-    if (adUuid && !importToken) {
-      // Formato: https://www.olx.com.br/vi/{list_id}.htm
-      adUrl = `https://www.olx.com.br/vi/${adUuid}.htm`
-      logger.log('[OLX-ACTION] URL do anúncio:', adUrl)
     }
 
     // Salvar anúncio no banco
-    const { data: anuncio, error: anuncioError } = await (supabase.from('olx_anuncios') as any)
+    const { data: anuncio, error: anuncioError } = await (supabase
+      .from('olx_anuncios') as any)
       .insert({
         produto_id: input.produto_id,
         olx_ad_id: adUuid,
         titulo: input.titulo || produto.nome,
         descricao: input.descricao || produto.descricao,
         preco: produto.preco,
-        url_imagem: produto.foto_principal,
-        categoria_olx: input.categoria_olx || '23',
         status: adUrl ? 'anunciado' : 'processando',
         sincronizado_em: new Date().toISOString(),
       })
@@ -484,18 +185,14 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
       return { success: false, error: 'Erro ao salvar anúncio no banco de dados' }
     }
 
-    logger.log('[OLX-ACTION] ✅ Anúncio salvo no banco:', anuncio)
-    logger.log('[OLX-ACTION] ID do anúncio:', anuncio.id)
-    logger.log('[OLX-ACTION] olx_ad_id salvo:', anuncio.olx_ad_id)
-
     // Log de sucesso
     await (supabase.from('olx_sync_log') as any).insert({
       anuncio_id: anuncio.id,
       acao: 'criar',
       status: 'sucesso',
-      mensagem: adUrl
-        ? `Anúncio criado na OLX (ID: ${adUuid}) com ${olxAdvert.ad_list[0].images?.length || 0} imagens`
-        : `Anúncio em processamento na OLX (Token: ${adUuid})`,
+      mensagem: adUrl 
+        ? `Anúncio criado (ID: ${adUuid})`
+        : `Anúncio em processamento (Token: ${adUuid})`,
       request_payload: olxAdvert,
       response_data: olxResponse,
     })
@@ -504,18 +201,14 @@ export async function criarAnuncioOlx(input: CriarAnuncioOlxInput) {
 
     return {
       success: true,
-      data: {
-        ...anuncio,
-        url: adUrl,
-      },
+      data: { ...anuncio, url: adUrl },
       message: adUrl
-        ? 'Anúncio criado com sucesso na OLX!'
-        : 'Anúncio enviado! Aguarde processamento da OLX.',
+        ? '✅ Anúncio criado com sucesso!'
+        : '⏱️ Anúncio enviado! Aguarde processamento da OLX.',
       adUrl,
     }
   } catch (error: any) {
-    logger.error('[OLX-ACTION] ERRO FATAL ao criar anúncio:', error)
-    logger.error('[OLX-ACTION] Stack trace:', error.stack)
+    logger.error('[OLX-ACTION] ERRO FATAL:', error)
     return {
       success: false,
       error: `Erro ao criar anúncio: ${error.message || 'Erro desconhecido'}`,
@@ -1602,6 +1295,9 @@ export async function buscarDetalhesAnuncioOlx(listId: string) {
 /**
  * Validar permissões do token antes de criar anúncio
  */
+/**
+ * ✅ CORREÇÃO 1: Validar permissões ANTES de criar anúncio
+ */
 export async function validarPermissoesToken() {
   try {
     const config = await getConfig()
@@ -1618,9 +1314,8 @@ export async function validarPermissoesToken() {
     const olxClient = new OlxAPIClient(config.access_token)
 
     logger.log('[OLX-VALIDATE] 📋 Iniciando validação completa do token...')
-    logger.log('[OLX-VALIDATE] Token prefix:', config.access_token.substring(0, 20))
 
-    // TESTE 1: Listar anúncios publicados (valida autenticação básica)
+    // TESTE 1: Listar anúncios (valida autenticação básica)
     logger.log('[OLX-VALIDATE] 1️⃣ Testando autenticação básica...')
     const listResponse = await olxClient.listPublishedAds()
 
@@ -1631,17 +1326,6 @@ export async function validarPermissoesToken() {
           error: '🔒 Token inválido ou expirado',
           can_create_ads: false,
           recommendation: 'Gere um novo Access Token no portal OLX',
-          details: listResponse.error,
-        }
-      }
-
-      if (listResponse.error.code === 403) {
-        return {
-          success: false,
-          error: '🚫 Token sem permissão básica',
-          can_create_ads: false,
-          recommendation: 'Verifique se o token tem as permissões corretas',
-          details: listResponse.error,
         }
       }
 
@@ -1649,22 +1333,21 @@ export async function validarPermissoesToken() {
         success: false,
         error: `❌ Erro ao validar token: ${listResponse.error.message}`,
         can_create_ads: false,
-        details: listResponse.error,
       }
     }
 
-    logger.log('[OLX-VALIDATE] ✅ Token válido para autenticação básica')
+    logger.log('[OLX-VALIDATE] ✅ Token válido!')
 
-    // TESTE 2: Verificar balance (plano e limites)
-    logger.log('[OLX-VALIDATE] 2️⃣ Verificando plano e limites...')
+    // TESTE 2: Verificar balance (plano profissional)
+    logger.log('[OLX-VALIDATE] 2️⃣ Verificando plano...')
     const balanceResponse = await olxClient.getBalance()
 
     if (!balanceResponse.error) {
-      // Plano profissional com controle de limites
+      // Plano profissional detectado!
       const adsAvailable = balanceResponse.data?.ads?.available || 0
       const adsTotal = balanceResponse.data?.ads?.total || 0
 
-      logger.log('[OLX-VALIDATE] ✅ Plano profissional detectado')
+      logger.log('[OLX-VALIDATE] ✅ Plano EMPRESA detectado')
       logger.log(`[OLX-VALIDATE] 📊 Anúncios: ${adsAvailable}/${adsTotal} disponíveis`)
 
       if (adsAvailable === 0) {
@@ -1685,88 +1368,41 @@ export async function validarPermissoesToken() {
         plan: 'professional',
         ads_available: adsAvailable,
         ads_total: adsTotal,
-        message: `✅ Token válido! Você pode criar ${adsAvailable} anúncios`,
+        message: `✅ Tudo pronto! Você pode criar ${adsAvailable} anúncios`,
       }
     }
 
-    // Erro 410 = Plano básico (sem acesso à API de balance)
-    if (balanceResponse.error?.code === 410) {
-      logger.log('[OLX-VALIDATE] ℹ️ Plano básico detectado (erro 410)')
-
-      // TESTE 3: Tentar criar anúncio de teste (dry-run)
-      logger.log('[OLX-VALIDATE] 3️⃣ Testando permissão "autoupload"...')
-
-      // Criar payload mínimo de teste
-      const testPayload = {
-        access_token: config.access_token,
-        ad_list: [
-          {
-            id: 'test-validation-' + Date.now(),
-            operation: 'insert',
-            subject: 'Teste de Validação',
-            body: 'Teste',
-            category: 3060,
-            type: 's',
-            price: 100,
-            region: 'ba',
-            municipality: 'Salvador',
-            zipcode: '40000-000',
-            images: [],
-            params: {
-              brand: '25',
-              item_condition: 'used',
-            },
-          },
-        ],
-      }
-
-      // Tentar criar (esperamos erro -6 se não tem permissão)
-      const testResponse = await olxClient.createAd(testPayload)
-
-      if (testResponse.error?.code === -6) {
-        logger.error('[OLX-VALIDATE] ❌ Erro -6: Sem permissão "autoupload"')
-
-        return {
-          success: false,
-          error: '🚫 Token SEM permissão "autoupload"',
-          can_create_ads: false,
-          plan: 'basic',
-          recommendation:
-            'SOLUÇÃO:\n' +
-            '1. Acesse https://developers.olx.com.br\n' +
-            '2. Vá em "Meus Apps" → Seu App\n' +
-            '3. Em "Permissions", adicione "autoupload"\n' +
-            '4. Gere um NOVO Access Token\n' +
-            '5. Cole o novo token aqui',
-          details: {
-            error_code: -6,
-            message: 'Without permission',
-            scope_missing: 'autoupload',
-          },
-        }
-      }
-
-      // Se não deu erro -6, pode criar anúncios
-      logger.log('[OLX-VALIDATE] ✅ Token COM permissão "autoupload"')
+    // Erro 410 ou 404 = Plano básico ou autônomo
+    if (balanceResponse.error?.code === 410 || balanceResponse.error?.code === 404) {
+      logger.log('[OLX-VALIDATE] ⚠️ Plano básico/autônomo detectado')
 
       return {
-        success: true,
-        can_create_ads: true,
+        success: false,
+        error: '🚫 Plano incompatível com API',
+        can_create_ads: false,
         plan: 'basic',
-        warning: '⚠️ Plano básico - sem controle de limites via API',
-        message: '✅ Token válido! Você pode criar anúncios (plano básico)',
-        recommendation: 'Considere upgrade para Plano Profissional para ter controle de limites',
+        recommendation:
+          '⚠️ IMPORTANTE:\n\n' +
+          'Planos "Essencial" e "Plus" (vendedores autônomos) NÃO permitem uso de API.\n\n' +
+          '✅ SOLUÇÃO:\n' +
+          '1. Contrate um plano EMPRESA:\n' +
+          '   - Essencial Empresa\n' +
+          '   - Plus Empresa\n' +
+          '   - Premium Empresa\n\n' +
+          '2. Contato:\n' +
+          '   📞 0800 022 9800 (Seg-Sex 09h-18h)\n' +
+          '   🌐 https://adquirir.olx.com.br/planos-veiculos-empresa',
       }
     }
 
-    // Outro erro ao buscar balance - assumir que token é válido
+    // Outro erro - assumir que pode não ter plano
     logger.log('[OLX-VALIDATE] ⚠️ Não foi possível verificar plano')
     return {
       success: true,
-      can_create_ads: true,
+      can_create_ads: false,
       plan: 'unknown',
-      warning: 'Não foi possível verificar limites de anúncios',
-      message: '⚠️ Token válido, mas não foi possível verificar plano',
+      warning: '⚠️ Não foi possível verificar seu plano. Você pode tentar criar um anúncio, mas pode falhar se não tiver plano EMPRESA.',
+      recommendation: 'Se o erro persistir, entre em contato com a OLX',
     }
   } catch (error: any) {
     logger.error('[OLX-VALIDATE] Erro fatal:', error)
