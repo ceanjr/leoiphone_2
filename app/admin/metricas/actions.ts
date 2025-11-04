@@ -34,7 +34,7 @@ export async function getBannerClickStats(): Promise<{
       .select('id, titulo, tipo')
       .eq('tipo', 'produtos_destaque')
       .eq('ativo', true)
-      .order('ordem')
+      .order('ordem') as { data: any[] | null; error: any }
 
     if (bannersError) {
       logger.error('Erro ao buscar banners:', bannersError)
@@ -69,8 +69,8 @@ export async function getBannerClickStats(): Promise<{
         continue
       }
 
-      const totalClicks = clickStats?.reduce((sum, stat) => sum + Number(stat.total_clicks), 0) || 0
-      const uniqueVisitors = clickStats?.reduce((sum, stat) => sum + Number(stat.unique_visitors), 0) || 0
+      const totalClicks = clickStats?.reduce((sum: number, stat: any) => sum + Number(stat.total_clicks), 0) || 0
+      const uniqueVisitors = clickStats?.reduce((sum: number, stat: any) => sum + Number(stat.unique_visitors), 0) || 0
 
       const produtos: BannerClickStats[] = (clickStats || []).map((stat: any) => ({
         banner_id: stat.banner_id,

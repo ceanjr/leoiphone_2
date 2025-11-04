@@ -3,11 +3,8 @@
 import { logger } from '@/lib/utils/logger'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Settings, RotateCcw, Search, Check } from 'lucide-react'
+import { Settings, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
@@ -16,13 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import {
   getCategoriaProdutosRelacionados,
   updateCategoriaProdutosRelacionados,
   resetProdutosRelacionados,
 } from '@/app/admin/categorias/produtos-relacionados-actions'
+import { ProdutosRelacionadosForm } from './produtos-relacionados-form'
 import type { Produto } from '@/types/produto'
 
 interface ModalProdutosRelacionadosProps {
@@ -104,16 +101,6 @@ export function ModalProdutosRelacionados({
     } finally {
       setLoading(false)
     }
-  }
-
-  function handleToggleProduto(produtoId: string) {
-    setProdutosSelecionados((prev) => {
-      if (prev.includes(produtoId)) {
-        return prev.filter((id) => id !== produtoId)
-      } else {
-        return [...prev, produtoId]
-      }
-    })
   }
 
   async function handleSave() {
@@ -210,150 +197,20 @@ export function ModalProdutosRelacionados({
         ) : (
           <>
             <div className="space-y-6 px-4 py-4 sm:px-0">
-              {/* Configurações Gerais */}
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    Faixa de Desconto Aleatório (%)
-                  </Label>
-                  <div className="mt-2 grid grid-cols-2 gap-3">
-                    <div>
-                      <Input
-                        id="desconto-min"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={descontoMin}
-                        onChange={(e) => setDescontoMin(parseFloat(e.target.value) || 0)}
-                        className="border-zinc-800 bg-zinc-950 text-white"
-                        placeholder="Mínimo"
-                      />
-                      <p className="mt-1 text-xs text-zinc-500">Mínimo</p>
-                    </div>
-                    <div>
-                      <Input
-                        id="desconto-max"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={descontoMax}
-                        onChange={(e) => setDescontoMax(parseFloat(e.target.value) || 0)}
-                        className="border-zinc-800 bg-zinc-950 text-white"
-                        placeholder="Máximo"
-                      />
-                      <p className="mt-1 text-xs text-zinc-500">Máximo</p>
-                    </div>
-                  </div>
-                  <p className="mt-2 text-xs text-zinc-500">
-                    Cada produto receberá um desconto aleatório entre os valores mínimo e máximo
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950 p-4">
-                  <div className="flex-1">
-                    <Label htmlFor="auto-select" className="font-medium">
-                      Seleção Automática
-                    </Label>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      Produtos serão selecionados automaticamente de forma inteligente
-                    </p>
-                  </div>
-                  <Switch
-                    id="auto-select"
-                    checked={autoSelect}
-                    onCheckedChange={setAutoSelect}
-                  />
-                </div>
-              </div>
-
-              {/* Seleção Manual de Produtos */}
-              {!autoSelect && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium">
-                      Produtos Selecionados ({produtosSelecionados.length})
-                    </Label>
-                    {produtosSelecionados.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setProdutosSelecionados([])}
-                        className="h-8 text-xs text-zinc-400 hover:text-white"
-                      >
-                        Limpar seleção
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-500" />
-                    <Input
-                      placeholder="Buscar produtos..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="border-zinc-800 bg-zinc-950 pl-10 text-white"
-                    />
-                  </div>
-
-                  <div className="max-h-[300px] space-y-2 overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950 p-3">
-                    {filteredProdutos.length === 0 ? (
-                      <p className="py-8 text-center text-sm text-zinc-500">
-                        Nenhum produto encontrado
-                      </p>
-                    ) : (
-                      filteredProdutos.map((produto) => {
-                        const isSelected = produtosSelecionados.includes(produto.id)
-
-                        return (
-                          <button
-                            key={produto.id}
-                            type="button"
-                            onClick={() => handleToggleProduto(produto.id)}
-                            className={`flex w-full cursor-pointer items-center gap-3 rounded-lg border p-3 text-left transition-all ${
-                              isSelected
-                                ? 'border-[var(--brand-yellow)] bg-[var(--brand-yellow)]/10'
-                                : 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/50'
-                            }`}
-                          >
-                            {/* Checkbox customizado */}
-                            <div
-                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-all ${
-                                isSelected
-                                  ? 'border-[var(--brand-yellow)] bg-[var(--brand-yellow)]'
-                                  : 'border-zinc-600 bg-zinc-800'
-                              }`}
-                            >
-                              {isSelected && <Check className="h-3 w-3 text-black" strokeWidth={3} />}
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-white">{produto.nome}</span>
-                                {produto.codigo_produto && (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-zinc-700 text-xs text-zinc-400"
-                                  >
-                                    {produto.codigo_produto}
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="mt-1 text-sm text-zinc-400">
-                                {new Intl.NumberFormat('pt-BR', {
-                                  style: 'currency',
-                                  currency: 'BRL',
-                                }).format(produto.preco)}
-                              </p>
-                            </div>
-                          </button>
-                        )
-                      })
-                    )}
-                  </div>
-                </div>
-              )}
+              <ProdutosRelacionadosForm
+                autoSelect={autoSelect}
+                onAutoSelectChange={setAutoSelect}
+                descontoMin={descontoMin}
+                onDescontoMinChange={setDescontoMin}
+                descontoMax={descontoMax}
+                onDescontoMaxChange={setDescontoMax}
+                produtosSelecionados={produtosSelecionados}
+                onProdutosSelecionadosChange={setProdutosSelecionados}
+                produtos={produtos}
+                searchTerm={searchTerm}
+                onSearchTermChange={setSearchTerm}
+                filteredProdutos={filteredProdutos}
+              />
 
               {/* Botão Reset */}
               <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">

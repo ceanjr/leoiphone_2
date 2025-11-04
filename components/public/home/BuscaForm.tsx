@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search, X } from 'lucide-react'
+import { memo } from 'react'
 
 interface BuscaFormProps {
   busca: string
@@ -10,7 +11,7 @@ interface BuscaFormProps {
   inputRef?: React.RefObject<HTMLInputElement | null>
 }
 
-export function BuscaForm({
+function BuscaFormComponent({
   busca,
   onBuscaChange,
   onBuscaSubmit,
@@ -42,3 +43,5 @@ export function BuscaForm({
     </form>
   )
 }
+
+export const BuscaForm = memo(BuscaFormComponent)

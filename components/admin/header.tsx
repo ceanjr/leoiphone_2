@@ -1,9 +1,11 @@
+import { memo } from 'react'
+
 interface HeaderProps {
   title: string
   description?: string
 }
 
-export function Header({ title, description }: HeaderProps) {
+function HeaderComponent({ title, description }: HeaderProps) {
   return (
     <div className="flex min-h-[64px] items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 md:px-6">
       <div className="min-w-0 flex-1">
@@ -13,3 +15,5 @@ export function Header({ title, description }: HeaderProps) {
     </div>
   )
 }
+
+export const Header = memo(HeaderComponent)

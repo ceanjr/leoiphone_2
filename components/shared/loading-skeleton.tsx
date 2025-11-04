@@ -1,3 +1,5 @@
+import { memo } from 'react'
+
 /**
  * Loading Skeleton para produtos
  * Usado enquanto os produtos estão carregando
@@ -8,7 +10,7 @@ interface LoadingSkeletonProps {
   view?: 'grid' | 'list'
 }
 
-export function LoadingSkeleton({ count = 4, view = 'grid' }: LoadingSkeletonProps) {
+export const LoadingSkeleton = memo(function LoadingSkeleton({ count = 4, view = 'grid' }: LoadingSkeletonProps) {
   return (
     <div
       className={
@@ -22,9 +24,9 @@ export function LoadingSkeleton({ count = 4, view = 'grid' }: LoadingSkeletonPro
       ))}
     </div>
   )
-}
+})
 
-function ProductCardSkeleton({ view }: { view: 'grid' | 'list' }) {
+const ProductCardSkeleton = memo(function ProductCardSkeleton({ view }: { view: 'grid' | 'list' }) {
   if (view === 'list') {
     return (
       <div className="flex gap-4 rounded-lg border border-zinc-800 bg-zinc-950/50 p-4 animate-pulse">
@@ -87,12 +89,12 @@ function ProductCardSkeleton({ view }: { view: 'grid' | 'list' }) {
       </div>
     </div>
   )
-}
+})
 
 /**
  * Skeleton para lista de produtos (categorias)
  */
-export function ProductsByCategorySkeleton() {
+export const ProductsByCategorySkeleton = memo(function ProductsByCategorySkeleton() {
   return (
     <div className="space-y-12">
       {Array.from({ length: 2 }).map((_, i) => (
@@ -113,12 +115,12 @@ export function ProductsByCategorySkeleton() {
       ))}
     </div>
   )
-}
+})
 
 /**
  * Skeleton para tabelas (admin)
  */
-export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
+export const TableSkeleton = memo(function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
   return (
     <div className="space-y-3 animate-pulse">
       {/* Header */}
@@ -138,4 +140,4 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
       ))}
     </div>
   )
-}
+})

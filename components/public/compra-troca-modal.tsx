@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { ShoppingCart, Repeat, ChevronRight } from 'lucide-react'
 import {
   BottomSheet,
@@ -17,7 +18,7 @@ interface CompraOuTrocaModalProps {
   produtoNome: string
 }
 
-export function CompraOuTrocaModal({
+function CompraOuTrocaModalComponent({
   open,
   onClose,
   onComprar,
@@ -90,3 +91,5 @@ export function CompraOuTrocaModal({
     </BottomSheet>
   )
 }
+
+export const CompraOuTrocaModal = memo(CompraOuTrocaModalComponent)

@@ -6,6 +6,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { memo } from 'react'
 
 interface Categoria {
   id: string
@@ -21,7 +22,7 @@ interface CategoriaFilterBarProps {
   onOpenChange?: (open: boolean) => void
 }
 
-export function CategoriaFilterBar({
+function CategoriaFilterBarComponent({
   categoriaFiltro,
   categorias,
   onCategoriaChange,
@@ -58,3 +59,5 @@ export function CategoriaFilterBar({
     </div>
   )
 }
+
+export const CategoriaFilterBar = memo(CategoriaFilterBarComponent)

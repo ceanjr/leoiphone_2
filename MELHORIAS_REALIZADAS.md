@@ -155,21 +155,35 @@ middleware.ts (arquivo oficial do Next.js)
 11. ✅ Analisar estrutura raiz
 
 ### 🔄 Em Progresso / Próximos Passos
-- [ ] Adicionar loading-skeleton.tsx (Sprint 1 restante)
-- [ ] Unificar headers (Sprint 2)
-- [ ] Consolidar modais duplicados (Sprint 2)
-- [ ] Adicionar React.memo apropriadamente (Sprint 2)
-- [ ] Reorganizar /public se necessário (Sprint 3)
-- [ ] Implementar lazy loading de modais (Sprint 3)
+1. ✅ Adicionar loading-skeleton.tsx (Sprint 1) - **CONCLUÍDO**
+2. ✅ Adicionar React.memo onde apropriado (Sprint 1) - **CONCLUÍDO**
+   - ActiveFilters
+   - WhatsAppContactButton  
+   - ViewToggle
+   - VerMaisButton
+   - LoadingSkeleton e variantes
+   - Loading e variantes
+3. [ ] Unificar headers (Sprint 2)
+4. [ ] Consolidar modais duplicados (Sprint 2)
+5. [ ] Reorganizar /public se necessário (Sprint 3)
+6. [ ] Implementar lazy loading de modais (Sprint 3)
 
 ---
 
 ## 📋 Arquivos Modificados
 
-### Arquivos Editados (3)
+### Arquivos Editados (11)
 1. `lib/utils/produtos/sorting.ts` - Consolidado para re-exports
 2. `lib/hooks/use-sort-worker.ts` - Importa de helpers
 3. `middleware.ts` - Renomeado de proxy.ts e corrigida função
+4. `components/public/active-filters.tsx` - Adicionado React.memo
+5. `components/shared/whatsapp-contact-button.tsx` - Adicionado React.memo
+6. `components/public/home/ViewToggle.tsx` - Adicionado React.memo
+7. `components/public/home/VerMaisButton.tsx` - Adicionado React.memo
+8. `components/shared/loading-skeleton.tsx` - Adicionado React.memo em todos os componentes
+9. `components/shared/loading.tsx` - Adicionado React.memo em todos os componentes
+10. `app/admin/dashboard/actions.ts` - Corrigido tipo do RPC
+11. `app/admin/metricas/actions.ts` - Corrigidos tipos TypeScript
 
 ### Arquivos Criados (6)
 1. `scripts/README.md` - Documentação de scripts
@@ -194,18 +208,21 @@ middleware.ts (arquivo oficial do Next.js)
 - ✅ Código mais maintível
 - ✅ Padrões consistentes
 - ✅ Documentação melhorada
+- ✅ React.memo aplicado em 10+ componentes para otimização de re-renders
 
 ### Organização
 - ✅ Estrutura mais clara
 - ✅ Arquivos no lugar correto
 - ✅ Migrations ordenadas
 - ✅ Scripts documentados
+- ✅ Loading states consolidados
 
 ### Performance
 - ✅ Logger condicional (não loga em prod)
 - ✅ Middleware otimizado
 - ✅ Cache headers corretos
 - ✅ Security headers aplicados
+- ✅ Componentes memoizados para evitar re-renders desnecessários
 
 ### Segurança
 - ✅ Rate limiting implementado
@@ -228,11 +245,7 @@ Relatórios detalhados gerados (disponíveis em `/tmp/`):
 
 ## 🎯 Próximos Passos Recomendados
 
-### Imediato (Sprint Atual)
-1. Adicionar `loading-skeleton.tsx` para estados de loading
-2. Revisar componentes que usam hooks e adicionar memo onde apropriado
-
-### Curto Prazo (Próxima Sprint)
+### Sprint 2 (Próxima Semana)
 1. Unificar headers duplicados em componentes
 2. Consolidar modais com lógica similar
 3. Implementar React Query/SWR para cache de dados (opcional)
@@ -260,5 +273,7 @@ O projeto apresenta:
 - 100% de migrations com timestamp correto
 - 0% de código duplicado crítico
 - Documentação completa de scripts e estrutura
+- 10+ componentes otimizados com React.memo
+- Loading skeleton implementado e memoizado
 
 **Recomendação**: Projeto está em ótimo estado para continuar desenvolvimento.

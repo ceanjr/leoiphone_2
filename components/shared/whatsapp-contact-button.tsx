@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, memo } from 'react'
 import { logger } from '@/lib/utils/logger'
 import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
@@ -42,7 +42,7 @@ interface WhatsAppContactButtonProps extends ButtonProps {
   onOpenChange?: (open: boolean) => void
 }
 
-export function WhatsAppContactButton({
+export const WhatsAppContactButton = memo(function WhatsAppContactButton({
   message,
   triggerIcon = false,
   className,
@@ -165,4 +165,4 @@ export function WhatsAppContactButton({
       </BottomSheet>
     </>
   )
-}
+})

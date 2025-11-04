@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ColorBadge } from '@/components/shared/color-badge'
@@ -12,7 +13,7 @@ interface ActiveFiltersProps {
   productCount: number
 }
 
-export function ActiveFilters({
+export const ActiveFilters = memo(function ActiveFilters({
   filters,
   onRemoveFilter,
   onClearAll,
@@ -114,4 +115,4 @@ export function ActiveFilters({
       </div>
     </div>
   )
-}
+})

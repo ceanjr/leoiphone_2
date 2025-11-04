@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { memo } from 'react'
 import { cn } from '@/lib/utils/cn'
 
 interface LoadingProps {
@@ -21,7 +22,7 @@ const sizeAttrMap = {
   xl: '96px',
 } as const
 
-export function Loading({ size = 'md', className, text }: LoadingProps) {
+export const Loading = memo(function Loading({ size = 'md', className, text }: LoadingProps) {
   return (
     <div className={cn('flex flex-col items-center justify-center gap-4', className)}>
       <div className={cn('relative animate-pulse', sizeMap[size])}>
@@ -40,22 +41,22 @@ export function Loading({ size = 'md', className, text }: LoadingProps) {
       )}
     </div>
   )
-}
+})
 
 // Variante para tela cheia
-export function LoadingScreen({ text = 'Carregando...' }: { text?: string }) {
+export const LoadingScreen = memo(function LoadingScreen({ text = 'Carregando...' }: { text?: string }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-black">
       <Loading size="xl" text={text} />
     </div>
   )
-}
+})
 
 // Variante para overlay
-export function LoadingOverlay({ text }: { text?: string }) {
+export const LoadingOverlay = memo(function LoadingOverlay({ text }: { text?: string }) {
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <Loading size="lg" text={text} />
     </div>
   )
-}
+})

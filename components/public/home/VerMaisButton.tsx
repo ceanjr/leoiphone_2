@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 
@@ -7,7 +8,7 @@ interface VerMaisButtonProps {
   temMaisProdutos: boolean
 }
 
-export function VerMaisButton({ onClick, loading = false, temMaisProdutos }: VerMaisButtonProps) {
+export const VerMaisButton = memo(function VerMaisButton({ onClick, loading = false, temMaisProdutos }: VerMaisButtonProps) {
   if (!temMaisProdutos) return null
 
   return (
@@ -33,4 +34,4 @@ export function VerMaisButton({ onClick, loading = false, temMaisProdutos }: Ver
       </Button>
     </div>
   )
-}
+})

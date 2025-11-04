@@ -20,6 +20,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { BatteryIcon } from '@/components/shared/battery-icon'
+import { ProdutosRelacionadosForm } from './produtos-relacionados-form'
 import {
   getConfigProdutosRelacionadosDestaque,
   updateConfigProdutosRelacionadosDestaque,
@@ -50,6 +51,8 @@ export function ModalProdutosRelacionadosDestaque({
   const [produtosDisponiveis, setProdutosDisponiveis] = useState<any[]>([])
   const [produtosEmDestaque, setProdutosEmDestaque] = useState<any[]>([])
   const [produtoEditando, setProdutoEditando] = useState<any>(null)
+  const [searchTermGlobal, setSearchTermGlobal] = useState('')
+  const [filteredProdutosGlobal, setFilteredProdutosGlobal] = useState<any[]>([])
 
   // Estados
   const [loading, setLoading] = useState(true)
@@ -61,6 +64,19 @@ export function ModalProdutosRelacionadosDestaque({
       loadData()
     }
   }, [open])
+
+  useEffect(() => {
+    if (searchTermGlobal) {
+      const filtered = produtosDisponiveis.filter(
+        (p: any) =>
+          p.nome.toLowerCase().includes(searchTermGlobal.toLowerCase()) ||
+          p.codigo_produto?.toLowerCase().includes(searchTermGlobal.toLowerCase())
+      )
+      setFilteredProdutosGlobal(filtered)
+    } else {
+      setFilteredProdutosGlobal(produtosDisponiveis)
+    }
+  }, [searchTermGlobal, produtosDisponiveis])
 
   async function loadData() {
     setLoading(true)
@@ -80,6 +96,7 @@ export function ModalProdutosRelacionadosDestaque({
     }
 
     setProdutosDisponiveis(disponiveisResult.data)
+    setFilteredProdutosGlobal(disponiveisResult.data)
     setProdutosEmDestaque(destaqueResult.data)
 
     setLoading(false)
@@ -160,12 +177,6 @@ export function ModalProdutosRelacionadosDestaque({
       }
     }
     // Se ativar, não faz nada - usuário deve configurar e salvar
-  }
-
-  function toggleProdutoGlobal(produtoId: string) {
-    setProdutosSelecionadosGlobal((prev) =>
-      prev.includes(produtoId) ? prev.filter((id) => id !== produtoId) : [...prev, produtoId]
-    )
   }
 
   function updateProdutoTempConfig(produto: any, key: string, value: any) {
@@ -252,107 +263,22 @@ export function ModalProdutosRelacionadosDestaque({
 
               <div className="space-y-4">
                 {/* Toggle Auto Select */}
-                <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
-                  <div className="flex-1">
-                    <Label className="text-sm font-semibold">Seleção Automática</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Sistema escolhe produtos relacionados automaticamente
-                    </p>
-                  </div>
-                  <Switch
-                    checked={autoSelectGlobal}
-                    onCheckedChange={setAutoSelectGlobal}
-                    className="data-[state=checked]:bg-green-600"
-                  />
-                </div>
-
-                {/* Range de Desconto */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs sm:text-sm">
-                      <Percent className="mr-1 inline h-3 w-3" />
-                      Desconto Mínimo (%)
-                    </Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={descontoMinGlobal}
-                      onChange={(e) => setDescontoMinGlobal(parseFloat(e.target.value) || 0)}
-                      className="h-10 border-zinc-800 bg-zinc-900"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs sm:text-sm">
-                      <Percent className="mr-1 inline h-3 w-3" />
-                      Desconto Máximo (%)
-                    </Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={descontoMaxGlobal}
-                      onChange={(e) => setDescontoMaxGlobal(parseFloat(e.target.value) || 0)}
-                      className="h-10 border-zinc-800 bg-zinc-900"
-                    />
-                  </div>
-                </div>
-
-                {/* Seleção Manual de Produtos */}
-                {!autoSelectGlobal && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold">
-                      Selecionar Produtos Manualmente ({produtosSelecionadosGlobal.length})
-                    </Label>
-                    <ScrollArea className="h-[300px] rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
-                      {loading ? (
-                        <p className="py-8 text-center text-xs text-muted-foreground">Carregando...</p>
-                      ) : produtosDisponiveis.length === 0 ? (
-                        <p className="py-8 text-center text-xs text-muted-foreground">
-                          Nenhum produto disponível
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {produtosDisponiveis.map((produto) => (
-                            <div
-                              key={produto.id}
-                              className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/50 p-2 hover:bg-zinc-800/50"
-                            >
-                              <Checkbox
-                                checked={produtosSelecionadosGlobal.includes(produto.id)}
-                                onCheckedChange={() => toggleProdutoGlobal(produto.id)}
-                              />
-                              {produto.foto_principal && (
-                                <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded">
-                                  <Image
-                                    src={produto.foto_principal}
-                                    alt={produto.nome}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                </div>
-                              )}
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-xs font-semibold">{produto.nome}</p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  R$ {produto.preco.toFixed(2)}
-                                </p>
-                              </div>
-                              {produto.nivel_bateria && (
-                                <Badge className="flex items-center gap-1 bg-zinc-800 px-1.5 py-0.5 text-[10px]">
-                                  <BatteryIcon level={produto.nivel_bateria} />
-                                  {produto.nivel_bateria}%
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </div>
-                )}
+                <ProdutosRelacionadosForm
+                  autoSelect={autoSelectGlobal}
+                  onAutoSelectChange={setAutoSelectGlobal}
+                  descontoMin={descontoMinGlobal}
+                  onDescontoMinChange={setDescontoMinGlobal}
+                  descontoMax={descontoMaxGlobal}
+                  onDescontoMaxChange={setDescontoMaxGlobal}
+                  produtosSelecionados={produtosSelecionadosGlobal}
+                  onProdutosSelecionadosChange={setProdutosSelecionadosGlobal}
+                  produtos={produtosDisponiveis}
+                  searchTerm={searchTermGlobal}
+                  onSearchTermChange={setSearchTermGlobal}
+                  filteredProdutos={filteredProdutosGlobal}
+                  showBatteryIcon
+                  compact
+                />
 
                 <Button
                   onClick={handleSaveGlobal}

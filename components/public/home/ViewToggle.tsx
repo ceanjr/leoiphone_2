@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { LayoutGrid, List } from 'lucide-react'
 
@@ -6,7 +7,7 @@ interface ViewToggleProps {
   onViewModeChange: (mode: 'grid' | 'list') => void
 }
 
-export function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
+export const ViewToggle = memo(function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
   return (
     <div className="flex gap-1 rounded-lg border border-zinc-800 bg-zinc-900 p-1">
       <Button
@@ -37,4 +38,4 @@ export function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
       </Button>
     </div>
   )
-}
+})
