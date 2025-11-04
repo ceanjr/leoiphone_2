@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'CatálogoLéo iPhone',
+    title: 'Catálogo Léo iPhone',
     description:
       'Veja os modelos disponíveis de iPhones com preços, imagens e informações detalhadas.',
     type: 'website',
