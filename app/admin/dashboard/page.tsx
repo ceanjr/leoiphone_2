@@ -3,7 +3,17 @@ import { logger } from '@/lib/utils/logger'
 
 import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
-import { Package, Eye, TrendingUp, DollarSign, RefreshCw, Users, Activity, RotateCcw, Shuffle } from 'lucide-react'
+import {
+  Package,
+  Eye,
+  TrendingUp,
+  DollarSign,
+  RefreshCw,
+  Users,
+  Activity,
+  RotateCcw,
+  Shuffle,
+} from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
@@ -105,7 +115,7 @@ export default function DashboardPage() {
         .from('page_views')
         .select('visitor_id', { count: 'exact', head: false })
         .gte('created_at', startOfToday.toISOString())
-        .then(res => {
+        .then((res) => {
           if (res.data) {
             const unique = new Set(res.data.map((r: any) => r.visitor_id))
             return { count: unique.size }
@@ -118,7 +128,7 @@ export default function DashboardPage() {
         .from('page_views')
         .select('visitor_id', { count: 'exact', head: false })
         .gte('created_at', startOfMonth.toISOString())
-        .then(res => {
+        .then((res) => {
           if (res.data) {
             const unique = new Set(res.data.map((r: any) => r.visitor_id))
             return { count: unique.size }
@@ -131,7 +141,7 @@ export default function DashboardPage() {
         .from('conversions')
         .select('visitor_id', { count: 'exact', head: false })
         .gte('created_at', startOfToday.toISOString())
-        .then(res => {
+        .then((res) => {
           if (res.data) {
             const unique = new Set(res.data.map((r: any) => r.visitor_id))
             return { count: unique.size }
@@ -144,7 +154,7 @@ export default function DashboardPage() {
         .from('conversions')
         .select('visitor_id', { count: 'exact', head: false })
         .gte('created_at', startOfMonth.toISOString())
-        .then(res => {
+        .then((res) => {
           if (res.data) {
             const unique = new Set(res.data.map((r: any) => r.visitor_id))
             return { count: unique.size }
@@ -182,7 +192,10 @@ export default function DashboardPage() {
     ])
 
     const totalVisualizacoes =
-      visualizacoesRes.data?.reduce((acc: number, curr: any) => acc + (curr.visualizacoes_total || 0), 0) || 0
+      visualizacoesRes.data?.reduce(
+        (acc: number, curr: any) => acc + (curr.visualizacoes_total || 0),
+        0
+      ) || 0
 
     const bannersDestaqueData = (bannersDestaqueRes.data ?? []) as Array<{
       id: string
@@ -235,7 +248,10 @@ export default function DashboardPage() {
         logger.error('[Dashboard] Erro ao carregar produtos destacados:', produtosInfoRes.error)
       }
 
-      const statsMap = new Map<string, Map<string, { totalClicks: number; uniqueVisitors: number }>>()
+      const statsMap = new Map<
+        string,
+        Map<string, { totalClicks: number; uniqueVisitors: number }>
+      >()
       ;(clicksStatsRes.data ?? []).forEach((row: any) => {
         if (!statsMap.has(row.banner_id)) {
           statsMap.set(row.banner_id, new Map())
@@ -263,9 +279,7 @@ export default function DashboardPage() {
           const produtoInfo = produtoMap.get(p.produto_id)
           const metrics = statsMap.get(banner.id)?.get(p.produto_id)
           const precoPromocional =
-            p.preco_promocional != null
-              ? Number(p.preco_promocional)
-              : produtoInfo?.preco ?? null
+            p.preco_promocional != null ? Number(p.preco_promocional) : (produtoInfo?.preco ?? null)
 
           return {
             produtoId: p.produto_id,
@@ -344,7 +358,11 @@ export default function DashboardPage() {
   }
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    return date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
   }
 
   if (loading) {
@@ -362,12 +380,13 @@ export default function DashboardPage() {
 
   const displayVisitors = period === 'today' ? stats.visitantesHoje : stats.visitantesMes
   const displayConversoes = period === 'today' ? stats.conversoesHoje : stats.conversoesMes
-  const conversionRate = displayVisitors > 0
-    ? ((displayConversoes / displayVisitors) * 100).toFixed(1)
-    : '0.0'
+  const conversionRate =
+    displayVisitors > 0 ? ((displayConversoes / displayVisitors) * 100).toFixed(1) : '0.0'
 
-  const isProduction = typeof window !== 'undefined' &&
-    (window.location.hostname.includes('leoiphone.com.br') || window.location.hostname.includes('vercel.app'))
+  const isProduction =
+    typeof window !== 'undefined' &&
+    (window.location.hostname.includes('leoiphone.com.br') ||
+      window.location.hostname.includes('vercel.app'))
 
   return (
     <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
@@ -479,7 +498,7 @@ export default function DashboardPage() {
                 </Button>
               </div>
             </div>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="mt-1 text-xs text-zinc-500">
               {period === 'today' ? 'Últimas 24h' : 'Últimos 30 dias'}
             </p>
           </CardContent>
@@ -501,7 +520,9 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="border-zinc-800 bg-zinc-900">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Visualizações Totais</CardTitle>
+            <CardTitle className="text-sm font-medium text-zinc-400">
+              Visualizações Totais
+            </CardTitle>
             <Eye className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -518,9 +539,7 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {conversionRate}%
-            </div>
+            <div className="text-2xl font-bold text-white">{conversionRate}%</div>
             <p className="text-xs text-zinc-500">
               {displayConversoes} conversões de {displayVisitors} visitantes
             </p>
@@ -548,15 +567,18 @@ export default function DashboardPage() {
 
       {/* Performance dos banners de produtos em destaque */}
       <Card className="border-zinc-800 bg-zinc-900">
-        <CardHeader>
-          <CardTitle className="text-white">Produtos em Destaque • Cliques</CardTitle>
-          <CardDescription className="text-zinc-400">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-base font-semibold text-white sm:text-lg">
+            Produtos em Destaque • Cliques
+          </CardTitle>
+          <CardDescription className="text-xs text-zinc-400 sm:text-sm">
             Monitoramento de banners ativos do tipo produtos_destaque
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           {stats.bannersDestaque.length === 0 ? (
-            <p className="py-8 text-center text-sm text-zinc-500">
+            <p className="py-10 text-center text-sm text-zinc-500">
               Nenhum banner de produtos em destaque está ativo no momento.
             </p>
           ) : (
@@ -564,14 +586,18 @@ export default function DashboardPage() {
               {stats.bannersDestaque.map((banner) => (
                 <div
                   key={banner.bannerId}
-                  className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4"
+                  className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4 sm:p-5"
                 >
-                  <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                     <div>
-                      <h3 className="text-sm font-semibold text-white">{banner.titulo}</h3>
-                      <p className="text-xs text-zinc-500">
+                      <h3 className="text-sm font-semibold text-white sm:text-base">
+                        {banner.titulo}
+                      </h3>
+                      <p className="text-xs text-zinc-500 sm:text-sm">
                         {banner.produtos.length}{' '}
-                        {banner.produtos.length === 1 ? 'produto configurado' : 'produtos configurados'}
+                        {banner.produtos.length === 1
+                          ? 'produto configurado'
+                          : 'produtos configurados'}
                       </p>
                     </div>
                   </div>
@@ -581,7 +607,7 @@ export default function DashboardPage() {
                       Adicione produtos ao banner para começar a medir cliques.
                     </p>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 sm:space-y-4">
                       {banner.produtos.map((produto) => {
                         const precoBase = produto.preco ?? produto.preco_promocional ?? 0
                         const precoDestaque = produto.preco_promocional ?? produto.preco ?? 0
@@ -593,43 +619,54 @@ export default function DashboardPage() {
                         return (
                           <div
                             key={produto.produtoId}
-                            className="flex items-center gap-4 rounded-md border border-zinc-800/60 bg-zinc-900/80 p-3 md:p-4"
+                            className="flex flex-col items-start gap-3 rounded-md border border-zinc-800/60 bg-zinc-900/80 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4"
                           >
-                            {produto.foto_principal ? (
-                              <div className="relative h-12 w-12 overflow-hidden rounded-md">
-                                <Image
-                                  src={produto.foto_principal}
-                                  alt={produto.nome}
-                                  fill
-                                  sizes="48px"
-                                  className="object-cover"
-                                />
-                              </div>
-                            ) : (
-                              <div className="flex h-12 w-12 items-center justify-center rounded-md bg-zinc-800 text-[10px] text-zinc-500">
-                                Sem foto
-                              </div>
-                            )}
+                            <div className="flex items-center gap-10">
+                              {produto.foto_principal ? (
+                                <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-md sm:h-12 sm:w-12">
+                                  <Image
+                                    src={produto.foto_principal}
+                                    alt={produto.nome}
+                                    fill
+                                    sizes="56px"
+                                    className="object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-md bg-zinc-800 text-[10px] text-zinc-500 sm:h-12 sm:w-12">
+                                  Sem foto
+                                </div>
+                              )}
 
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium text-white">{produto.nome}</p>
-                              <div className="flex items-center gap-2 text-xs text-zinc-500">
-                                {temDesconto && (
-                                  <span className="line-through">
-                                    R$ {precoBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-white sm:text-base">
+                                  {produto.nome}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+                                  {temDesconto && (
+                                    <span className="line-through">
+                                      R${' '}
+                                      {precoBase.toLocaleString('pt-BR', {
+                                        minimumFractionDigits: 2,
+                                      })}
+                                    </span>
+                                  )}
+                                  <span className="font-semibold text-[var(--brand-yellow)]">
+                                    R${' '}
+                                    {precoDestaque.toLocaleString('pt-BR', {
+                                      minimumFractionDigits: 2,
+                                    })}
                                   </span>
-                                )}
-                                <span className="font-semibold text-[var(--brand-yellow)]">
-                                  R$ {precoDestaque.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </span>
+                                </div>
                               </div>
                             </div>
-
-                            <div className="flex flex-shrink-0 gap-4">
+                            <div className="mt-2 flex w-full justify-between border-t border-zinc-800 pt-2 sm:mt-0 sm:w-auto sm:gap-6 sm:border-0 sm:pt-0">
                               <div className="text-right">
-                                <p className="text-[11px] uppercase tracking-wide text-zinc-500">Cliques</p>
+                                <p className="text-[11px] tracking-wide text-zinc-500 uppercase">
+                                  Cliques
+                                </p>
                                 <p
-                                  className={`text-lg font-semibold ${
+                                  className={`text-base font-semibold sm:text-lg ${
                                     produto.totalClicks > 0 ? 'text-white' : 'text-zinc-500'
                                   }`}
                                 >
@@ -637,11 +674,11 @@ export default function DashboardPage() {
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="text-[11px] uppercase tracking-wide text-zinc-500">
+                                <p className="text-[11px] tracking-wide text-zinc-500 uppercase">
                                   Visitantes
                                 </p>
                                 <p
-                                  className={`text-lg font-semibold ${
+                                  className={`text-base font-semibold sm:text-lg ${
                                     produto.uniqueVisitors > 0 ? 'text-white' : 'text-zinc-500'
                                   }`}
                                 >
@@ -665,16 +702,23 @@ export default function DashboardPage() {
       <Card className="border-zinc-800 bg-zinc-900">
         <CardHeader>
           <CardTitle className="text-white">Produtos Mais Visualizados</CardTitle>
-          <CardDescription className="text-zinc-400">Top 5 produtos com mais acessos</CardDescription>
+          <CardDescription className="text-zinc-400">
+            Top 5 produtos com mais acessos
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {stats.topProdutos.length === 0 ? (
-            <p className="py-8 text-center text-sm text-zinc-500">Nenhum produto cadastrado ainda</p>
+            <p className="py-8 text-center text-sm text-zinc-500">
+              Nenhum produto cadastrado ainda
+            </p>
           ) : (
             <div className="space-y-4">
               {stats.topProdutos.map((produto, index) => (
-                <div key={produto.id} className="flex items-center gap-4 rounded-lg border border-zinc-800 p-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                <div
+                  key={produto.id}
+                  className="flex items-center gap-4 rounded-lg border border-zinc-800 p-4"
+                >
+                  <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold">
                     {index + 1}
                   </div>
 
@@ -694,7 +738,7 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-white">{produto.nome}</p>
                     <p className="text-xs text-zinc-400">
                       R$ {produto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}

@@ -86,28 +86,32 @@ export async function aleatorizarProdutosRelacionados() {
   }
 }
 
-export async function trackBannerProductClick(bannerId: string, produtoId: string, visitorId?: string) {
+export async function trackBannerProductClick(
+  bannerId: string, 
+  produtoId: string, 
+  visitorId: string
+) {
   try {
-    const supabase = await createClient()
+    const supabase = await createClient() // ✅ Correto - server-side
     
-    // Se não receber visitor_id, criar um baseado no timestamp
-    const finalVisitorId = visitorId || `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-
-    // Usar RPC function criada na migration
-    const { error } = await (supabase as any).rpc('record_banner_click', {
-      p_banner_id: bannerId,
-      p_produto_id: produtoId,
-      p_visitor_id: finalVisitorId,
-    })
+    // Inserir clique diretamente na tabela
+    const { error } = await supabase
+      .from('banner_produtos_clicks')
+      .insert({
+        banner_id: bannerId,
+        produto_id: produtoId,
+        visitor_id: visitorId,
+      } as any)
 
     if (error) {
-      logger.error('Erro ao registrar clique no banner:', error)
+      logger.error('[trackBannerProductClick] Erro ao registrar:', error)
       return { success: false, error: error.message }
     }
 
-    return { success: true, visitorId: finalVisitorId }
+    logger.info('[trackBannerProductClick] Clique registrado:', { bannerId, produtoId, visitorId })
+    return { success: true, visitorId }
   } catch (error: any) {
-    logger.error('Erro ao registrar clique no banner:', error)
+    logger.error('[trackBannerProductClick] Exceção:', error)
     return { success: false, error: error.message }
   }
 }

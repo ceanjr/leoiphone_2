@@ -5,121 +5,99 @@ import { saveAs } from 'file-saver'
 import type { ProductCardData } from './product-card-renderer'
 
 /**
- * Converte URL do Supabase para formato otimizado
- * Adiciona parâmetros de transformação se disponível
+ * Converte URL para usar proxy e adicionar otimizações
+ * Usa o proxy /api/proxy-image para evitar problemas de CORS
  */
-function optimizeSupabaseUrl(url: string): string {
-  // Se a URL já tem parâmetros, adiciona &, senão adiciona ?
-  const separator = url.includes('?') ? '&' : '?'
-
-  // Adiciona cache busting e qualidade para Supabase
-  return `${url}${separator}quality=100&format=auto`
+function optimizeImageUrl(url: string): string {
+  if (!url) return ''
+  
+  // Sempre usar proxy para imagens externas (Firebase ou Supabase)
+  // Isso garante que não haverá problemas de CORS
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return `/api/proxy-image?url=${encodeURIComponent(url)}`
+  }
+  
+  // Para URLs relativas, retornar como está
+  return url
 }
 
 /**
  * Força o reload de todas as imagens em um elemento
- * Usa fetch para carregar via JavaScript e contornar CORS
+ * Converte para data URLs (base64) para evitar problemas de CORS com html-to-image
  */
 async function forceReloadImages(element: HTMLElement): Promise<void> {
   const images = element.querySelectorAll('img')
-  const timestamp = Date.now()
 
-  logger.info(`🔄 Forçando reload de ${images.length} imagens com timestamp ${timestamp}`)
+  logger.info(`🔄 Convertendo ${images.length} imagens para base64...`)
 
   // Criar array de promises para aguardar todas as imagens
   const loadPromises = Array.from(images).map((img, index) => {
     return new Promise<void>(async (resolve) => {
       try {
-        const originalSrc = img.getAttribute('data-original-src') || img.src
-
-        // Armazenar URL original se não existir
-        if (!img.getAttribute('data-original-src')) {
-          img.setAttribute('data-original-src', originalSrc)
+        const currentSrc = img.src
+        
+        if (!currentSrc || currentSrc.startsWith('data:')) {
+          logger.info(`⭐️ Imagem ${index} já é data URL ou vazia`)
+          resolve()
+          return
         }
 
-        logger.info(`📸 Imagem ${index}: Carregando...`)
+        logger.info(`📸 Imagem ${index}: Convertendo para base64...`)
 
         // Timeout de segurança
         const timeout = setTimeout(() => {
           logger.warn(`⚠️ Timeout na imagem ${index}`)
           resolve()
-        }, 10000)
+        }, 15000)
 
-        // Método 1: Tentar carregar com fetch (contorna CORS)
         try {
-          const response = await fetch(originalSrc, {
+          // Fazer fetch da imagem usando o src atual (que já deve estar com proxy)
+          const response = await fetch(currentSrc, {
             method: 'GET',
-            mode: 'cors',
             cache: 'no-cache',
-            credentials: 'omit',
           })
 
-          if (response.ok) {
-            const blob = await response.blob()
-            const objectUrl = URL.createObjectURL(blob)
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`)
+          }
 
-            // Armazenar object URL para limpeza depois
-            img.setAttribute('data-object-url', objectUrl)
-
-            // Aguardar imagem carregar
-            await new Promise<void>((resolveLoad) => {
+          const blob = await response.blob()
+          
+          // Converter blob para data URL (base64)
+          const reader = new FileReader()
+          
+          await new Promise<void>((resolveLoad) => {
+            reader.onloadend = () => {
+              clearTimeout(timeout)
+              const dataUrl = reader.result as string
+              
+              // Definir o src como data URL
               img.onload = () => {
-                clearTimeout(timeout)
                 logger.info(
-                  `✅ Imagem ${index} carregada via fetch: ${img.naturalWidth}x${img.naturalHeight}`
+                  `✅ Imagem ${index} carregada: ${img.naturalWidth}x${img.naturalHeight}`
                 )
                 resolveLoad()
               }
               img.onerror = () => {
-                clearTimeout(timeout)
-                logger.warn(`⚠️ Erro ao carregar imagem ${index} via object URL`)
+                logger.warn(`⚠️ Erro ao carregar imagem ${index} após conversão`)
                 resolveLoad()
               }
-              img.src = objectUrl
-            })
-          } else {
-            throw new Error(`HTTP ${response.status}`)
-          }
-        } catch (fetchError) {
-          logger.warn(
-            `⚠️ Fetch falhou para imagem ${index}, tentando método tradicional:`,
-            fetchError
-          )
-
-          // Método 2: Fallback para carregamento tradicional com cache busting
-          const newSrc = optimizeSupabaseUrl(originalSrc)
-          const cacheBustSrc = `${newSrc}&_cb=${timestamp}&_idx=${index}`
-
-          await new Promise<void>((resolveLoad) => {
-            const onLoad = () => {
+              img.src = dataUrl
+            }
+            
+            reader.onerror = () => {
               clearTimeout(timeout)
-              logger.info(`✅ Imagem ${index} carregada: ${img.naturalWidth}x${img.naturalHeight}`)
+              logger.warn(`⚠️ Erro ao converter imagem ${index} para data URL`)
               resolveLoad()
             }
-
-            const onError = () => {
-              clearTimeout(timeout)
-              logger.error(`❌ Erro ao carregar imagem ${index}`)
-              resolveLoad()
-            }
-
-            if (img.complete && img.naturalHeight > 0) {
-              clearTimeout(timeout)
-              logger.info(`✅ Imagem ${index} já estava carregada`)
-              resolveLoad()
-              return
-            }
-
-            img.addEventListener('load', onLoad, { once: true })
-            img.addEventListener('error', onError, { once: true })
-
-            // Não usar crossOrigin para evitar problemas
-            img.removeAttribute('crossorigin')
-            img.src = cacheBustSrc
+            
+            reader.readAsDataURL(blob)
           })
+        } catch (fetchError) {
+          logger.error(`❌ Erro ao carregar imagem ${index}:`, fetchError)
+          clearTimeout(timeout)
         }
 
-        clearTimeout(timeout)
         resolve()
       } catch (error) {
         logger.error(`❌ Erro geral na imagem ${index}:`, error)
@@ -137,25 +115,10 @@ async function forceReloadImages(element: HTMLElement): Promise<void> {
 }
 
 /**
- * Limpa os atributos de cache das imagens e object URLs
+ * Limpa os atributos de cache das imagens
  */
 function cleanupImageCache(element: HTMLElement): void {
-  const images = element.querySelectorAll('img')
-  images.forEach((img) => {
-    // Limpar object URLs para evitar memory leak
-    const objectUrl = img.getAttribute('data-object-url')
-    if (objectUrl) {
-      URL.revokeObjectURL(objectUrl)
-      img.removeAttribute('data-object-url')
-    }
-
-    // Restaurar src original
-    const originalSrc = img.getAttribute('data-original-src')
-    if (originalSrc) {
-      img.src = originalSrc
-      img.removeAttribute('data-original-src')
-    }
-  })
+  // Nada a fazer - imagens já estão como data URLs
   logger.info('🧹 Cache de imagens limpo')
 }
 
@@ -252,14 +215,16 @@ export async function exportProductGrid(produtos: ProductCardData[]): Promise<Bl
   gridContainer.id = 'product-grid-temp'
   gridContainer.style.cssText = `
     position: fixed;
-    left: -9999px;
+    left: 0;
     top: 0;
-    z-index: -1;
+    z-index: 9999;
     width: 1680px;
     height: 1960px;
     background: linear-gradient(to bottom, #000000, #0a0a0a, #000000);
     padding: 40px;
     box-sizing: border-box;
+    opacity: 0;
+    pointer-events: none;
   `
 
   // Header da grade
@@ -317,6 +282,9 @@ export async function exportProductGrid(produtos: ProductCardData[]): Promise<Bl
   document.body.appendChild(gridContainer)
 
   try {
+    // Tornar visível temporariamente para renderização
+    gridContainer.style.opacity = '1'
+    
     // Aguardar imagens carregarem
     await forceReloadImages(gridContainer)
 
@@ -333,6 +301,15 @@ export async function exportProductGrid(produtos: ProductCardData[]): Promise<Bl
         pixelRatio: 2,
         backgroundColor: '#000000',
         skipFonts: false,
+        includeQueryParams: false,
+        filter: (node: HTMLElement) => {
+          // Garantir que imagens sejam incluídas
+          if (node.tagName === 'IMG') {
+            logger.info(`📸 Incluindo imagem: ${(node as HTMLImageElement).src?.slice(0, 50)}...`)
+            return true
+          }
+          return true
+        },
       })
     } catch (error) {
       logger.error('⚠️ toBlob falhou, tentando toPng:', error)
@@ -342,11 +319,22 @@ export async function exportProductGrid(produtos: ProductCardData[]): Promise<Bl
         pixelRatio: 2,
         backgroundColor: '#000000',
         skipFonts: false,
+        includeQueryParams: false,
+        filter: (node: HTMLElement) => {
+          if (node.tagName === 'IMG') {
+            logger.info(`📸 Incluindo imagem: ${(node as HTMLImageElement).src?.slice(0, 50)}...`)
+            return true
+          }
+          return true
+        },
       })
 
       const response = await fetch(dataUrl)
       blob = await response.blob()
     }
+    
+    // Ocultar novamente
+    gridContainer.style.opacity = '0'
 
     if (!blob || blob.size < 1024) {
       throw new Error('Falha ao gerar blob da grade')
@@ -416,7 +404,7 @@ function createCompactProductCard(produto: ProductCardData): HTMLElement {
   `
 
   const img = document.createElement('img')
-  img.src = optimizeSupabaseUrl(produto.foto_principal)
+  img.src = optimizeImageUrl(produto.foto_principal)
   img.alt = produto.nome
   // Não usar crossOrigin para evitar problemas de CORS
   img.style.cssText = `

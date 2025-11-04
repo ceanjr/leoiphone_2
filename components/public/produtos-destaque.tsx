@@ -7,20 +7,8 @@ import { Flame } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { CountdownTimer } from '@/components/ui/countdown-timer'
 import { trackBannerProductClick } from '@/app/admin/dashboard/actions'
+import { getOrCreateVisitorId } from '@/lib/utils/visitor'
 import { logger } from '@/lib/utils/logger'
-
-function getOrCreateVisitorId(): string {
-  if (typeof window === 'undefined') return ''
-
-  const stored = localStorage.getItem('visitor_id')
-  if (stored) return stored
-
-  // Criar novo visitor_id (UUID simples)
-  const newVisitorId = `v_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
-  localStorage.setItem('visitor_id', newVisitorId)
-
-  return newVisitorId
-}
 
 interface ProdutoDestaque {
   id: string
@@ -51,24 +39,40 @@ function ProdutosDestaqueComponent({
   bannerId,
   countdownEndsAt,
 }: ProdutosDestaqueProps) {
-  const [isTracking, setIsTracking] = useState(false)
+  const [trackingStates, setTrackingStates] = useState<Record<string, boolean>>({})
 
   const handleClick = async (productId: string) => {
-    // Não bloquear a navegação
-    if (isTracking) return
+    // Evitar múltiplos cliques no mesmo produto
+    if (trackingStates[productId]) return
 
-    setIsTracking(true)
+    setTrackingStates((prev) => ({ ...prev, [productId]: true }))
 
     try {
-      // Pegar ou criar visitor_id
+      // Pegar visitor_id do sistema de cookies
       const visitorId = getOrCreateVisitorId()
-      
-      // Registrar o clique em background
-      await trackBannerProductClick(bannerId, productId, visitorId)
+
+      if (!visitorId) {
+        logger.warn('[ProdutosDestaque] visitor_id não encontrado')
+        return
+      }
+
+      // Registrar clique (não aguardar para não bloquear navegação)
+      trackBannerProductClick(bannerId, productId, visitorId)
+        .then((result) => {
+          if (!result.success) {
+            logger.error('[ProdutosDestaque] Erro ao registrar clique:', result.error)
+          }
+        })
+        .catch((err) => {
+          logger.error('[ProdutosDestaque] Exceção ao registrar clique:', err)
+        })
     } catch (error) {
-      logger.error('Erro ao registrar clique:', error)
+      logger.error('[ProdutosDestaque] Erro no handleClick:', error)
     } finally {
-      setIsTracking(false)
+      // Resetar após 1 segundo para permitir novo clique se necessário
+      setTimeout(() => {
+        setTrackingStates((prev) => ({ ...prev, [productId]: false }))
+      }, 1000)
     }
   }
 
@@ -84,12 +88,11 @@ function ProdutosDestaqueComponent({
             </div>
             {subtitulo && <p className="px-8 text-sm text-zinc-400">{subtitulo}</p>}
           </div>
-          {/* Countdown Timer */}
           {countdownEndsAt && <CountdownTimer endDate={countdownEndsAt} />}
         </div>
       </div>
 
-      {/* Grid de Produtos - Scroll horizontal no mobile */}
+      {/* Grid de Produtos */}
       {produtos.length === 0 ? (
         <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/30 p-8 text-center">
           <div className="rounded-full bg-zinc-800/50 p-4">
@@ -99,9 +102,6 @@ function ProdutosDestaqueComponent({
             <h3 className="text-lg font-semibold text-zinc-300">Produtos Esgotados</h3>
             <p className="text-sm text-zinc-500">
               Todos os produtos em oferta dessa semana esgotaram
-            </p>
-            <p className="text-xs text-zinc-600">
-              Em breve teremos novos produtos incríveis para você! 🚀
             </p>
           </div>
         </div>
@@ -155,17 +155,17 @@ function ProdutosDestaqueComponent({
 
                   <div className="flex flex-wrap items-center gap-1.5 text-xs">
                     {produto.condicao === 'novo' && (
-                      <Badge className="bg-green-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-green-700">
+                      <Badge className="bg-green-600 px-1.5 py-0.5 text-[10px] text-white">
                         Novo
                       </Badge>
                     )}
                     {produto.condicao === 'seminovo' && (
-                      <Badge className="bg-amber-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-amber-700">
+                      <Badge className="bg-amber-600 px-1.5 py-0.5 text-[10px] text-white">
                         Seminovo
                       </Badge>
                     )}
                     {produto.garantia !== 'nenhuma' && (
-                      <Badge className="bg-purple-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-purple-700">
+                      <Badge className="bg-purple-600 px-1.5 py-0.5 text-[10px] text-white">
                         Com Garantia
                       </Badge>
                     )}
@@ -211,5 +211,4 @@ function ProdutosDestaqueComponent({
   )
 }
 
-// Memoize para melhor performance em carrosséis
 export const ProdutosDestaque = memo(ProdutosDestaqueComponent)

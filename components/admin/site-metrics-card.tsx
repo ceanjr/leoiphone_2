@@ -75,7 +75,7 @@ export function SiteMetricsCard({ onRefresh }: SiteMetricsCardProps) {
   const handleResetMetric = async (metricType: string) => {
     setResetting(true)
     const result = await resetMetric(metricType)
-    
+
     if (result.success) {
       toast.success('Métrica resetada com sucesso!')
       await loadStats()
@@ -83,7 +83,7 @@ export function SiteMetricsCard({ onRefresh }: SiteMetricsCardProps) {
     } else {
       toast.error(`Erro ao resetar métrica: ${result.error}`)
     }
-    
+
     setResetting(false)
     setMetricToReset(null)
   }
@@ -91,54 +91,69 @@ export function SiteMetricsCard({ onRefresh }: SiteMetricsCardProps) {
   return (
     <>
       <Card className="border-zinc-800 bg-zinc-900">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-col items-start justify-between gap-3 pb-4 sm:flex-row sm:items-center sm:gap-0">
           <div>
-            <CardTitle className="text-white">Métricas do Site</CardTitle>
-            <CardDescription className="text-zinc-400">
+            <CardTitle className="text-base font-semibold text-white sm:text-lg">
+              Métricas do Site
+            </CardTitle>
+            <CardDescription className="text-xs text-zinc-400 sm:text-sm">
               Interações e ações dos usuários
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={loadStats} disabled={loading}>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadStats}
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 text-xs sm:w-auto sm:text-sm"
+          >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
         </CardHeader>
+
         <CardContent>
           {loading ? (
-            <div className="py-8 text-center">
+            <div className="py-10 text-center">
               <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-zinc-700 border-t-yellow-500" />
               <p className="mt-4 text-sm text-zinc-400">Carregando métricas...</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 sm:space-y-4">
               {METRICS.map((metric) => {
                 const stat = stats[metric.key] || { total: 0, unique: 0 }
-                
+
                 return (
                   <div
                     key={metric.key}
-                    className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/40 p-4"
+                    className="flex flex-col items-start justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4"
                   >
-                    <div className="flex items-center gap-3">
-                      {metric.icon}
-                      <div>
-                        <p className="text-sm font-medium text-white">{metric.label}</p>
-                        <p className="text-xs text-zinc-500">{metric.description}</p>
+                    <div className="flex w-full items-center gap-3">
+                      <div className="flex-shrink-0">{metric.icon}</div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-white sm:text-base">
+                          {metric.label}
+                        </p>
+                        <p className="text-xs text-zinc-500 sm:text-sm">{metric.description}</p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-white">{stat.total}</p>
-                        <p className="text-xs text-zinc-500">
+
+                    <div className="flex w-full items-center justify-between border-t border-zinc-800 pt-3 sm:w-auto sm:gap-6 sm:border-0 sm:pt-0">
+                      <div className="">
+                        <p className="text-xl font-bold text-white sm:text-2xl">
+                          {stat.total} <span className="text-[11px] font-normal">clicks</span>
+                        </p>
+                        <p className="text-[11px] text-zinc-500 sm:text-xs">
                           {stat.unique} {stat.unique === 1 ? 'visitante' : 'visitantes'}
                         </p>
                       </div>
-                      
+
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setMetricToReset(metric.key)}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        className="flex-shrink-0 text-red-400 hover:bg-red-500/10 hover:text-red-300"
                         disabled={stat.total === 0}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -152,13 +167,16 @@ export function SiteMetricsCard({ onRefresh }: SiteMetricsCardProps) {
         </CardContent>
       </Card>
 
-      <AlertDialog open={metricToReset !== null} onOpenChange={(open) => !open && setMetricToReset(null)}>
-        <AlertDialogContent className="bg-zinc-900 border-zinc-800">
+      <AlertDialog
+        open={metricToReset !== null}
+        onOpenChange={(open) => !open && setMetricToReset(null)}
+      >
+        <AlertDialogContent className="border-zinc-800 bg-zinc-900">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Resetar Métrica</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">
-              Tem certeza que deseja resetar esta métrica? Todos os dados serão permanentemente removidos.
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja resetar esta métrica? Todos os dados serão permanentemente
+              removidos. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

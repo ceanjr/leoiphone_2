@@ -28,8 +28,8 @@ export function ProductCardRenderer({ produto, visible = false }: ProductCardRen
   // Criar URL proxied para evitar problemas de CORS
   const getProxiedImageUrl = (url: string) => {
     if (!url) return ''
-    // Se for Firebase Storage ou Supabase Storage, usar proxy
-    if (url.includes('firebasestorage.googleapis.com') || url.includes('supabase.co/storage')) {
+    // Sempre usar proxy para URLs externas
+    if (url.startsWith('http://') || url.startsWith('https://')) {
       return `/api/proxy-image?url=${encodeURIComponent(url)}`
     }
     return url
