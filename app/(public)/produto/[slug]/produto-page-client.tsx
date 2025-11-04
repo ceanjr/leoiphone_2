@@ -1,18 +1,16 @@
 'use client'
 import { logger } from '@/lib/utils/logger'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { notFound, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Check, Share2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { WhatsAppContactButton } from '@/components/shared/whatsapp-contact-button'
-import { CalculadoraParcelas } from '@/components/public/calculadora-parcelas'
+import { CalculadoraParcelas } from '@/components/public/calculadora/calculadora-parcelas'
 import { ProdutosRelacionados } from '@/components/public/produtos-relacionados'
 import { ImageGalleryWithZoom } from '@/components/public/image-gallery-zoom'
-import { CompraOuTrocaModal } from '@/components/public/compra-troca-modal'
-import { TrocaModal } from '@/components/public/troca-modal'
 import { ProductStructuredData } from '@/components/seo/product-structured-data'
 import { createClient } from '@/lib/supabase/client'
 import { usePollingTaxas } from '@/hooks/use-polling-taxas'
@@ -20,6 +18,14 @@ import type { ProdutoComCategoria } from '@/types/produto'
 import type { TaxasConfig } from '@/lib/validations/taxas'
 import type { TrocaFormData } from '@/lib/validations/troca'
 import { estadoConservacaoLabels } from '@/lib/validations/troca'
+
+// Lazy load heavy modals
+const CompraOuTrocaModal = lazy(() => 
+  import('@/components/public/compra-troca-modal').then(mod => ({ default: mod.CompraOuTrocaModal }))
+)
+const TrocaModal = lazy(() =>
+  import('@/components/public/troca-modal').then(mod => ({ default: mod.TrocaModal }))
+)
 
 export function ProdutoPageClient({ slug }: { slug: string }) {
   const searchParams = useSearchParams()
@@ -587,21 +593,25 @@ ${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`)
         </div>
       </div>
 
-      {/* Modais */}
-      <CompraOuTrocaModal
-        open={modalCompraOuTroca}
-        onClose={() => setModalCompraOuTroca(false)}
-        onComprar={handleComprar}
-        onTrocar={handleTrocar}
-        produtoNome={produto.nome}
-      />
+      {/* Modais - Lazy loaded with Suspense */}
+      <Suspense fallback={null}>
+        <CompraOuTrocaModal
+          open={modalCompraOuTroca}
+          onClose={() => setModalCompraOuTroca(false)}
+          onComprar={handleComprar}
+          onTrocar={handleTrocar}
+          produtoNome={produto.nome}
+        />
+      </Suspense>
 
-      <TrocaModal
-        open={modalTroca}
-        onClose={() => setModalTroca(false)}
-        onSubmit={handleTrocaSubmit}
-        produtoNome={produto.nome}
-      />
+      <Suspense fallback={null}>
+        <TrocaModal
+          open={modalTroca}
+          onClose={() => setModalTroca(false)}
+          onSubmit={handleTrocaSubmit}
+          produtoNome={produto.nome}
+        />
+      </Suspense>
 
       {/* Modal WhatsApp (sempre renderizado, controlado) */}
       <WhatsAppContactButton

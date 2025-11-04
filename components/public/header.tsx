@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { WhatsAppContactButton } from '@/components/shared/whatsapp-contact-button'
-import { CalculadoraTaxasDialog } from '@/components/public/calculadora-taxas-dialog'
+import { CalculadoraTaxasDialog } from '@/components/public/calculadora/calculadora-taxas-dialog'
 import { useAuth } from '@/hooks/use-auth'
 import { usePollingTaxas } from '@/hooks/use-polling-taxas'
 import type { TaxasConfig } from '@/lib/validations/taxas'

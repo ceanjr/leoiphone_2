@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import type { ProductFilters } from '@/components/public/filters-drawer'
+import type { ProductFilters } from '@/components/public/filters/filters-drawer'
 
 export function useHomeFilters() {
   const searchParams = useSearchParams()
