@@ -12,7 +12,6 @@ import { useHomeFilters } from '@/hooks/use-home-filters'
 import { useHomeData } from '@/hooks/use-home-data'
 import { useProdutosAgrupados } from '@/hooks/use-produtos-agrupados'
 import { getSecaoConfig } from '@/lib/config/secao-config'
-import { filtrarProdutos } from '@/lib/utils/produtos/grouping'
 import { ordenarProdutosPorModelo } from '@/lib/utils/produtos/helpers'
 import { ProductsByCategorySkeleton } from '@/components/shared/loading-skeleton'
 import {
@@ -86,18 +85,14 @@ function HomePageContent() {
   }, [])
 
   // Polling de produtos atualiza em tempo real
+  // Atualiza apenas os produtos sem filtrar - a filtragem acontece no useProdutosAgrupados
   const handleProdutosUpdate = useCallback(
     (produtosAtualizados: ProdutoComCategoria[]) => {
-      const produtosFiltrados = filtrarProdutos(produtosAtualizados, {
-        categoriaId: categoriaFiltro,
-        busca,
-        excluirIds: produtosEmDestaqueIds,
-      })
-
-      const produtosOrdenados = ordenarProdutosPorModelo(produtosFiltrados)
+      // Ordenar produtos (não filtrar aqui para evitar race conditions)
+      const produtosOrdenados = ordenarProdutosPorModelo(produtosAtualizados)
       setProdutos(produtosOrdenados)
     },
-    [produtosEmDestaqueIds, categoriaFiltro, busca, setProdutos]
+    [setProdutos]
   )
 
   usePollingProdutos({
@@ -127,6 +122,14 @@ function HomePageContent() {
 
         {/* Carrossel de Banners */}
         <BannerCarousel />
+
+        {/* Card informativo sobre preços de seminovos */}
+        <div className="mb-4 rounded-lg border border-[var(--brand-yellow)]/30 bg-[var(--brand-yellow)]/10 px-4 py-3 backdrop-blur-sm">
+          <p className="text-center text-sm text-zinc-200 md:text-base">
+            Os preços dos aparelhos seminovos podem variar de acordo com o estado de conservação e
+            saúde da bateria.
+          </p>
+        </div>
 
         {/* Barra de Busca */}
         <div className="mb-4">

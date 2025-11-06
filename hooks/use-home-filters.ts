@@ -54,7 +54,7 @@ export function useHomeFilters() {
   // Atualizar URL com filtros
   const updateURL = (newBusca?: string, newCategoria?: string, newViewMode?: 'grid' | 'list') => {
     const params = new URLSearchParams(searchParams?.toString())
-    
+
     const finalBusca = newBusca !== undefined ? newBusca : busca
     const finalCategoria = newCategoria !== undefined ? newCategoria : categoriaFiltro
     const finalViewMode = newViewMode !== undefined ? newViewMode : viewMode
@@ -80,9 +80,9 @@ export function useHomeFilters() {
     const query = params.toString()
     const target = query ? `/?${query}` : '/'
     const currentQuery = searchParams?.toString() ?? ''
-    
+
     if (pathname === '/' && query !== currentQuery) {
-      router.replace(target)
+      router.replace(target, { scroll: false })
     }
   }
 

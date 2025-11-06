@@ -1,7 +1,7 @@
 'use client'
 
 import { logger } from '@/lib/utils/logger'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner'
 import dynamic from 'next/dynamic'
 import type { ProdutoComCategoria } from '@/types/produto'
+import { ordenarProdutosPorModelo } from '@/lib/utils/produtos/helpers'
 
 const ProdutosTable = dynamic(() =>
   import('@/components/admin/produtos-table').then((mod) => mod.ProdutosTable),
@@ -49,12 +50,16 @@ export function ProdutosManager({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
-  // Filtrar produtos baseado no status
-  const filteredProdutos = produtos.filter((produto) => {
-    if (statusFilter === 'active') return produto.ativo === true
-    if (statusFilter === 'inactive') return produto.ativo === false
-    return true // 'all'
-  })
+  // Filtrar e ordenar produtos baseado no status
+  // Usa a mesma ordenação do catálogo (por modelo e capacidade)
+  const filteredProdutos = useMemo(() => {
+    const filtered = produtos.filter((produto) => {
+      if (statusFilter === 'active') return produto.ativo === true
+      if (statusFilter === 'inactive') return produto.ativo === false
+      return true // 'all'
+    })
+    return ordenarProdutosPorModelo(filtered)
+  }, [produtos, statusFilter])
 
   useEffect(() => {
     if (!initialModalMode) return

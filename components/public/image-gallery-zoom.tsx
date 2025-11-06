@@ -183,7 +183,6 @@ function ImageGalleryWithZoomComponent({
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 600px"
                 className={`object-cover transition-opacity duration-200 ${imageLoading ? 'opacity-70' : 'opacity-100'}`}
                 priority={selectedIndex === 0}
-                quality={95}
                 onLoad={() => setImageLoading(false)}
               />
               {imageLoading && (
@@ -224,7 +223,6 @@ function ImageGalleryWithZoomComponent({
                   sizes="(max-width: 640px) 20vw, (max-width: 1024px) 15vw, 120px"
                   className="object-cover"
                   loading="eager"
-                  quality={80}
                 />
               </button>
             ))}
@@ -283,7 +281,6 @@ function ImageGalleryWithZoomComponent({
                 width={1200}
                 height={1200}
                 className="max-h-full max-w-full object-contain"
-                quality={100}
               />
             </div>
 

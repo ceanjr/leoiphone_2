@@ -120,7 +120,6 @@ function ProdutoCardComponent({
                     sizes="112px"
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                     loading={priority ? 'eager' : 'lazy'}
-                    quality={85}
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-xs text-zinc-700">
@@ -219,7 +218,6 @@ function ProdutoCardComponent({
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 292px"
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
                 loading={priority ? 'eager' : 'lazy'}
-                quality={85}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-zinc-700">

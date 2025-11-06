@@ -44,7 +44,7 @@ export function ProdutosPorCategoria({
       {produtosAgrupados.map((grupo) => (
         <section key={grupo.categoria.id} className="space-y-6">
           <div className="border-b border-zinc-800 pb-3">
-            <h2 className="text-2xl font-bold text-white">{grupo.categoria.nome}</h2>
+            <h2 className="text-2xl font-bold text-(--brand-yellow)">{grupo.categoria.nome}</h2>
             <p className="mt-1 text-sm text-zinc-400">
               {grupo.produtos.length} {grupo.produtos.length === 1 ? 'produto' : 'produtos'}
             </p>
