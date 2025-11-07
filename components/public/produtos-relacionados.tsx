@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, memo } from 'react'
-import NextImage from 'next/image'
+import { OptimizedImage } from '@/components/shared/optimized-image'
 import Link from 'next/link'
 import { Tag, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -210,7 +210,7 @@ function ProdutosRelacionadosComponent({
                   {/* Imagem */}
                   <div className="relative aspect-square w-full overflow-hidden rounded border border-zinc-800 bg-zinc-950">
                     {produto.foto_principal || produto.fotos?.[0] ? (
-                      <NextImage
+                      <OptimizedImage
                         src={produto.foto_principal || produto.fotos[0]}
                         alt={produto.nome}
                         fill

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, TouchEvent, memo } from 'react'
-import NextImage from 'next/image'
+import { OptimizedImage } from '@/components/shared/optimized-image'
 import { X, ZoomIn, ZoomOut } from 'lucide-react'
 
 interface ImageGalleryProps {
@@ -176,7 +176,7 @@ function ImageGalleryWithZoomComponent({
         >
           {images[selectedIndex] ? (
             <>
-              <NextImage
+              <OptimizedImage
                 src={images[selectedIndex]}
                 alt={productName}
                 fill
@@ -216,7 +216,7 @@ function ImageGalleryWithZoomComponent({
                     : 'border-zinc-800 hover:scale-105 hover:border-zinc-700'
                 }`}
               >
-                <NextImage
+                <OptimizedImage
                   src={foto}
                   alt={`${productName} - Foto ${index + 1}`}
                   fill
@@ -275,7 +275,7 @@ function ImageGalleryWithZoomComponent({
                 transition: isDragging ? 'none' : 'transform 0.2s ease-out',
               }}
             >
-              <NextImage
+              <OptimizedImage
                 src={images[selectedIndex]}
                 alt={productName}
                 width={1200}

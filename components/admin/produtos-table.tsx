@@ -2,7 +2,7 @@
 
 import { logger } from '@/lib/utils/logger'
 import { useEffect, useMemo, useState, memo, type ChangeEvent, type KeyboardEvent } from 'react'
-import Image from 'next/image'
+import { OptimizedImage } from '@/components/shared/optimized-image'
 import Link from 'next/link'
 import { Edit, Eye, EyeOff, MoreVertical, Save, Search, Trash2, Download } from 'lucide-react'
 import { toast } from 'sonner'
@@ -459,7 +459,7 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                       suppressHydrationWarning
                     >
                       {produto.foto_principal ? (
-                        <Image
+                        <OptimizedImage
                           src={produto.foto_principal}
                           alt={produto.nome}
                           fill
@@ -686,7 +686,7 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                   <TableCell>
                     <div className="relative h-12 w-12 overflow-hidden rounded-md bg-zinc-950">
                       {produto.foto_principal ? (
-                        <Image
+                        <OptimizedImage
                           src={produto.foto_principal}
                           alt={produto.nome}
                           fill

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import Image from 'next/image'
+import { OptimizedImage } from '@/components/shared/optimized-image'
 import { Upload, X, Loader2, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -157,7 +157,7 @@ export function ImageUpload({ images, onChange, maxImages = 5, disabled = false 
                 >
                   {/* Imagem */}
                   <div className="aspect-square relative">
-                    <Image
+                    <OptimizedImage
                       src={url}
                       alt={`Foto ${index + 1}`}
                       fill
@@ -279,7 +279,7 @@ export function ImageUpload({ images, onChange, maxImages = 5, disabled = false 
                 >
                   {/* Imagem */}
                   <div className="aspect-square relative">
-                    <Image
+                    <OptimizedImage
                       src={url}
                       alt={`Foto ${index + 1}`}
                       fill

@@ -91,8 +91,11 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   reactStrictMode: true,
 
-  // Optimization: Enhanced image configuration for cost reduction
+  // Optimization: Use pre-optimized image variants instead of Vercel's optimization
+  // Images are optimized during upload, generating multiple WebP variants (thumb, small, medium, large)
+  // This eliminates Vercel's Image Optimization costs entirely (100% free)
   images: {
+    unoptimized: true, // Don't use Vercel's image optimization - we pre-optimize everything
     remotePatterns: [
       {
         protocol: 'https',
@@ -105,15 +108,6 @@ const nextConfig: NextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-    formats: ['image/webp'], // WebP only - reduces transformations (removed AVIF)
-    minimumCacheTTL: 2678400, // 31 days cache (reduced transformations)
-    deviceSizes: [640, 750, 828, 1080, 1200], // Mobile-first optimized sizes
-    imageSizes: [16, 32, 48, 64, 96, 128, 256], // Thumbnail sizes
-    // CRITICAL: Limit quality to only 75% - dramatically reduces transformations
-    // Instead of generating images at every quality level (10-100), only generate at 75%
-    // This can reduce transformations by up to 90% while maintaining good visual quality
-    qualities: [75],
-    unoptimized: false, // Keep optimization for product photos
     dangerouslyAllowSVG: true,
     contentDispositionType: 'inline',
   },

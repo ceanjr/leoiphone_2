@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import Image from 'next/image'
+import { OptimizedImage } from '@/components/shared/optimized-image'
 import { Badge } from '@/components/ui/badge'
 import type { Produto, ProdutoCusto } from '@/types/produto'
 import { getCorOficial, getContrastColor } from '@/lib/data/iphone-cores'
@@ -113,7 +113,7 @@ function ProdutoCardComponent({
               {/* Optimization: Fixed dimensions to prevent CLS */}
               <div className="relative hidden h-28 w-28 flex-shrink-0 overflow-hidden bg-zinc-950 sm:block">
                 {produto.foto_principal ? (
-                  <Image
+                  <OptimizedImage
                     src={produto.foto_principal}
                     alt={produto.nome}
                     fill
@@ -211,7 +211,7 @@ function ProdutoCardComponent({
           {/* Optimization: aspect-square maintains proper spacing, preventing CLS */}
           <div className="relative aspect-square overflow-hidden bg-zinc-950">
             {produto.foto_principal ? (
-              <Image
+              <OptimizedImage
                 src={produto.foto_principal}
                 alt={produto.nome}
                 fill

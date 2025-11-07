@@ -1,7 +1,7 @@
 'use client'
 
 import { memo, useState } from 'react'
-import Image from 'next/image'
+import { OptimizedImage } from '@/components/shared/optimized-image'
 import Link from 'next/link'
 import { Flame } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -131,7 +131,7 @@ function ProdutosDestaqueComponent({
 
                 {/* Imagem do Produto */}
                 <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-lg bg-zinc-900">
-                  <Image
+                  <OptimizedImage
                     src={produto.foto_principal}
                     alt={produto.nome}
                     fill

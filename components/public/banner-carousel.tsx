@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, memo } from 'react'
-import Image from 'next/image'
+import { OptimizedImage } from '@/components/shared/optimized-image'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -179,7 +179,7 @@ function BannerCarouselComponent() {
 
   const BannerContent = (
     <div className="relative h-[300px] w-full overflow-hidden rounded-lg bg-zinc-900 md:h-[400px] lg:h-[500px]">
-      <Image
+      <OptimizedImage
         src={currentBanner.imagem_url}
         alt={currentBanner.titulo}
         fill

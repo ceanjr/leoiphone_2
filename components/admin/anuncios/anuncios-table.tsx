@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
+import { OptimizedImage } from '@/components/shared/optimized-image'
 import { MoreHorizontal, Eye, Trash2, RefreshCw, AlertCircle, CheckCircle, Package, ExternalLink } from 'lucide-react'
 import {
   Table,
@@ -163,7 +163,7 @@ export function AnunciosTable({ anuncios, loading, onRefresh }: AnunciosTablePro
                 <TableCell>
                   <div className="relative h-16 w-16 overflow-hidden rounded-md bg-muted">
                     {anuncio.produto_imagem ? (
-                      <Image
+                      <OptimizedImage
                         src={anuncio.produto_imagem}
                         alt={anuncio.produto_nome}
                         fill

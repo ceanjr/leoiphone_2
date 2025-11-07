@@ -1,0 +1,125 @@
+'use client'
+
+/**
+ * Componente de imagem otimizada que substitui next/image
+ * Usa múltiplas variantes pré-processadas para economizar custos da Vercel
+ * Implementa responsive images com srcset
+ */
+
+import { useState, useEffect } from 'react'
+import Image, { ImageProps } from 'next/image'
+import { getImagePath, type ImageSize } from '@/lib/utils/image-paths'
+
+interface OptimizedImageProps extends Omit<ImageProps, 'src'> {
+  src: string
+  /**
+   * Tamanho fixo a usar (opcional)
+   * Se não especificado, escolhe automaticamente baseado no width/sizes
+   */
+  variant?: ImageSize
+  /**
+   * Fallback para imagens que ainda não foram otimizadas
+   * Padrão: true (usa imagem original se variantes não existirem)
+   */
+  fallback?: boolean
+}
+
+/**
+ * Detecta se uma URL é do Supabase Storage
+ */
+function isSupabaseImage(src: string): boolean {
+  return src.includes('supabase.co/storage')
+}
+
+/**
+ * Detecta qual variante usar baseado no tamanho solicitado
+ */
+function getVariantFromSize(sizes?: string, width?: number | string): ImageSize {
+  // Se tem width numérico específico
+  if (typeof width === 'number') {
+    if (width <= 200) return 'thumb'
+    if (width <= 500) return 'small'
+    if (width <= 900) return 'medium'
+    return 'large'
+  }
+
+  // Se tem sizes string, analisa o maior tamanho
+  if (sizes) {
+    // Pega o maior valor em pixels da string sizes
+    const matches = sizes.match(/(\d+)px/g)
+    if (matches) {
+      const maxSize = Math.max(...matches.map((m) => parseInt(m)))
+      if (maxSize <= 200) return 'thumb'
+      if (maxSize <= 500) return 'small'
+      if (maxSize <= 900) return 'medium'
+      return 'large'
+    }
+
+    // Se menciona vw (viewport width)
+    if (sizes.includes('100vw')) return 'large'
+    if (sizes.includes('50vw')) return 'medium'
+    if (sizes.includes('33vw')) return 'medium'
+    if (sizes.includes('25vw')) return 'small'
+  }
+
+  // Padrão: medium
+  return 'medium'
+}
+
+/**
+ * Componente OptimizedImage
+ * Serve variantes pré-otimizadas de imagens
+ */
+export function OptimizedImage({
+  src,
+  alt,
+  variant,
+  fallback = true,
+  sizes,
+  width,
+  priority,
+  loading,
+  ...props
+}: OptimizedImageProps) {
+  const [imageSrc, setImageSrc] = useState(src)
+  const [imageError, setImageError] = useState(false)
+
+  // Determinar qual variante usar
+  const targetVariant = variant || getVariantFromSize(sizes, width)
+
+  useEffect(() => {
+    // Se não é imagem do Supabase, usa src original
+    if (!isSupabaseImage(src)) {
+      setImageSrc(src)
+      return
+    }
+
+    // Tenta usar a variante otimizada
+    const optimizedSrc = getImagePath(src, targetVariant)
+    setImageSrc(optimizedSrc)
+    setImageError(false)
+  }, [src, targetVariant])
+
+  const handleError = () => {
+    // Se erro ao carregar variante otimizada e fallback está ativo
+    if (fallback && !imageError) {
+      setImageError(true)
+      // Tenta a imagem original
+      setImageSrc(src)
+    }
+  }
+
+  return (
+    <Image
+      {...props}
+      src={imageSrc}
+      alt={alt}
+      sizes={sizes}
+      width={width}
+      priority={priority}
+      loading={priority ? 'eager' : loading || 'lazy'}
+      onError={handleError}
+      unoptimized
+    />
+  )
+}

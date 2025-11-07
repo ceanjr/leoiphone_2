@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, getClientIP } from '@/lib/utils/rate-limiter'
 import { logger } from '@/lib/utils/logger'
 import { UPLOAD_LIMITS } from '@/lib/config/constants'
+import { optimizeImage, getBasePath } from '@/lib/utils/image-optimizer'
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,39 +52,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'A imagem deve ter no máximo 10MB' }, { status: 400 })
     }
 
-    // Gerar nome único para o arquivo
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-    const filePath = `produtos/${fileName}`
+    // Gerar nome único para o arquivo (sem extensão, será adicionada depois)
+    const baseName = `${Date.now()}-${Math.random().toString(36).substring(7)}`
 
-    // Converter File para ArrayBuffer
+    // Converter File para Buffer
     const arrayBuffer = await file.arrayBuffer()
-    const buffer = new Uint8Array(arrayBuffer)
+    const buffer = Buffer.from(arrayBuffer)
 
-    // Fazer upload para o Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('produtos')
-      .upload(filePath, buffer, {
-        contentType: file.type,
-        upsert: false,
-      })
+    // Otimizar imagem gerando múltiplas variantes
+    logger.info(`[Upload] Otimizando imagem: ${file.name}`)
+    const variants = await optimizeImage(buffer, baseName)
+    logger.info(`[Upload] Geradas ${variants.length} variantes`)
 
-    if (uploadError) {
-      logger.error('Erro no upload:', uploadError)
-      return NextResponse.json(
-        { error: `Erro ao fazer upload: ${uploadError.message}` },
-        { status: 500 }
-      )
+    // Fazer upload de todas as variantes
+    const uploadPromises = variants.map(async (variant) => {
+      const filePath = `produtos/${variant.filename}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('produtos')
+        .upload(filePath, variant.buffer, {
+          contentType: 'image/webp',
+          upsert: false,
+        })
+
+      if (uploadError) {
+        throw new Error(`Erro ao fazer upload de ${variant.size}: ${uploadError.message}`)
+      }
+
+      logger.debug(`[Upload] Variante ${variant.size}: ${filePath} (${variant.width}x${variant.height})`)
+      return filePath
+    })
+
+    // Aguardar upload de todas as variantes
+    const uploadedPaths = await Promise.all(uploadPromises)
+
+    // Pegar a URL da variante original (será usada como base)
+    const originalPath = uploadedPaths.find(path => path.includes('-original.webp'))
+    if (!originalPath) {
+      throw new Error('Erro ao encontrar imagem original após upload')
     }
 
-    // Obter URL pública da imagem
+    // Obter URL pública da imagem original
     const {
       data: { publicUrl },
-    } = supabase.storage.from('produtos').getPublicUrl(filePath)
+    } = supabase.storage.from('produtos').getPublicUrl(originalPath)
+
+    // Retornar URL base (sem sufixo -original) para que OptimizedImage possa escolher variantes
+    const baseUrl = publicUrl.replace('-original.webp', '')
+
+    logger.info(`[Upload] Upload concluído: ${uploadedPaths.length} variantes`)
 
     return NextResponse.json({
-      url: publicUrl,
-      path: uploadData.path,
+      url: `${baseUrl}.webp`, // URL base que será processada pelo OptimizedImage
+      path: originalPath,
+      variants: uploadedPaths,
     })
   } catch (error) {
     logger.error('Erro no upload:', error)
@@ -116,18 +138,54 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Caminho da imagem não fornecido' }, { status: 400 })
     }
 
-    // Deletar do storage
-    const { error: deleteError } = await supabase.storage.from('produtos').remove([path])
+    // Obter nome base do arquivo (sem sufixo de tamanho)
+    const basePath = getBasePath(path)
+    const baseFileName = basePath.split('/').pop()
+
+    // Listar todas as variantes da imagem
+    const { data: files, error: listError } = await supabase.storage
+      .from('produtos')
+      .list('produtos', {
+        search: baseFileName || undefined,
+      })
+
+    if (listError) {
+      logger.error('Erro ao listar variantes:', listError)
+      // Se falhar ao listar, tenta deletar apenas a imagem especificada
+      const { error: deleteError } = await supabase.storage.from('produtos').remove([path])
+      if (deleteError) {
+        return NextResponse.json(
+          { error: `Erro ao deletar: ${deleteError.message}` },
+          { status: 500 }
+        )
+      }
+      return NextResponse.json({ success: true, deleted: 1 })
+    }
+
+    // Filtrar apenas variantes da mesma imagem
+    const variantPaths = files
+      ?.filter(file => file.name.startsWith(baseFileName || ''))
+      .map(file => `produtos/${file.name}`) || []
+
+    // Se não encontrou variantes, usa o path original
+    const pathsToDelete = variantPaths.length > 0 ? variantPaths : [path]
+
+    // Deletar todas as variantes
+    const { error: deleteError } = await supabase.storage
+      .from('produtos')
+      .remove(pathsToDelete)
 
     if (deleteError) {
-      logger.error('Erro ao deletar:', deleteError)
+      logger.error('Erro ao deletar variantes:', deleteError)
       return NextResponse.json(
         { error: `Erro ao deletar: ${deleteError.message}` },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({ success: true })
+    logger.info(`[Delete] Removidas ${pathsToDelete.length} variantes da imagem`)
+
+    return NextResponse.json({ success: true, deleted: pathsToDelete.length })
   } catch (error) {
     logger.error('Erro ao deletar:', error)
     return NextResponse.json(
