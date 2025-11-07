@@ -3,14 +3,17 @@
 /**
  * Componente de imagem otimizada que substitui next/image
  * Usa múltiplas variantes pré-processadas para economizar custos da Vercel
- * Implementa responsive images com srcset
+ * Implementa responsive images, lazy loading inteligente e blur placeholders
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image, { ImageProps } from 'next/image'
 import { getImagePath, type ImageSize } from '@/lib/utils/image-paths'
 
-interface OptimizedImageProps extends Omit<ImageProps, 'src'> {
+// Blur placeholder SVG (10x10px base64)
+const BLUR_DATA_URL = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMjEyMTIxIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGEwYTBhIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSJ1cmwoI2cpIi8+PC9zdmc+'
+
+interface OptimizedImageProps extends Omit<ImageProps, 'src' | 'fetchPriority'> {
   src: string
   /**
    * Tamanho fixo a usar (opcional)
@@ -22,6 +25,11 @@ interface OptimizedImageProps extends Omit<ImageProps, 'src'> {
    * Padrão: true (usa imagem original se variantes não existirem)
    */
   fallback?: boolean
+  /**
+   * Fetch priority para otimizar LCP
+   * Use 'high' para imagens acima da dobra (above fold)
+   */
+  fetchPriority?: 'high' | 'low' | 'auto'
 }
 
 /**
@@ -79,15 +87,51 @@ export function OptimizedImage({
   width,
   priority,
   loading,
+  placeholder,
+  blurDataURL,
+  fetchPriority,
   ...props
 }: OptimizedImageProps) {
   const [imageSrc, setImageSrc] = useState(src)
   const [imageError, setImageError] = useState(false)
+  const [isInView, setIsInView] = useState(priority || false)
+  const imgRef = useRef<HTMLDivElement>(null)
 
   // Determinar qual variante usar
   const targetVariant = variant || getVariantFromSize(sizes, width)
 
+  // Intersection Observer para lazy loading inteligente
   useEffect(() => {
+    if (priority || isInView) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsInView(true)
+            observer.disconnect()
+          }
+        })
+      },
+      {
+        rootMargin: '50px', // Começa a carregar 50px antes de aparecer
+        threshold: 0.01,
+      }
+    )
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current)
+    }
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [priority, isInView])
+
+  useEffect(() => {
+    // Se não está no viewport e não é priority, não carrega ainda
+    if (!isInView && !priority) return
+
     // Se não é imagem do Supabase, usa src original
     if (!isSupabaseImage(src)) {
       setImageSrc(src)
@@ -98,7 +142,7 @@ export function OptimizedImage({
     const optimizedSrc = getImagePath(src, targetVariant)
     setImageSrc(optimizedSrc)
     setImageError(false)
-  }, [src, targetVariant])
+  }, [src, targetVariant, isInView, priority])
 
   const handleError = () => {
     // Se erro ao carregar variante otimizada e fallback está ativo
@@ -109,17 +153,28 @@ export function OptimizedImage({
     }
   }
 
+  // Usar blur placeholder por padrão para imagens do Supabase
+  const shouldBlur = isSupabaseImage(src) && !priority
+  const finalPlaceholder = placeholder || (shouldBlur ? 'blur' : undefined)
+  const finalBlurDataURL = blurDataURL || (shouldBlur ? BLUR_DATA_URL : undefined)
+
   return (
-    <Image
-      {...props}
-      src={imageSrc}
-      alt={alt}
-      sizes={sizes}
-      width={width}
-      priority={priority}
-      loading={priority ? 'eager' : loading || 'lazy'}
-      onError={handleError}
-      unoptimized
-    />
+    <div ref={imgRef} style={{ display: 'contents' }}>
+      <Image
+        {...props}
+        src={imageSrc}
+        alt={alt}
+        sizes={sizes}
+        width={width}
+        priority={priority}
+        loading={priority ? 'eager' : loading || 'lazy'}
+        placeholder={finalPlaceholder}
+        blurDataURL={finalBlurDataURL}
+        onError={handleError}
+        unoptimized
+        // @ts-ignore - fetchPriority não está nos tipos do Next.js mas funciona
+        fetchPriority={fetchPriority || (priority ? 'high' : 'auto')}
+      />
+    </div>
   )
 }
