@@ -53,7 +53,7 @@ export function extrairModeloECapacidade(nome: string): {
 /**
  * Ordena produtos por modelo iPhone e capacidade
  */
-export function ordenarProdutosPorModelo(produtos: Produto[]): Produto[] {
+export function ordenarProdutosPorModelo<T extends Produto>(produtos: T[]): T[] {
   return produtos.sort((a, b) => {
     const { modelo: modeloA, capacidade: capacidadeA } = extrairModeloECapacidade(a.nome)
     const { modelo: modeloB, capacidade: capacidadeB } = extrairModeloECapacidade(b.nome)
