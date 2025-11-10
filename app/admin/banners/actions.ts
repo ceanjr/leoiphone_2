@@ -202,13 +202,17 @@ export async function autoDisableBannerOnExpire(bannerId: string) {
 
   try {
     // Buscar banner para verificar se realmente expirou
-    const { data: banner } = await supabase
+    const { data: banner, error: fetchError } = await (supabase as any)
       .from('banners')
       .select('id, ativo, countdown_ends_at')
       .eq('id', bannerId)
       .single()
 
-    if (!banner || !banner.ativo || !banner.countdown_ends_at) {
+    if (fetchError || !banner) {
+      return { success: false, error: 'Banner não encontrado ou já desativado' }
+    }
+
+    if (!banner.ativo || !banner.countdown_ends_at) {
       return { success: false, error: 'Banner não encontrado ou já desativado' }
     }
 
