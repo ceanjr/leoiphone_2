@@ -18,9 +18,10 @@ import type { ProdutoComCategoria } from '@/types/produto'
 import type { TaxasConfig } from '@/lib/validations/taxas'
 import type { TrocaFormData } from '@/lib/validations/troca'
 import { estadoConservacaoLabels } from '@/lib/validations/troca'
+import { useAuth } from '@/hooks/use-auth'
 
 // Lazy load heavy modals
-const CompraOuTrocaModal = lazy(() => 
+const CompraOuTrocaModal = lazy(() =>
   import('@/components/public/compra-troca-modal').then(mod => ({ default: mod.CompraOuTrocaModal }))
 )
 const TrocaModal = lazy(() =>
@@ -29,6 +30,7 @@ const TrocaModal = lazy(() =>
 
 export function ProdutoPageClient({ slug }: { slug: string }) {
   const searchParams = useSearchParams()
+  const { isAuthenticated } = useAuth() // Use hook que reage às mudanças de autenticação
   const [produto, setProduto] = useState<ProdutoComCategoria | null>(null)
   const [loading, setLoading] = useState(true)
   const [fotoSelecionada, setFotoSelecionada] = useState(0)
@@ -40,6 +42,7 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
   const [produtosRelacionadosInfo, setProdutosRelacionadosInfo] = useState<
     Array<{ id: string; nome: string; slug: string; preco: number }>
   >([])
+  const [custos, setCustos] = useState<Array<{ id: string; custo: number; estoque: number; codigo: string | null }>>([])
 
   // Estados dos modais
   const [modalCompraOuTroca, setModalCompraOuTroca] = useState(false)
@@ -195,6 +198,7 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
       try {
         const { data: sessionData } = await supabase.auth.getSession()
         const session = sessionData.session
+
         if (!session?.user) {
           const payload: { produto_id: string } = { produto_id: produtoData.id }
           await supabase.rpc('increment_visualizacoes', payload as any)
@@ -249,6 +253,32 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
 
     loadProduto()
   }, [slug])
+
+  // Carregar ou limpar custos quando autenticação mudar
+  useEffect(() => {
+    if (!produto?.id) return
+
+    const supabase = createClient()
+
+    if (isAuthenticated) {
+      // Carregar custos se autenticado
+      const loadCustos = async () => {
+        const { data: custosData } = await supabase
+          .from('produtos_custos')
+          .select('id, custo, estoque, codigo')
+          .eq('produto_id', produto.id)
+          .order('created_at', { ascending: true })
+
+        if (custosData) {
+          setCustos(custosData)
+        }
+      }
+      loadCustos()
+    } else {
+      // Limpar custos se não autenticado (logout)
+      setCustos([])
+    }
+  }, [isAuthenticated, produto?.id])
 
   if (loading) {
     return (
@@ -539,6 +569,29 @@ ${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`)
                       {garantiaTexto[produto.garantia]}
                     </span>
                   </div>
+                )}
+                {isAuthenticated && custos.length > 0 && (
+                  <>
+                    <div className="my-3 border-t border-zinc-700" />
+                    <div className="rounded-md bg-zinc-800/50 p-3">
+                      <h3 className="mb-2 text-sm font-semibold text-[var(--brand-yellow)]">
+                        Preços de Custo
+                      </h3>
+                      <div className="space-y-2">
+                        {custos.map((custo, index) => (
+                          <div key={custo.id} className="flex justify-between text-sm">
+                            <span className="text-zinc-400">
+                              {custo.codigo ? `${custo.codigo}` : `Custo ${index + 1}`}
+                              {custo.estoque > 0 && ` (${custo.estoque} em estoque)`}
+                            </span>
+                            <span className="font-medium text-green-400">
+                              {formatPreco(custo.custo)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </CardContent>

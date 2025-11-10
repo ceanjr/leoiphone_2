@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils/cn'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { logout } from '@/app/(auth)/login/actions'
+import { resetClient } from '@/lib/supabase/client'
 import logoImage from '@/public/images/logo.png'
 
 export const menuItems = [
@@ -59,6 +60,36 @@ export function Sidebar() {
 
   async function handleLogout() {
     setShowLogoutDialog(false)
+
+    // Limpar localStorage e sessionStorage completamente antes do logout
+    try {
+      // Remover todos os itens relacionados ao Supabase do localStorage
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+
+      // Limpar também sessionStorage
+      const sessionKeysToRemove: string[] = []
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i)
+        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+          sessionKeysToRemove.push(key)
+        }
+      }
+      sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key))
+
+      // Resetar o singleton do Supabase client
+      resetClient()
+    } catch (e) {
+      console.error('Erro ao limpar storage:', e)
+    }
+
+    // Agora fazer o logout no servidor
     await logout()
   }
 

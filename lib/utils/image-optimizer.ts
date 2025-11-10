@@ -80,6 +80,7 @@ export async function optimizeImage(
     if (size === 'original') {
       // Manter original mas em WebP com boa qualidade
       const optimizedBuffer = await sharp(buffer)
+        .rotate() // Respeita metadados EXIF de orientação
         .webp({ quality: QUALITY_SETTINGS.original, effort: 6 })
         .toBuffer()
 
@@ -104,6 +105,7 @@ export async function optimizeImage(
 
     // Otimizar e converter para WebP
     const optimizedBuffer = await sharp(buffer)
+      .rotate() // Respeita metadados EXIF de orientação
       .resize(width, height, {
         fit: 'inside',
         withoutEnlargement: true,

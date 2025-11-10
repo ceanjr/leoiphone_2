@@ -216,14 +216,20 @@ function ImageGalleryWithZoomComponent({
                     : 'border-zinc-800 hover:scale-105 hover:border-zinc-700'
                 }`}
               >
-                <OptimizedImage
-                  src={foto}
-                  alt={`${productName} - Foto ${index + 1}`}
-                  fill
-                  sizes="(max-width: 640px) 20vw, (max-width: 1024px) 15vw, 120px"
-                  className="object-cover"
-                  loading="eager"
-                />
+                {foto ? (
+                  <OptimizedImage
+                    src={foto}
+                    alt={`${productName} - Foto ${index + 1}`}
+                    fill
+                    sizes="(max-width: 640px) 20vw, (max-width: 1024px) 15vw, 120px"
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs text-zinc-700">
+                    Sem foto
+                  </div>
+                )}
               </button>
             ))}
           </div>

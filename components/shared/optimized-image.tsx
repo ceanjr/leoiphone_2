@@ -132,25 +132,17 @@ export function OptimizedImage({
     // Se não está no viewport e não é priority, não carrega ainda
     if (!isInView && !priority) return
 
-    // Se não é imagem do Supabase, usa src original
-    if (!isSupabaseImage(src)) {
-      setImageSrc(src)
-      return
-    }
-
-    // Tenta usar a variante otimizada
-    const optimizedSrc = getImagePath(src, targetVariant)
-    setImageSrc(optimizedSrc)
+    // Reset error state quando src mudar
     setImageError(false)
-  }, [src, targetVariant, isInView, priority])
+
+    // Sempre usar a imagem original diretamente
+    // Sem tentar variantes otimizadas (estava causando problemas)
+    setImageSrc(src)
+  }, [src, isInView, priority])
 
   const handleError = () => {
-    // Se erro ao carregar variante otimizada e fallback está ativo
-    if (fallback && !imageError) {
-      setImageError(true)
-      // Tenta a imagem original
-      setImageSrc(src)
-    }
+    // Como sempre usamos a imagem original, se falhou é porque não existe
+    setImageError(true)
   }
 
   // Usar blur placeholder por padrão para imagens do Supabase

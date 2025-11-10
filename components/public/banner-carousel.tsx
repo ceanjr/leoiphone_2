@@ -57,25 +57,41 @@ function BannerCarouselComponent() {
       setBanners(data)
 
       // Load produtos em segundo plano (não bloqueia LCP)
+      // OTIMIZADO: Elimina query N+1 - busca todos os produtos de uma vez
       const produtosMap: Record<string, Array<Produto & { preco_promocional: number }>> = {}
 
-      for (const banner of data as any) {
-        if (banner.tipo === 'produtos_destaque' && banner.produtos_destaque?.length > 0) {
-          const produtoIds = banner.produtos_destaque.map((p: { produto_id: string }) => p.produto_id)
-          const { data: produtos } = await supabase
-            .from('produtos')
-            .select('id, nome, slug, codigo_produto, preco, foto_principal, condicao, nivel_bateria, cores, garantia')
-            .in('id', produtoIds)
-            .is('deleted_at', null)
+      // 1. Coletar todos os IDs de produtos de todos os banners
+      const bannersComProdutos = (data as any[]).filter(
+        b => b.tipo === 'produtos_destaque' && b.produtos_destaque?.length > 0
+      )
 
-          if (produtos) {
-            produtosMap[banner.id] = produtos.map((p: any) => {
-              const produtoDestaque = banner.produtos_destaque.find((pd: { produto_id: string }) => pd.produto_id === p.id)
-              return {
-                ...p,
-                preco_promocional: produtoDestaque?.preco_promocional || p.preco,
-              }
-            })
+      if (bannersComProdutos.length > 0) {
+        const todosIdsUnicos = [...new Set(
+          bannersComProdutos.flatMap(b =>
+            b.produtos_destaque.map((p: { produto_id: string }) => p.produto_id)
+          )
+        )]
+
+        // 2. Buscar TODOS os produtos de uma vez (não em loop) - Otimização: de N queries para 1 query
+        const { data: todosProdutos } = await supabase
+          .from('produtos')
+          .select('id, nome, slug, codigo_produto, preco, foto_principal, condicao, nivel_bateria, cores, garantia')
+          .in('id', todosIdsUnicos)
+          .is('deleted_at', null)
+
+        // 3. Mapear produtos por banner no cliente (operação local, não query)
+        if (todosProdutos) {
+          for (const banner of bannersComProdutos) {
+            produtosMap[banner.id] = banner.produtos_destaque
+              .map((pd: { produto_id: string; preco_promocional: number }) => {
+                const produto = (todosProdutos as any[]).find(p => p.id === pd.produto_id)
+                if (!produto) return null
+                return {
+                  ...produto,
+                  preco_promocional: pd.preco_promocional || produto.preco,
+                }
+              })
+              .filter(Boolean)
           }
         }
       }

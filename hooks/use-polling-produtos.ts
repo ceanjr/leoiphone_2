@@ -9,7 +9,7 @@ const logger = createLogger('usePollingProdutos')
 
 interface UsePollingProdutosOptions {
   enabled?: boolean
-  interval?: number // em milissegundos (padrão: 5000ms = 5s)
+  interval?: number // em milissegundos (padrão: 10000ms = 10s)
   onUpdate?: (produtos: ProdutoComCategoria[]) => void
 }
 
@@ -21,11 +21,11 @@ interface UsePollingProdutosOptions {
  *
  * @param options - Configurações do polling
  * @param options.enabled - Se o polling está ativo (padrão: true)
- * @param options.interval - Intervalo em ms (padrão: 5000ms)
+ * @param options.interval - Intervalo em ms (padrão: 10000ms = 10s)
  * @param options.onUpdate - Callback quando detectar mudança
  */
 export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
-  const { enabled = true, interval = 2000, onUpdate } = options // Reduzido para 2s
+  const { enabled = true, interval = 10000, onUpdate } = options // Otimizado para 10s (reduz tráfego em 80%)
   const lastHashRef = useRef<string | null>(null)
   const intervalIdRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -41,16 +41,11 @@ export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
 
     const checkForUpdates = async () => {
       try {
-        // Buscar todos os produtos ativos
+        // Buscar todos os produtos ativos com dados completos (otimização: única query)
         const { data, error } = await supabase
           .from('produtos')
           .select(`
-            id,
-            nome,
-            preco,
-            updated_at,
-            ativo,
-            deleted_at,
+            *,
             categoria:categorias(id, nome, slug)
           `)
           .eq('ativo', true)
@@ -63,7 +58,7 @@ export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
         }
 
         if (data) {
-          // Criar hash mais completo para detectar mudanças
+          // Criar hash para detectar mudanças
           const currentHash = data
             .map((p: any) => `${p.id}:${p.updated_at}:${p.preco}:${p.ativo}`)
             .join('|')
@@ -75,18 +70,9 @@ export function usePollingProdutos(options: UsePollingProdutosOptions = {}) {
               depois: currentHash.slice(0, 100),
             })
 
-            // Buscar produtos completos
-            const { data: produtosCompletos } = await supabase
-              .from('produtos')
-              .select(`
-                *,
-                categoria:categorias(id, nome, slug)
-              `)
-              .eq('ativo', true)
-              .is('deleted_at', null)
-
-            if (produtosCompletos && onUpdate) {
-              onUpdate(produtosCompletos as ProdutoComCategoria[])
+            // Dados já estão completos, não precisa buscar novamente (otimização: 50% menos queries)
+            if (onUpdate) {
+              onUpdate(data as ProdutoComCategoria[])
             }
           }
 

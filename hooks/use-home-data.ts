@@ -92,43 +92,52 @@ export function useHomeData(isAuthenticated: boolean) {
     }
   }, [])
 
-  // Carregar seções de destaque
+  // Carregar seções de destaque (OTIMIZADO: elimina query N+1)
   const loadSecoes = useCallback(async () => {
     const supabase = createClient()
+
+    // 1. Buscar todas as seções ativas
     const { data: secoesData } = await supabase
       .from('secoes_home')
       .select('id, tipo, titulo, subtitulo')
       .eq('ativo', true)
       .order('ordem', { ascending: true })
 
-    if (secoesData) {
-      const secoesBase = (secoesData ?? []) as SecaoHomeRow[]
-      const secoesComProdutos = await Promise.all(
-        secoesBase.map(async (secao) => {
-          const { data: produtosSecao } = await supabase
-            .from('produtos_secoes')
-            .select(
-              `
-              ordem,
-              produto:produtos(*)
-            `
-            )
-            .eq('secao_id', secao.id)
-            .order('ordem', { ascending: true })
-
-          const produtos = ((produtosSecao ?? []) as ProdutoSecaoRow[])
-            .map((ps) => ps.produto)
-            .filter((p): p is Produto => Boolean(p && p.ativo && !p.deleted_at))
-
-          return {
-            ...secao,
-            produtos,
-          }
-        })
-      )
-
-      setSecoes(secoesComProdutos.filter((s) => s.produtos.length > 0))
+    if (!secoesData || secoesData.length === 0) {
+      setSecoes([])
+      return
     }
+
+    const secoesBase = (secoesData ?? []) as SecaoHomeRow[]
+    const secaoIds = secoesBase.map(s => s.id)
+
+    // 2. Buscar TODAS as relações de uma vez (não em loop) - Otimização: de N+1 queries para 2 queries
+    const { data: todasRelacoes } = await supabase
+      .from('produtos_secoes')
+      .select(
+        `
+        secao_id,
+        ordem,
+        produto:produtos(*)
+      `
+      )
+      .in('secao_id', secaoIds)
+      .order('ordem', { ascending: true })
+
+    // 3. Agrupar produtos por seção no cliente (operação local, não query)
+    const secoesComProdutos = secoesBase.map(secao => {
+      const produtosSecao = ((todasRelacoes ?? []) as any[])
+        .filter(rel => rel.secao_id === secao.id)
+        .map(rel => rel.produto)
+        .filter((p): p is Produto => Boolean(p && p.ativo && !p.deleted_at))
+
+      return {
+        ...secao,
+        produtos: produtosSecao,
+      }
+    })
+
+    setSecoes(secoesComProdutos.filter((s) => s.produtos.length > 0))
   }, [])
 
   // Carregar produtos

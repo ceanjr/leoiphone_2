@@ -5,6 +5,11 @@ import { logger } from '@/lib/utils/logger'
 // Optimization Phase 2: Lazy singleton instance to reduce initial bundle impact
 let clientInstance: ReturnType<typeof createBrowserClient<Database>> | null = null
 
+// Função para resetar o singleton (útil após logout)
+export function resetClient() {
+  clientInstance = null
+}
+
 export function createClient() {
   // Return existing instance if already created
   if (clientInstance) {
