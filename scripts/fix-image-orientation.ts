@@ -2,8 +2,14 @@ import { createClient } from '@supabase/supabase-js'
 import sharp from 'sharp'
 import { optimizeImage } from '../lib/utils/image-optimizer'
 
-const supabaseUrl = 'https://aswejqbtejibrilrblnm.supabase.co'
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzd2VqcWJ0ZWppYnJpbHJibG5tIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTMxMjQ2MywiZXhwIjoyMDc2ODg4NDYzfQ.98uyNcAHMtDPgXeEt73Qo5dmUzetQQKgt3m9_T_r4oo'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ Variáveis de ambiente não configuradas!')
+  console.error('Execute: source .env.local && SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY npx tsx <script>')
+  process.exit(1)
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
