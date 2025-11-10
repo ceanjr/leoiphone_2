@@ -7,6 +7,7 @@ import { Flame } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { CountdownTimer } from '@/components/ui/countdown-timer'
 import { trackBannerProductClick } from '@/app/admin/dashboard/actions'
+import { autoDisableBannerOnExpire } from '@/app/admin/banners/actions'
 import { getOrCreateVisitorId } from '@/lib/utils/visitor'
 import { logger } from '@/lib/utils/logger'
 
@@ -40,6 +41,21 @@ function ProdutosDestaqueComponent({
   countdownEndsAt,
 }: ProdutosDestaqueProps) {
   const [trackingStates, setTrackingStates] = useState<Record<string, boolean>>({})
+
+  // Desativar banner quando countdown expirar
+  const handleCountdownExpire = async () => {
+    try {
+      logger.info(`[ProdutosDestaque] Countdown expirou para banner ${bannerId}, desativando...`)
+      const result = await autoDisableBannerOnExpire(bannerId)
+      if (result.success) {
+        logger.info(`[ProdutosDestaque] Banner ${bannerId} desativado com sucesso`)
+      } else {
+        logger.error(`[ProdutosDestaque] Erro ao desativar banner: ${result.error}`)
+      }
+    } catch (error) {
+      logger.error('[ProdutosDestaque] Exceção ao desativar banner:', error)
+    }
+  }
 
   const handleClick = async (productId: string) => {
     // Evitar múltiplos cliques no mesmo produto
@@ -88,7 +104,12 @@ function ProdutosDestaqueComponent({
             </div>
             {subtitulo && <p className="px-8 text-sm text-zinc-400">{subtitulo}</p>}
           </div>
-          {countdownEndsAt && <CountdownTimer endDate={countdownEndsAt} />}
+          {countdownEndsAt && (
+            <CountdownTimer
+              endDate={countdownEndsAt}
+              onExpire={handleCountdownExpire}
+            />
+          )}
         </div>
       </div>
 

@@ -32,6 +32,8 @@ export async function createBanner(data: {
   tipo: 'banner' | 'produtos_destaque'
   produtos_destaque?: Array<{ produto_id: string; preco_promocional: number }>
   countdown_ends_at?: string | null
+  active_from?: string | null
+  active_until?: string | null
   ativo?: boolean
 }) {
   const supabase = await createClient()
@@ -69,6 +71,8 @@ export async function createBanner(data: {
       tipo: data.tipo,
       produtos_destaque: data.produtos_destaque || [],
       countdown_ends_at: data.countdown_ends_at || null,
+      active_from: data.active_from || null,
+      active_until: data.active_until || null,
       ativo: data.ativo ?? true,
       ordem: novaOrdem,
     })
@@ -96,6 +100,8 @@ export async function updateBanner(
     tipo: 'banner' | 'produtos_destaque'
     produtos_destaque?: Array<{ produto_id: string; preco_promocional: number }>
     countdown_ends_at?: string | null
+    active_from?: string | null
+    active_until?: string | null
     ativo?: boolean
   }
 ) {
@@ -120,6 +126,8 @@ export async function updateBanner(
       tipo: data.tipo,
       produtos_destaque: data.produtos_destaque || [],
       countdown_ends_at: data.countdown_ends_at || null,
+      active_from: data.active_from || null,
+      active_until: data.active_until || null,
       ativo: data.ativo ?? true,
     })
     .eq('id', id)
@@ -183,4 +191,53 @@ export async function toggleBannerAtivo(id: string, ativo: boolean) {
   revalidatePath('/admin/banners')
   revalidatePath('/')
   return { success: true }
+}
+
+/**
+ * Desativa automaticamente um banner quando o countdown expira
+ * Chamado pelo componente CountdownTimer no client-side
+ */
+export async function autoDisableBannerOnExpire(bannerId: string) {
+  const supabase = await createClient()
+
+  try {
+    // Buscar banner para verificar se realmente expirou
+    const { data: banner } = await supabase
+      .from('banners')
+      .select('id, ativo, countdown_ends_at')
+      .eq('id', bannerId)
+      .single()
+
+    if (!banner || !banner.ativo || !banner.countdown_ends_at) {
+      return { success: false, error: 'Banner não encontrado ou já desativado' }
+    }
+
+    // Verificar se realmente expirou
+    const now = new Date()
+    const expiryDate = new Date(banner.countdown_ends_at)
+
+    if (expiryDate > now) {
+      return { success: false, error: 'Countdown ainda não expirou' }
+    }
+
+    // Desativar banner
+    const { error } = await (supabase as any)
+      .from('banners')
+      .update({ ativo: false })
+      .eq('id', bannerId)
+
+    if (error) {
+      logger.error('Erro ao desativar banner expirado:', error)
+      return { success: false, error: 'Erro ao desativar banner' }
+    }
+
+    logger.info(`Banner ${bannerId} desativado automaticamente (countdown expirado)`)
+
+    revalidatePath('/admin/banners')
+    revalidatePath('/')
+    return { success: true }
+  } catch (error) {
+    logger.error('Exceção ao desativar banner:', error)
+    return { success: false, error: 'Erro inesperado' }
+  }
 }

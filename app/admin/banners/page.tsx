@@ -37,6 +37,8 @@ interface Banner {
   tipo: 'banner' | 'produtos_destaque'
   produtos_destaque: Array<{ produto_id: string; preco_promocional: number }>
   countdown_ends_at: string | null
+  active_from: string | null
+  active_until: string | null
 }
 
 interface Produto {
@@ -63,6 +65,8 @@ export default function BannersPage() {
     tipo: 'banner' as 'banner' | 'produtos_destaque',
     produtos_destaque: [] as Array<{ produto_id: string; preco_promocional: number }>,
     countdown_ends_at: null as string | null,
+    active_from: null as string | null,
+    active_until: null as string | null,
   })
   const [saving, setSaving] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -99,6 +103,8 @@ export default function BannersPage() {
         tipo: banner.tipo || 'banner',
         produtos_destaque: banner.produtos_destaque || [],
         countdown_ends_at: banner.countdown_ends_at || null,
+        active_from: banner.active_from || null,
+        active_until: banner.active_until || null,
       })
 
       // Se for produtos_destaque, carregar os produtos selecionados
@@ -135,6 +141,8 @@ export default function BannersPage() {
         tipo: 'banner',
         produtos_destaque: [],
         countdown_ends_at: null,
+        active_from: null,
+        active_until: null,
       })
       setSelectedProdutos([])
     }
@@ -945,6 +953,116 @@ export default function BannersPage() {
                                   className="text-xs text-red-500 hover:text-red-400"
                                 >
                                   Limpar
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Agendamento de Ativação/Desativação */}
+                          <div className="mt-6 space-y-3 rounded-lg border border-zinc-800/70 bg-zinc-950/80 p-4">
+                            <div>
+                              <Label className="text-sm font-medium text-zinc-200">
+                                Agendamento Automático (opcional)
+                              </Label>
+                              <p className="mt-1 text-xs text-zinc-500">
+                                Programe quando este banner deve ficar ativo automaticamente
+                              </p>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {/* Ativar a partir de */}
+                              <div className="space-y-2">
+                                <Label htmlFor="active_from" className="text-xs text-zinc-400">
+                                  Ativar a partir de
+                                </Label>
+                                <Input
+                                  id="active_from"
+                                  type="datetime-local"
+                                  value={
+                                    formData.active_from
+                                      ? new Date(formData.active_from).toISOString().slice(0, 16)
+                                      : ''
+                                  }
+                                  onChange={(event) => {
+                                    setFormData({
+                                      ...formData,
+                                      active_from: event.target.value
+                                        ? new Date(event.target.value).toISOString()
+                                        : null,
+                                    })
+                                  }}
+                                  className="border-zinc-800 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
+                                  disabled={saving}
+                                />
+                                <p className="text-[10px] text-zinc-600">
+                                  Banner ficará ativo a partir desta data/hora
+                                </p>
+                              </div>
+
+                              {/* Desativar até */}
+                              <div className="space-y-2">
+                                <Label htmlFor="active_until" className="text-xs text-zinc-400">
+                                  Desativar automaticamente em
+                                </Label>
+                                <Input
+                                  id="active_until"
+                                  type="datetime-local"
+                                  value={
+                                    formData.active_until
+                                      ? new Date(formData.active_until).toISOString().slice(0, 16)
+                                      : ''
+                                  }
+                                  onChange={(event) => {
+                                    setFormData({
+                                      ...formData,
+                                      active_until: event.target.value
+                                        ? new Date(event.target.value).toISOString()
+                                        : null,
+                                    })
+                                  }}
+                                  className="border-zinc-800 bg-zinc-950 text-white focus-visible:ring-yellow-500/70"
+                                  disabled={saving}
+                                />
+                                <p className="text-[10px] text-zinc-600">
+                                  Banner será desativado automaticamente nesta data/hora
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Preview do agendamento */}
+                            {(formData.active_from || formData.active_until) && (
+                              <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
+                                <p className="text-xs font-medium text-zinc-400">Resumo do agendamento:</p>
+                                {formData.active_from && (
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-zinc-500">Ficará ativo em:</span>
+                                    <span className="font-medium text-green-400">
+                                      {new Date(formData.active_from).toLocaleString('pt-BR', {
+                                        dateStyle: 'short',
+                                        timeStyle: 'short',
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
+                                {formData.active_until && (
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-zinc-500">Será desativado em:</span>
+                                    <span className="font-medium text-red-400">
+                                      {new Date(formData.active_until).toLocaleString('pt-BR', {
+                                        dateStyle: 'short',
+                                        timeStyle: 'short',
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData({ ...formData, active_from: null, active_until: null })
+                                  }
+                                  className="text-xs text-red-500 hover:text-red-400"
+                                >
+                                  Limpar agendamento
                                 </button>
                               </div>
                             )}

@@ -22,10 +22,12 @@ import { useAuth } from '@/hooks/use-auth'
 
 // Lazy load heavy modals
 const CompraOuTrocaModal = lazy(() =>
-  import('@/components/public/compra-troca-modal').then(mod => ({ default: mod.CompraOuTrocaModal }))
+  import('@/components/public/compra-troca-modal').then((mod) => ({
+    default: mod.CompraOuTrocaModal,
+  }))
 )
 const TrocaModal = lazy(() =>
-  import('@/components/public/troca-modal').then(mod => ({ default: mod.TrocaModal }))
+  import('@/components/public/troca-modal').then((mod) => ({ default: mod.TrocaModal }))
 )
 
 export function ProdutoPageClient({ slug }: { slug: string }) {
@@ -42,7 +44,9 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
   const [produtosRelacionadosInfo, setProdutosRelacionadosInfo] = useState<
     Array<{ id: string; nome: string; slug: string; preco: number }>
   >([])
-  const [custos, setCustos] = useState<Array<{ id: string; custo: number; estoque: number; codigo: string | null }>>([])
+  const [custos, setCustos] = useState<
+    Array<{ id: string; custo: number; estoque: number; codigo: string | null }>
+  >([])
 
   // Estados dos modais
   const [modalCompraOuTroca, setModalCompraOuTroca] = useState(false)
@@ -461,13 +465,12 @@ ${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`)
           {/* Preço */}
           <div className="mb-6">
             {precoPromocional && precoPromocional < produto.preco ? (
-              <div className="flex justify-between sm:flex-row sm:items-center sm:gap-12">
+              <div className="flex items-center justify-between sm:flex-row sm:gap-12">
                 <div>
                   <p className="mb-1 text-sm text-zinc-500 line-through">
                     {formatPreco(produto.preco)}
                   </p>
                   <div className="mb-2 flex items-center gap-3">
-                    <span className="text-orange-500">🔥</span>
                     <p className="text-4xl font-bold" style={{ color: 'var(--brand-yellow)' }}>
                       {formatPreco(precoPromocional)}
                     </p>
@@ -490,7 +493,7 @@ ${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`)
                     transition: 'all 0.3s ease',
                     cursor: 'pointer',
                   }}
-                  className="w-34 rounded-lg opacity-90 hover:scale-[1.02] hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] hover:shadow-[0_0_20px_rgba(255,204,0,0.4)] active:scale-[0.98] sm:w-auto sm:opacity-100"
+                  className="h-[43px] w-34 rounded-lg opacity-90 hover:scale-[1.02] hover:bg-[var(--brand-yellow)] hover:text-[var(--brand-black)] hover:shadow-[0_0_20px_rgba(255,204,0,0.4)] active:scale-[0.98] sm:w-auto sm:opacity-100"
                 >
                   Tenho Interesse
                 </button>

@@ -6,6 +6,7 @@ import { Clock, Flame } from 'lucide-react'
 interface CountdownTimerProps {
   endDate: string | null
   className?: string
+  onExpire?: () => void // Callback quando o timer expirar
 }
 
 interface TimeLeft {
@@ -15,7 +16,7 @@ interface TimeLeft {
   seconds: number
 }
 
-export function CountdownTimer({ endDate, className = '' }: CountdownTimerProps) {
+export function CountdownTimer({ endDate, className = '', onExpire }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null)
   const [isExpired, setIsExpired] = useState(false)
 
@@ -26,6 +27,9 @@ export function CountdownTimer({ endDate, className = '' }: CountdownTimerProps)
       const difference = new Date(endDate).getTime() - new Date().getTime()
 
       if (difference <= 0) {
+        if (!isExpired && onExpire) {
+          onExpire() // Chamar callback quando expirar
+        }
         setIsExpired(true)
         setTimeLeft(null)
         return
@@ -47,7 +51,7 @@ export function CountdownTimer({ endDate, className = '' }: CountdownTimerProps)
     const timer = setInterval(calculateTimeLeft, 1000)
 
     return () => clearInterval(timer)
-  }, [endDate])
+  }, [endDate, isExpired, onExpire])
 
   if (!endDate || isExpired) return null
   if (!timeLeft) return null
