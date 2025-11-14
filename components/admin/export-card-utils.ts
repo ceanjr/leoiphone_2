@@ -608,11 +608,11 @@ export async function shareOrDownloadFile(
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
   // Tentar usar Web Share API no mobile
-  if (isMobile && navigator.share && navigator.canShare) {
+  if (isMobile && navigator.share) {
     try {
       const file = new File([blob], fileName, { type: blob.type })
 
-      if (navigator.canShare({ files: [file] })) {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: title || 'Produto - Léo iPhone',
           files: [file],

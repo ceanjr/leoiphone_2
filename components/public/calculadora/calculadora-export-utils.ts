@@ -98,7 +98,7 @@ export async function shareSimulacao(
   blob: Blob,
   valor: string
 ): Promise<boolean> {
-  if (!navigator.share || !navigator.canShare) {
+  if (!navigator.share) {
     return false
   }
 
@@ -106,7 +106,7 @@ export async function shareSimulacao(
     type: 'image/png',
   })
 
-  if (!navigator.canShare({ files: [file] })) {
+  if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
     return false
   }
 
