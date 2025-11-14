@@ -1,8 +1,9 @@
 'use client'
 
 import { logger } from '@/lib/utils/logger'
+import { shareOrDownloadImage } from '@/lib/utils/share'
 import { useState, useRef, useEffect } from 'react'
-import { Download, Smartphone, Flame, Sparkles } from 'lucide-react'
+import { Download, Smartphone, Flame, Sparkles, Share2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,13 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
   const [exporting, setExporting] = useState(false)
   const [bannerPromo, setBannerPromo] = useState<BannerPromo | null>(null)
   const storyRef = useRef<HTMLDivElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detectar mobile no client-side
+  useEffect(() => {
+    const { isMobileDevice } = require('@/lib/utils/share')
+    setIsMobile(isMobileDevice())
+  }, [])
 
   useEffect(() => {
     if (!produto || !open) return
@@ -196,17 +204,14 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
         throw new Error(`Blob muito pequeno: ${blob.size} bytes - pode estar corrompido`)
       }
 
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
       const slug = produto.slug || produto.nome.toLowerCase().replace(/\s+/g, '-')
-      link.download = `${slug}-story.png`
-      link.href = url
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      
-      // Limpar URL depois de um tempo
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      const fileName = `${slug}-story.png`
+
+      // Usar compartilhamento nativo no mobile ou download no desktop
+      await shareOrDownloadImage(blob, fileName, {
+        title: `${produto.nome} - Story`,
+        text: `Confira este produto: ${produto.nome}`,
+      })
 
       logger.info('✅ Story exportado com sucesso!')
 
@@ -410,8 +415,14 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
               disabled={exporting}
               className="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold text-base py-6"
             >
-              <Download className="mr-2 h-5 w-5" />
-              {exporting ? 'Exportando...' : 'Exportar Story'}
+              {isMobile ? (
+                <Share2 className="mr-2 h-5 w-5" />
+              ) : (
+                <Download className="mr-2 h-5 w-5" />
+              )}
+              {exporting
+                ? `${isMobile ? 'Compartilhando' : 'Exportando'}...`
+                : `${isMobile ? 'Compartilhar' : 'Exportar'} Story`}
             </Button>
           </div>
         </div>

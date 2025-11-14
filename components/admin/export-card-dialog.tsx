@@ -1,8 +1,9 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { toBlob, toPng } from 'html-to-image'
-import { Download, Loader2, X, Grid2X2 } from 'lucide-react'
+import { Download, Loader2, X, Grid2X2, Share2 } from 'lucide-react'
+import { isMobileDevice } from './export-card-utils'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -31,6 +32,11 @@ interface ExportCardDialogProps {
 export function ExportCardDialog({ open, onOpenChange, produtos }: ExportCardDialogProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 })
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    setIsMobile(isMobileDevice())
+  }, [])
 
   const handleExportSingle = async (produto: ProductCardData) => {
     setIsExporting(true)
@@ -38,7 +44,7 @@ export function ExportCardDialog({ open, onOpenChange, produtos }: ExportCardDia
       logger.info(`\n🎯 Exportação individual: ${produto.nome}`)
       const blob = await exportProductCard(produto, `product-card-${produto.id}`)
       const fileName = generateFileName(produto)
-      downloadFile(blob, fileName)
+      await downloadFile(blob, fileName, produto)
       logger.info('✅ Exportação individual concluída')
     } catch (error) {
       logger.error('❌ Erro ao exportar card:', error)
@@ -90,7 +96,7 @@ export function ExportCardDialog({ open, onOpenChange, produtos }: ExportCardDia
 
       const blob = await exportProductGrid(produtosParaGrade)
       const fileName = generateGridFileName()
-      downloadFile(blob, fileName)
+      await downloadFile(blob, fileName)
 
       logger.info('✅ Grade exportada com sucesso')
       alert('✅ Grade 2x2 exportada com sucesso!')
@@ -131,12 +137,16 @@ export function ExportCardDialog({ open, onOpenChange, produtos }: ExportCardDia
                 {isExporting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Exportando...
+                    {isMobile ? 'Compartilhando...' : 'Exportando...'}
                   </>
                 ) : (
                   <>
-                    <Grid2X2 className="mr-2 h-4 w-4" />
-                    Grade 2x2 (4 produtos)
+                    {isMobile ? (
+                      <Share2 className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Grid2X2 className="mr-2 h-4 w-4" />
+                    )}
+                    {isMobile ? 'Compartilhar' : 'Grade 2x2'} (4 produtos)
                   </>
                 )}
               </Button>
@@ -248,10 +258,14 @@ export function ExportCardDialog({ open, onOpenChange, produtos }: ExportCardDia
                       disabled={isExporting}
                       size="sm"
                       variant="ghost"
-                      title="Exportar este card"
+                      title={isMobile ? 'Compartilhar este card' : 'Exportar este card'}
                       className="flex-shrink-0"
                     >
-                      <Download className="h-4 w-4" />
+                      {isMobile ? (
+                        <Share2 className="h-4 w-4" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 ))}

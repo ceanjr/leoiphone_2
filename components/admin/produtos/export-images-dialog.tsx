@@ -1,8 +1,9 @@
 'use client'
 
 import { logger } from '@/lib/utils/logger'
+import { shareOrDownloadImage, isMobileDevice } from '@/lib/utils/share'
 import { useState } from 'react'
-import { Download, Image as ImageIcon } from 'lucide-react'
+import { Download, Image as ImageIcon, Share2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ interface ExportImagesDialogProps {
 export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialogProps) {
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set())
   const [downloading, setDownloading] = useState(false)
+  const isMobile = isMobileDevice()
 
   if (!produto) return null
 
@@ -62,20 +64,18 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
       // Use API route to proxy image download
       const apiUrl = `/api/download-image?url=${encodeURIComponent(url)}`
       const response = await fetch(apiUrl)
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      
+
       const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
+
+      // Usar compartilhamento nativo no mobile ou download no desktop
+      await shareOrDownloadImage(blob, filename, {
+        title: produto?.nome || 'Imagem do produto',
+        text: `Imagem: ${filename}`,
+      })
     } catch (error) {
       logger.error('Erro ao baixar imagem:', error)
       throw error
@@ -168,12 +168,16 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
                 disabled={selectedImages.size === 0 || downloading}
                 className="bg-[var(--brand-yellow)] text-black hover:bg-[var(--brand-yellow)]/90 font-medium min-h-[44px]"
               >
-                <Download className="mr-2 h-4 w-4" />
+                {isMobile ? (
+                  <Share2 className="mr-2 h-4 w-4" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
                 {downloading
-                  ? `Exportando ${selectedImages.size}...`
+                  ? `${isMobile ? 'Compartilhando' : 'Exportando'} ${selectedImages.size}...`
                   : selectedImages.size === 0
                   ? 'Selecione imagens'
-                  : `Exportar ${selectedImages.size} ${selectedImages.size === 1 ? 'imagem' : 'imagens'}`}
+                  : `${isMobile ? 'Compartilhar' : 'Exportar'} ${selectedImages.size} ${selectedImages.size === 1 ? 'imagem' : 'imagens'}`}
               </Button>
             </div>
 

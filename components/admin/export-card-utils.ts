@@ -1,8 +1,14 @@
 import { toBlob, toPng } from 'html-to-image'
 import { logger } from '@/lib/utils/logger'
+import { shareOrDownloadImage, isMobileDevice as detectMobile } from '@/lib/utils/share'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import type { ProductCardData } from './product-card-renderer'
+
+/**
+ * Re-exportar função de detecção de mobile
+ */
+export { detectMobile as isMobileDevice }
 
 /**
  * Converte URL para usar proxy e adicionar otimizações
@@ -585,19 +591,19 @@ export function generateGridFileName(): string {
 }
 
 /**
- * Baixa um único arquivo
+ * Baixa um único arquivo ou compartilha no mobile
  */
-export function downloadFile(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  link.click()
+export async function downloadFile(
+  blob: Blob,
+  fileName: string,
+  produto?: ProductCardData
+): Promise<void> {
+  await shareOrDownloadImage(blob, fileName, {
+    title: produto?.nome || 'Card de produto',
+    text: produto ? `${produto.nome} - ${produto.codigo_produto}` : 'Card de produto',
+  })
 
-  // Limpar URL após uso
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-
-  logger.info(`💾 Download iniciado: ${fileName}`)
+  logger.info(`💾 Download/Compartilhamento iniciado: ${fileName}`)
 }
 
 /**
