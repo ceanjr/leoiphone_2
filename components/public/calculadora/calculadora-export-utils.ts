@@ -102,7 +102,9 @@ export async function shareSimulacao(
   blob: Blob,
   valor: string
 ): Promise<boolean> {
-  if (!navigator.share || !navigator.canShare) {
+  // Verificar se o navegador suporta Web Share API
+  if (!navigator.share) {
+    logger.info('❌ Web Share API não disponível')
     return false
   }
 
@@ -110,7 +112,9 @@ export async function shareSimulacao(
     type: 'image/png',
   })
 
-  if (!navigator.canShare({ files: [file] })) {
+  // Verificar se o navegador suporta compartilhamento de arquivos
+  if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+    logger.info('❌ Compartilhamento de arquivos não suportado')
     return false
   }
 
@@ -123,7 +127,12 @@ export async function shareSimulacao(
     logger.info('✅ Simulação compartilhada com sucesso!')
     return true
   } catch (error) {
-    logger.info('[Export] Erro no compartilhamento:', error)
+    // Se o usuário cancelou o compartilhamento, não é um erro
+    if (error instanceof Error && error.name === 'AbortError') {
+      logger.info('ℹ️ Compartilhamento cancelado pelo usuário')
+      return false
+    }
+    logger.error('[Export] Erro no compartilhamento:', error)
     return false
   }
 }

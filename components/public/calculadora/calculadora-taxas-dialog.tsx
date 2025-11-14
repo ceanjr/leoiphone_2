@@ -122,7 +122,8 @@ export function CalculadoraTaxasDialog({
     try {
       const blob = await exportSimulacao(valor, parcelas)
 
-      if (isMobile && (await navigator.share())) {
+      // No mobile, tentar compartilhar primeiro
+      if (isMobile && typeof navigator.share === 'function') {
         const shared = await shareSimulacao(blob, valor)
 
         if (shared) {
@@ -132,10 +133,12 @@ export function CalculadoraTaxasDialog({
           })
           toast.success('Simulação compartilhada!')
         } else {
+          // Se não compartilhou, fazer download
           downloadSimulacao(blob)
           toast.success('Simulação baixada!')
         }
       } else {
+        // No desktop ou se não suporta share, fazer download
         downloadSimulacao(blob)
         toast.success('Simulação baixada!')
       }
