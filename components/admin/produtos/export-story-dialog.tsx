@@ -2,6 +2,7 @@
 
 import { logger } from '@/lib/utils/logger'
 import { useState, useRef, useEffect } from 'react'
+import { saveAs } from 'file-saver'
 import { Download, Smartphone, Flame, Sparkles } from 'lucide-react'
 import {
   Dialog,
@@ -196,17 +197,10 @@ export function ExportStoryDialog({ open, onClose, produto }: ExportStoryDialogP
         throw new Error(`Blob muito pequeno: ${blob.size} bytes - pode estar corrompido`)
       }
 
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
+      // Download usando file-saver para melhor compatibilidade mobile
       const slug = produto.slug || produto.nome.toLowerCase().replace(/\s+/g, '-')
-      link.download = `${slug}-story.png`
-      link.href = url
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      
-      // Limpar URL depois de um tempo
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      const fileName = `${slug}-story.png`
+      saveAs(blob, fileName)
 
       logger.info('✅ Story exportado com sucesso!')
 

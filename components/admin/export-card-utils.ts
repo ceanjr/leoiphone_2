@@ -586,18 +586,49 @@ export function generateGridFileName(): string {
 
 /**
  * Baixa um único arquivo
+ * Usa file-saver para melhor compatibilidade cross-browser (especialmente mobile)
  */
 export function downloadFile(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  link.click()
-
-  // Limpar URL após uso
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  // Usar file-saver para melhor compatibilidade cross-browser (especialmente mobile)
+  saveAs(blob, fileName)
 
   logger.info(`💾 Download iniciado: ${fileName}`)
+}
+
+/**
+ * Tenta compartilhar no mobile usando Web Share API, caso contrário faz download
+ * Retorna true se compartilhou com sucesso, false se fez download
+ */
+export async function shareOrDownloadFile(
+  blob: Blob,
+  fileName: string,
+  title?: string
+): Promise<boolean> {
+  // Detectar se é mobile
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+
+  // Tentar usar Web Share API no mobile
+  if (isMobile && navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], fileName, { type: blob.type })
+
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: title || 'Produto - Léo iPhone',
+          files: [file],
+        })
+        logger.info('✅ Arquivo compartilhado com sucesso via Web Share API')
+        return true
+      }
+    } catch (error) {
+      // Se o usuário cancelou ou houve erro, fazer download normal
+      logger.info('ℹ️ Compartilhamento cancelado ou falhou, fazendo download...')
+    }
+  }
+
+  // Fallback: download normal usando file-saver
+  downloadFile(blob, fileName)
+  return false
 }
 
 /**

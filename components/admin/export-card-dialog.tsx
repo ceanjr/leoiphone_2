@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { toBlob, toPng } from 'html-to-image'
+import { saveAs } from 'file-saver'
 import { Download, Loader2, X, Grid2X2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -449,14 +450,9 @@ export function ProdutoCardExport({ produto }: ProdutoCardExportProps) {
 
       logger.info(`✅ Blob: ${(blob.size / 1024).toFixed(2)} KB`)
 
-      // 4. Download
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.download = `produto-${produto.codigo_produto}-${timestamp}.png`
-      link.href = url
-      link.click()
-
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      // 4. Download usando file-saver para melhor compatibilidade mobile
+      const fileName = `produto-${produto.codigo_produto}-${timestamp}.png`
+      saveAs(blob, fileName)
 
       logger.info('✅ Exportado com sucesso!')
       alert('✅ Imagem exportada com sucesso!')

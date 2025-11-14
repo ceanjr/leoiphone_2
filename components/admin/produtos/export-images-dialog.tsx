@@ -2,6 +2,7 @@
 
 import { logger } from '@/lib/utils/logger'
 import { useState } from 'react'
+import { saveAs } from 'file-saver'
 import { Download, Image as ImageIcon } from 'lucide-react'
 import {
   Dialog,
@@ -62,20 +63,15 @@ export function ExportImagesDialog({ open, onClose, produto }: ExportImagesDialo
       // Use API route to proxy image download
       const apiUrl = `/api/download-image?url=${encodeURIComponent(url)}`
       const response = await fetch(apiUrl)
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      
+
       const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
+
+      // Usar file-saver para melhor compatibilidade mobile
+      saveAs(blob, filename)
     } catch (error) {
       logger.error('Erro ao baixar imagem:', error)
       throw error

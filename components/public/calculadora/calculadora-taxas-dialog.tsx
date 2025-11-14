@@ -122,7 +122,8 @@ export function CalculadoraTaxasDialog({
     try {
       const blob = await exportSimulacao(valor, parcelas)
 
-      if (isMobile && (await navigator.share())) {
+      // Tentar compartilhar no mobile se a Web Share API estiver disponível
+      if (isMobile && navigator.share && navigator.canShare) {
         const shared = await shareSimulacao(blob, valor)
 
         if (shared) {

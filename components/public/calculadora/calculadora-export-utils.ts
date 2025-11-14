@@ -1,5 +1,6 @@
 import { logger } from '@/lib/utils/logger'
 import { toBlob, toPng } from 'html-to-image'
+import { saveAs } from 'file-saver'
 import type { ParcelaData } from './calculadora-export-renderer'
 
 /**
@@ -79,19 +80,14 @@ export async function exportSimulacao(
 
 /**
  * Faz o download da imagem
+ * Usa file-saver para melhor compatibilidade com mobile
  */
 export function downloadSimulacao(blob: Blob, filename?: string): void {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename || `simulacao-parcelas-${Date.now()}.png`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  
-  // Limpar URL depois de um tempo
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-  
+  const fileName = filename || `simulacao-parcelas-${Date.now()}.png`
+
+  // Usar file-saver para melhor compatibilidade cross-browser (especialmente mobile)
+  saveAs(blob, fileName)
+
   logger.info('✅ Simulação baixada com sucesso!')
 }
 
