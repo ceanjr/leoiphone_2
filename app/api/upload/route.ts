@@ -97,13 +97,12 @@ export async function POST(request: NextRequest) {
       data: { publicUrl },
     } = supabase.storage.from('produtos').getPublicUrl(originalPath)
 
-    // Retornar URL base (sem sufixo -original) para que OptimizedImage possa escolher variantes
-    const baseUrl = publicUrl.replace('-original.webp', '')
-
+    // Retornar URL completa da imagem original (com sufixo -original.webp)
+    // OptimizedImage sempre usa a imagem original diretamente
     logger.info(`[Upload] Upload concluído: ${uploadedPaths.length} variantes`)
 
     return NextResponse.json({
-      url: `${baseUrl}.webp`, // URL base que será processada pelo OptimizedImage
+      url: publicUrl, // URL completa da imagem original
       path: originalPath,
       variants: uploadedPaths,
     })
