@@ -55,15 +55,14 @@ export async function createCategoria(data: { nome: string; descricao?: string; 
     .from('categorias')
     .select('id')
     .eq('nome', data.nome.trim())
-    .single()
+    .maybeSingle()
 
-  if (existingError && existingError.code !== 'PGRST116') {
-    // PGRST116 = not found, que é o esperado
+  if (existingError) {
     logger.error('[createCategoria] Erro ao verificar categoria existente:', existingError)
   }
 
   if (existing) {
-    logger.info('[createCategoria] Categoria já existe:', existing.id)
+    logger.info('[createCategoria] Categoria já existe')
     return { success: false, error: 'Já existe uma categoria com este nome' }
   }
 
@@ -73,9 +72,9 @@ export async function createCategoria(data: { nome: string; descricao?: string; 
     .select('ordem')
     .order('ordem', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
-  if (maxOrdemError && maxOrdemError.code !== 'PGRST116') {
+  if (maxOrdemError) {
     logger.error('[createCategoria] Erro ao buscar ordem máxima:', maxOrdemError)
   }
 
@@ -131,7 +130,7 @@ export async function updateCategoria(id: string, data: { nome: string; descrica
     .select('id')
     .eq('nome', data.nome.trim())
     .neq('id', id)
-    .single()
+    .maybeSingle()
 
   if (existing) {
     return { success: false, error: 'Já existe uma categoria com este nome' }
