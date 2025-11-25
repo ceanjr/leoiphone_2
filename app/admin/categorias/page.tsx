@@ -51,7 +51,6 @@ interface Categoria {
   id: string
   nome: string
   slug: string
-  descricao: string | null
   ativo: boolean
   ordem: number
 }
@@ -65,7 +64,6 @@ export default function CategoriasPage() {
   const [categoriaToDelete, setCategoriaToDelete] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     nome: '',
-    descricao: '',
     ativo: true,
   })
   const [saving, setSaving] = useState(false)
@@ -115,12 +113,11 @@ export default function CategoriasPage() {
       setEditingCategoria(categoria)
       setFormData({
         nome: categoria.nome,
-        descricao: categoria.descricao || '',
         ativo: categoria.ativo,
       })
     } else {
       setEditingCategoria(null)
-      setFormData({ nome: '', descricao: '', ativo: true })
+      setFormData({ nome: '', ativo: true })
     }
     setDialogOpen(true)
   }
@@ -504,9 +501,6 @@ export default function CategoriasPage() {
                     )}
                   </button>
                 </div>
-                {categoria.descricao ? (
-                  <p className="mt-3 text-sm text-zinc-400">{categoria.descricao}</p>
-                ) : null}
                 <div className="mt-4 flex flex-col gap-2">
                   <Button
                     variant="outline"
@@ -553,9 +547,6 @@ export default function CategoriasPage() {
                   <tr className="border-b border-zinc-800">
                     <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Ordem</th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Nome</th>
-                    <th className="hidden px-4 py-3 text-left text-sm font-medium text-zinc-400 md:table-cell">
-                      Descrição
-                    </th>
                     <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Status</th>
                     <th className="px-4 py-3 text-right text-sm font-medium text-zinc-400">Ações</th>
                   </tr>
@@ -606,11 +597,6 @@ export default function CategoriasPage() {
                           <div className="font-medium text-white">{categoria.nome}</div>
                           <div className="text-xs text-zinc-500">{categoria.slug}</div>
                         </div>
-                      </td>
-                      <td className="hidden px-4 py-3 md:table-cell">
-                        <p className="max-w-xs truncate text-sm text-zinc-400">
-                          {categoria.descricao || '-'}
-                        </p>
                       </td>
                       <td className="px-4 py-3">
                         <button
@@ -700,18 +686,6 @@ export default function CategoriasPage() {
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 className="border-zinc-800 bg-zinc-950 text-white"
                 placeholder="Ex: iPhone 15"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="descricao">Descrição</Label>
-              <Textarea
-                id="descricao"
-                value={formData.descricao}
-                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                className="border-zinc-800 bg-zinc-950 text-white"
-                rows={3}
-                placeholder="Descrição opcional da categoria"
               />
             </div>
 
