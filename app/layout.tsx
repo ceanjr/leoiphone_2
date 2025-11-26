@@ -36,11 +36,11 @@ export const metadata: Metadata = {
       'Veja os modelos disponíveis de iPhones com preços, imagens e informações detalhadas.',
     type: 'website',
     locale: 'pt_BR',
-    url: '/',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.leoiphone.com.br',
     siteName: 'Léo iPhone',
     images: [
       {
-        url: '/images/og-image.png',
+        url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.leoiphone.com.br'}/images/og-image.png`,
         width: 1200,
         height: 630,
         alt: 'Léo iPhone - Catálogo Completo',
