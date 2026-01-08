@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { ChevronDown, ChevronUp, CreditCard } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { TaxasConfig } from '@/lib/validations/taxas'
@@ -45,17 +44,13 @@ export function CalculadoraParcelas({ preco, taxas }: CalculadoraParcelasProps) 
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 flex-shrink-0 p-0 hover:bg-zinc-800"
-              >
+              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center">
                 {expandido ? (
                   <ChevronUp className="h-4 w-4 text-zinc-400" />
                 ) : (
                   <ChevronDown className="h-4 w-4 text-zinc-400" />
                 )}
-              </Button>
+              </div>
             </div>
           </button>
 

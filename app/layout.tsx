@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Toaster } from '@/components/ui/sonner'
 import { Analytics } from '@vercel/analytics/react'
-import { ServiceWorkerManager } from '@/components/shared/service-worker-manager'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -93,20 +92,9 @@ export default function RootLayout({
           href="https://aswejqbtejibrilrblnm.supabase.co/storage"
           crossOrigin="anonymous"
         />
-        {/* PWA Meta Tags */}
-        <meta name="application-name" content="Leo iPhone" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Leo iPhone" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#09090b" />
-        {/* PWA Icons */}
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="antialiased" suppressHydrationWarning>
-        <ServiceWorkerManager />
         <div suppressHydrationWarning>{children}</div>
         <Toaster richColors closeButton />
         <Analytics />

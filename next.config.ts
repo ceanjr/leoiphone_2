@@ -1,90 +1,8 @@
 import type { NextConfig } from 'next'
 
-// @ts-ignore - next-pwa doesn't have types
-import withPWAInit from 'next-pwa'
-
 // Optimization Phase 2: Bundle analyzer to identify unused JS
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
-})
-
-// PWA Configuration
-const withPWA = withPWAInit({
-  dest: 'public',
-  // Desabilitar completamente em desenvolvimento para evitar problemas de cache
-  disable: process.env.NODE_ENV === 'development',
-  register: true,
-  skipWaiting: true,
-  // Não cachear páginas HTML (apenas assets)
-  buildExcludes: [/middleware-manifest\.json$/],
-  runtimeCaching: [
-    // NUNCA cachear auth requests do Supabase
-    {
-      urlPattern: /^https:\/\/aswejqbtejibrilrblnm\.supabase\.co\/auth/,
-      handler: 'NetworkOnly',
-    },
-    // Cache de imagens do Supabase
-    {
-      urlPattern: /^https:\/\/aswejqbtejibrilrblnm\.supabase\.co\/storage/,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'supabase-images',
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
-      },
-    },
-    // Cache de imagens locais
-    {
-      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'images',
-        expiration: {
-          maxEntries: 60,
-          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
-      },
-    },
-    // Cache de Google Fonts
-    {
-      urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'google-fonts',
-        expiration: {
-          maxEntries: 30,
-          maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
-      },
-    },
-    // API calls com NetworkFirst (sempre tenta rede primeiro)
-    {
-      urlPattern: /^https:\/\/aswejqbtejibrilrblnm\.supabase\.co\/rest/,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'api-cache',
-        networkTimeoutSeconds: 10,
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 5 * 60, // 5 minutos
-        },
-        cacheableResponse: {
-          statuses: [0, 200],
-        },
-      },
-    },
-  ],
 })
 
 const nextConfig: NextConfig = {
@@ -142,4 +60,4 @@ const nextConfig: NextConfig = {
   turbopack: {},
 }
 
-export default withPWA(withBundleAnalyzer(nextConfig))
+export default withBundleAnalyzer(nextConfig)
