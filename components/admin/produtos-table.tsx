@@ -1,7 +1,7 @@
 'use client'
 
 import { logger } from '@/lib/utils/logger'
-import { useEffect, useMemo, useState, memo, type ChangeEvent, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useState, memo, useRef, type ChangeEvent, type KeyboardEvent } from 'react'
 import { OptimizedImage } from '@/components/shared/optimized-image'
 import Link from 'next/link'
 import { Edit, Eye, EyeOff, MoreVertical, Save, Search, Trash2, Download } from 'lucide-react'
@@ -154,6 +154,10 @@ interface ProdutosTableProps {
   onEditProduto: (produtoId: string) => void
 }
 
+// Constantes para carregamento progressivo (otimização mobile)
+const INITIAL_ITEMS_MOBILE = 10 // Carrega 10 items inicialmente no mobile
+const LOAD_MORE_ITEMS = 10 // Carrega mais 10 por vez
+
 const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [produtoToDelete, setProdutoToDelete] = useState<string | null>(null)
@@ -162,6 +166,12 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
   const [savingPriceId, setSavingPriceId] = useState<string | null>(null)
   const [exportImagesOpen, setExportImagesOpen] = useState(false)
   const [produtoToExport, setProdutoToExport] = useState<ProdutoComCategoria | null>(null)
+
+  // Estado para carregamento progressivo no mobile
+  const [visibleItemsCount, setVisibleItemsCount] = useState(INITIAL_ITEMS_MOBILE)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+  const isLoadingMore = useRef(false)
+
   const [savedPrices, setSavedPrices] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {}
     produtos.forEach((produto) => {
@@ -301,6 +311,50 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
     return resultado
   }, [produtos, busca, categoriaFiltro])
 
+  // Reset do contador de items visíveis quando filtros mudam
+  useEffect(() => {
+    setVisibleItemsCount(INITIAL_ITEMS_MOBILE)
+  }, [busca, categoriaFiltro])
+
+  // Produtos visíveis no mobile (carregamento progressivo)
+  const produtosVisiveis = useMemo(() => {
+    return produtosFiltrados.slice(0, visibleItemsCount)
+  }, [produtosFiltrados, visibleItemsCount])
+
+  const hasMoreItems = visibleItemsCount < produtosFiltrados.length
+
+  // Intersection Observer para carregar mais items automaticamente
+  useEffect(() => {
+    if (!loadMoreRef.current) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0]
+        if (entry?.isIntersecting && hasMoreItems && !isLoadingMore.current) {
+          isLoadingMore.current = true
+          // Usar requestAnimationFrame para evitar bloqueio da UI
+          requestAnimationFrame(() => {
+            setVisibleItemsCount((prev) => prev + LOAD_MORE_ITEMS)
+            // Pequeno delay para permitir renderização antes de permitir novo carregamento
+            setTimeout(() => {
+              isLoadingMore.current = false
+            }, 100)
+          })
+        }
+      },
+      {
+        rootMargin: '200px', // Começa a carregar 200px antes de chegar no fim
+        threshold: 0.1,
+      }
+    )
+
+    observer.observe(loadMoreRef.current)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [hasMoreItems])
+
   async function handleSavePrice(produto: ProdutoComCategoria, rawValue: string) {
     const currentSavedPrice = savedPrices[produto.id] ?? produto.preco
     const currentValue = rawValue || currentSavedPrice.toFixed(2)
@@ -439,9 +493,9 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
         </div>
       ) : (
         <>
-          {/* VIEW MOBILE: Cards */}
+          {/* VIEW MOBILE: Cards com carregamento progressivo */}
           <div className="flex flex-col gap-4 md:hidden" suppressHydrationWarning>
-            {produtosFiltrados.map((produto) => {
+            {produtosVisiveis.map((produto) => {
               const currentSavedPrice = savedPrices[produto.id] ?? produto.preco
               const isSaving = savingPriceId === produto.id
 
@@ -449,6 +503,10 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                 <div
                   key={produto.id}
                   className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900"
+                  style={{
+                    contentVisibility: 'auto',
+                    containIntrinsicSize: '0 200px', // Altura estimada do card
+                  }}
                   suppressHydrationWarning
                 >
                   {/* Header do Card */}
@@ -661,6 +719,26 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
                 </div>
               )
             })}
+
+            {/* Indicador de carregamento progressivo e sentinela */}
+            {hasMoreItems && (
+              <div
+                ref={loadMoreRef}
+                className="flex flex-col items-center justify-center py-6 text-zinc-500"
+              >
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-yellow-500" />
+                <p className="mt-2 text-sm">
+                  Carregando mais produtos... ({produtosVisiveis.length}/{produtosFiltrados.length})
+                </p>
+              </div>
+            )}
+
+            {/* Indicador quando todos os items foram carregados */}
+            {!hasMoreItems && produtosFiltrados.length > INITIAL_ITEMS_MOBILE && (
+              <p className="py-4 text-center text-sm text-zinc-500">
+                Todos os {produtosFiltrados.length} produtos carregados
+              </p>
+            )}
           </div>
 
       {/* VIEW DESKTOP: Tabela */}
