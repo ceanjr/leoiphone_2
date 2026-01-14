@@ -1,34 +1,25 @@
 'use client'
 
-import { logger } from '@/lib/utils/logger'
+/**
+ * Products Manager - Versão Simplificada
+ * Baseado no sriphone_2 que funciona perfeitamente
+ */
+
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Download } from 'lucide-react'
+import { Plus, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { toast } from 'sonner'
 import dynamic from 'next/dynamic'
 import type { ProdutoComCategoria } from '@/types/produto'
 import { ordenarProdutosPorModelo } from '@/lib/utils/produtos/helpers'
 
-const ProdutosTable = dynamic(() =>
-  import('@/components/admin/produtos-table').then((mod) => mod.ProdutosTable),
-  {
-    loading: () => (
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8 text-center text-zinc-400">
-        Carregando tabela...
-      </div>
-    ),
-    ssr: false,
-  }
-)
+// Componente simplificado de tabela (importação direta, sem dynamic)
+import { ProdutosTableSimple } from '@/components/admin/produtos-table-simple'
 
-const ProductFormDialog = dynamic(() =>
-  import('@/components/admin/produtos/product-form-dialog').then((mod) => mod.ProductFormDialog),
-  {
-    loading: () => null,
-    ssr: false,
-  }
+// Apenas o form dialog é carregado dinamicamente (pois é pesado e só abre quando necessário)
+const ProductFormDialog = dynamic(
+  () => import('@/components/admin/produtos/product-form-dialog').then((mod) => mod.ProductFormDialog),
+  { ssr: false }
 )
 
 interface ProdutosManagerProps {
@@ -48,19 +39,37 @@ export function ProdutosManager({
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
 
-  // Filtrar e ordenar produtos baseado no status
-  // Usa a mesma ordenação do catálogo (por modelo e capacidade)
-  const filteredProdutos = useMemo(() => {
-    const filtered = produtos.filter((produto) => {
-      if (statusFilter === 'active') return produto.ativo === true
-      if (statusFilter === 'inactive') return produto.ativo === false
-      return true // 'all'
+  // Extrair categorias únicas dos produtos
+  const categories = useMemo(() => {
+    const cats = new Map<string, { id: string; nome: string; ordem: number }>()
+    produtos.forEach(p => {
+      if (p.categoria && !cats.has(p.categoria.id)) {
+        cats.set(p.categoria.id, {
+          id: p.categoria.id,
+          nome: p.categoria.nome,
+          ordem: p.categoria.ordem || 9999
+        })
+      }
     })
-    return ordenarProdutosPorModelo(filtered)
-  }, [produtos, statusFilter])
+    return Array.from(cats.values()).sort((a, b) => a.ordem - b.ordem)
+  }, [produtos])
 
+  // Filtrar e ordenar produtos
+  const filteredProdutos = useMemo(() => {
+    let result = produtos
+
+    // Filtrar por categoria se selecionada
+    if (selectedCategoryId) {
+      result = result.filter(p => p.categoria?.id === selectedCategoryId)
+    }
+
+    // Ordenar por modelo e capacidade (mesma ordenação do catálogo)
+    return ordenarProdutosPorModelo([...result])
+  }, [produtos, selectedCategoryId])
+
+  // Abrir modal de edição se vier da URL
   useEffect(() => {
     if (!initialModalMode) return
     const handle = window.setTimeout(() => {
@@ -92,161 +101,70 @@ export function ProdutosManager({
     router.refresh()
   }, [router])
 
-  const exportarParaCSV = useCallback(() => {
-    try {
-      // Cabeçalhos do CSV
-      const headers = [
-        'ID',
-        'Código',
-        'Nome',
-        'Descrição',
-        'Preço',
-        'Nível Bateria',
-        'Condição',
-        'Categoria',
-        'Garantia',
-        'Cores',
-        'Acessórios',
-        'Ativo',
-        'Estoque',
-        'Criado em',
-        'Atualizado em',
-      ]
-
-      // Converter produtos para linhas CSV
-      const rows = produtos.map((produto) => {
-        // Formatar acessórios
-        const acessoriosAtivos = Object.entries(produto.acessorios || {})
-          .filter(([_, value]) => value)
-          .map(([key]) => key)
-          .join('; ')
-
-        return [
-          produto.id,
-          produto.codigo_produto || '',
-          produto.nome,
-          produto.descricao || '',
-          produto.preco.toFixed(2),
-          produto.nivel_bateria || '',
-          produto.condicao,
-          produto.categoria?.nome || '',
-          produto.garantia,
-          produto.cores?.join('; ') || '',
-          acessoriosAtivos || 'Nenhum',
-          produto.ativo ? 'Sim' : 'Não',
-          produto.estoque || 0,
-          new Date(produto.created_at).toLocaleString('pt-BR'),
-          new Date(produto.updated_at).toLocaleString('pt-BR'),
-        ]
-      })
-
-      // Criar conteúdo CSV
-      const csvContent = [
-        headers.join(','),
-        ...rows.map((row) =>
-          row.map((cell) => {
-            // Escapar células que contêm vírgula, aspas ou quebra de linha
-            const cellStr = String(cell)
-            if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
-              return `"${cellStr.replace(/"/g, '""')}"`
-            }
-            return cellStr
-          }).join(',')
-        ),
-      ].join('\n')
-
-      // Adicionar BOM para UTF-8 (para Excel abrir corretamente)
-      const BOM = '\uFEFF'
-      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
-
-      // Criar link de download
-      const link = document.createElement('a')
-      const url = URL.createObjectURL(blob)
-      link.setAttribute('href', url)
-      link.setAttribute('download', `produtos_${new Date().toISOString().split('T')[0]}.csv`)
-      link.style.visibility = 'hidden'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-
-      toast.success(`${produtos.length} produtos exportados com sucesso!`)
-    } catch (error) {
-      logger.error('Erro ao exportar CSV:', error)
-      toast.error('Erro ao exportar produtos para CSV')
-    }
-  }, [produtos])
-
   return (
-    <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
+    <div className="space-y-6 p-4 md:p-6">
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white md:text-2xl">Lista de Produtos</h2>
-          <p className="text-xs text-zinc-400 md:text-sm">
-            Visualize e gerencie todos os produtos do catálogo
+          <h1 className="text-2xl font-bold text-white md:text-3xl">Produtos</h1>
+          <p className="mt-1 text-sm text-zinc-400">
+            Gerencie o catálogo de produtos
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-          <Button
-            onClick={exportarParaCSV}
-            variant="outline"
-            className="w-full border-zinc-700 text-zinc-200 hover:border-zinc-600 hover:bg-zinc-800 sm:w-auto"
-            disabled={produtos.length === 0}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Exportar CSV
-          </Button>
-
-          <Button
-            onClick={openCreateModal}
-            className="w-full sm:w-auto"
-            style={{
-              backgroundColor: 'var(--brand-yellow)',
-              color: 'var(--brand-black)',
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Produto
-          </Button>
-        </div>
+        <Button
+          onClick={openCreateModal}
+          className="w-full sm:w-auto"
+          style={{
+            backgroundColor: 'var(--brand-yellow)',
+            color: 'var(--brand-black)',
+          }}
+        >
+          <Plus className="mr-2 h-5 w-5" />
+          Adicionar
+        </Button>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-zinc-400">Filtrar por status:</span>
-          <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
-            <SelectTrigger className="w-[180px] border-zinc-700 bg-zinc-900 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="border-zinc-700 bg-zinc-900">
-              <SelectItem value="all" className="text-white">
-                Todos ({produtos.length})
-              </SelectItem>
-              <SelectItem value="active" className="text-green-400">
-                Ativos ({produtos.filter(p => p.ativo).length})
-              </SelectItem>
-              <SelectItem value="inactive" className="text-red-400">
-                Inativos ({produtos.filter(p => !p.ativo).length})
-              </SelectItem>
-            </SelectContent>
-          </Select>
+      {/* Category Filter */}
+      <div className="flex flex-col gap-2">
+        <div className="relative w-full max-w-xs">
+          <Filter className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+          <select
+            value={selectedCategoryId}
+            onChange={(e) => setSelectedCategoryId(e.target.value)}
+            className="w-full appearance-none rounded-lg border border-zinc-700 bg-zinc-900 py-2.5 pl-10 pr-10 text-sm text-white transition-colors focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20"
+          >
+            <option value="">Todas as Categorias</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.nome}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+            <svg className="h-5 w-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
 
-        <div className="text-sm text-zinc-400">
-          Exibindo {filteredProdutos.length} de {produtos.length} produtos
-        </div>
+        {/* Results count */}
+        <p className="text-sm text-zinc-400">
+          <span className="font-semibold">{filteredProdutos.length}</span>{' '}
+          {filteredProdutos.length === 1 ? 'produto' : 'produtos'}
+        </p>
       </div>
 
+      {/* Products List */}
       {errorMessage ? (
         <div className="rounded-lg border border-red-900/50 bg-red-950/20 p-8 text-center">
           <p className="text-red-400">{errorMessage}</p>
         </div>
       ) : (
-        <ProdutosTable produtos={filteredProdutos} onEditProduto={openEditModal} />
+        <ProdutosTableSimple produtos={filteredProdutos} onEditProduto={openEditModal} />
       )}
 
+      {/* Form Dialog */}
       <ProductFormDialog
         open={modalOpen}
         mode={modalMode}
