@@ -2,6 +2,7 @@
 
 import { logger } from '@/lib/utils/logger'
 import { useEffect, useMemo, useState, memo, useRef, type ChangeEvent, type KeyboardEvent } from 'react'
+import { useMediaQuery } from '@/hooks/use-media-query'
 import { OptimizedImage } from '@/components/shared/optimized-image'
 import Link from 'next/link'
 import { Edit, Eye, EyeOff, MoreVertical, Save, Search, Trash2, Download } from 'lucide-react'
@@ -167,7 +168,11 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
   const [exportImagesOpen, setExportImagesOpen] = useState(false)
   const [produtoToExport, setProdutoToExport] = useState<ProdutoComCategoria | null>(null)
 
-  // Estado para carregamento progressivo no mobile
+  // Detectar se é desktop para renderizar apenas a view apropriada
+  // Isso evita renderizar 200+ cards no mobile que estariam ocultos via CSS
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+
+  // Estado para carregamento progressivo
   const [visibleItemsCount, setVisibleItemsCount] = useState(INITIAL_ITEMS_MOBILE)
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const isLoadingMore = useRef(false)
@@ -219,36 +224,14 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
     return Array.from(cats.values()).sort((a, b) => a.ordem - b.ordem)
   }, [produtos])
 
-  // Função para extrair capacidade de armazenamento em GB
-  const extrairArmazenamento = (nome: string): number => {
-    // Procurar por padrões como "64GB", "128GB", "256GB", "512GB", "1TB", "2TB"
-    const matchGB = nome.match(/(\d+)\s*GB/i)
-    if (matchGB) return parseInt(matchGB[1])
-
-    const matchTB = nome.match(/(\d+)\s*TB/i)
-    if (matchTB) return parseInt(matchTB[1]) * 1024 // Converter TB para GB
-
-    return 0 // Sem armazenamento especificado
-  }
-
-  // Função para extrair número do modelo iPhone
-  const extrairNumeroModelo = (nome: string): number => {
-    // Casos especiais
-    if (nome.toLowerCase().includes('iphone x') && !nome.toLowerCase().includes('xr') && !nome.toLowerCase().includes('xs')) return 10 // iPhone X = 10
-    if (nome.toLowerCase().includes('iphone xr')) return 10.3 // iPhone XR entre X e 11
-    if (nome.toLowerCase().includes('iphone xs')) return 10.5 // iPhone XS
-
-    // Extrair número padrão (8, 11, 12, 13, 14, 15, 16)
-    const match = nome.match(/iphone\s+(\d+)/i)
-    if (match) return parseInt(match[1])
-
-    // Se não for iPhone, retornar número alto
-    return 9999
-  }
-
-  // Filtrar e ordenar produtos
+  // Filtrar produtos (ordenação já vem do products-manager)
   const produtosFiltrados = useMemo(() => {
-    let resultado = [...produtos]
+    // Se não há filtros, retornar produtos diretamente (já ordenados)
+    if (!busca.trim() && categoriaFiltro === 'todas') {
+      return produtos
+    }
+
+    let resultado = produtos
 
     // Aplicar busca por nome ou código
     if (busca.trim()) {
@@ -264,49 +247,6 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
     if (categoriaFiltro !== 'todas') {
       resultado = resultado.filter(p => p.categoria?.id === categoriaFiltro)
     }
-
-    // Ordenar: iPhones em ordem crescente (8, X, XR, XS, 11, 12...), depois outras categorias alfabéticas
-    resultado.sort((a, b) => {
-      const nomeA = a.nome.toLowerCase()
-      const nomeB = b.nome.toLowerCase()
-
-      const isIphoneA = nomeA.includes('iphone')
-      const isIphoneB = nomeB.includes('iphone')
-
-      // Se ambos são iPhone, ordenar por modelo
-      if (isIphoneA && isIphoneB) {
-        const numA = extrairNumeroModelo(a.nome)
-        const numB = extrairNumeroModelo(b.nome)
-
-        if (numA !== numB) {
-          return numA - numB
-        }
-
-        // Mesmo modelo, ordenar por armazenamento (crescente)
-        const armazenamentoA = extrairArmazenamento(a.nome)
-        const armazenamentoB = extrairArmazenamento(b.nome)
-        if (armazenamentoA !== armazenamentoB) {
-          return armazenamentoA - armazenamentoB
-        }
-
-        // Mesmo modelo e armazenamento, ordenar alfabeticamente
-        return a.nome.localeCompare(b.nome)
-      }
-
-      // iPhones sempre vêm primeiro
-      if (isIphoneA && !isIphoneB) return -1
-      if (!isIphoneA && isIphoneB) return 1
-
-      // Ambos não são iPhone: ordenar por categoria e depois alfabético
-      const ordemA = a.categoria?.ordem ?? 9999
-      const ordemB = b.categoria?.ordem ?? 9999
-
-      if (ordemA !== ordemB) {
-        return ordemA - ordemB
-      }
-
-      return a.nome.localeCompare(b.nome)
-    })
 
     return resultado
   }, [produtos, busca, categoriaFiltro])
@@ -494,7 +434,9 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
       ) : (
         <>
           {/* VIEW MOBILE: Cards com carregamento progressivo */}
-          <div className="flex flex-col gap-4 md:hidden" suppressHydrationWarning>
+          {/* Renderiza apenas no mobile para evitar processar 200+ cards desnecessariamente */}
+          {!isDesktop && (
+          <div className="flex flex-col gap-4" suppressHydrationWarning>
             {produtosVisiveis.map((produto) => {
               const currentSavedPrice = savedPrices[produto.id] ?? produto.preco
               const isSaving = savingPriceId === produto.id
@@ -740,9 +682,12 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
               </p>
             )}
           </div>
+          )}
 
       {/* VIEW DESKTOP: Tabela */}
-      <div className="hidden overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-900 md:block">
+      {/* Renderiza apenas no desktop para evitar processar a tabela no mobile */}
+      {isDesktop && (
+      <div className="overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-900">
         <Table>
           <TableHeader>
             <TableRow className="border-zinc-800 hover:bg-zinc-900">
@@ -906,6 +851,7 @@ const ProdutosTableComponent = ({ produtos, onEditProduto }: ProdutosTableProps)
           </TableBody>
         </Table>
       </div>
+      )}
         </>
       )}
 
