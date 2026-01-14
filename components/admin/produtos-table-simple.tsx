@@ -6,14 +6,12 @@
  */
 
 import { useState } from 'react'
-import Link from 'next/link'
 import Image from 'next/image'
 import { Edit, Trash2, Eye, EyeOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { deleteProduto, toggleProdutoAtivo } from '@/app/admin/produtos/actions'
 import type { ProdutoComCategoria } from '@/types/produto'
-import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 interface ProdutosTableSimpleProps {
   produtos: ProdutoComCategoria[]
@@ -24,15 +22,13 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
   const router = useRouter()
   const [deleting, setDeleting] = useState<string | null>(null)
   const [toggling, setToggling] = useState<string | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [produtoToDelete, setProdutoToDelete] = useState<{ id: string; nome: string } | null>(null)
 
-  const handleDelete = async () => {
-    if (!produtoToDelete) return
+  const handleDelete = async (id: string, nome: string) => {
+    if (!confirm(`Tem certeza que deseja excluir "${nome}"?`)) return
 
-    setDeleting(produtoToDelete.id)
+    setDeleting(id)
     try {
-      const result = await deleteProduto(produtoToDelete.id)
+      const result = await deleteProduto(id)
       if (result.success) {
         toast.success('Produto excluído com sucesso!')
         router.refresh()
@@ -43,8 +39,6 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
       toast.error('Erro ao excluir produto')
     } finally {
       setDeleting(null)
-      setDeleteDialogOpen(false)
-      setProdutoToDelete(null)
     }
   }
 
@@ -173,10 +167,7 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => {
-                          setProdutoToDelete({ id: produto.id, nome: produto.nome })
-                          setDeleteDialogOpen(true)
-                        }}
+                        onClick={() => handleDelete(produto.id, produto.nome)}
                         disabled={deleting === produto.id}
                         className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                         title="Excluir"
@@ -270,10 +261,7 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
                 </button>
 
                 <button
-                  onClick={() => {
-                    setProdutoToDelete({ id: produto.id, nome: produto.nome })
-                    setDeleteDialogOpen(true)
-                  }}
+                  onClick={() => handleDelete(produto.id, produto.nome)}
                   disabled={deleting === produto.id}
                   className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                   title="Excluir"
@@ -285,17 +273,6 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
           </div>
         ))}
       </div>
-
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title="Excluir produto"
-        description={`Tem certeza que deseja excluir "${produtoToDelete?.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
-        onConfirm={handleDelete}
-        variant="destructive"
-      />
     </>
   )
 }
