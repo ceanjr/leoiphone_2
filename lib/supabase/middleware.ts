@@ -45,10 +45,26 @@ export async function updateSession(request: NextRequest) {
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Auth timeout')), 3000)
       )
-      const { data } = (await Promise.race([
+      const { data, error } = (await Promise.race([
         authPromise,
         timeoutPromise,
       ])) as Awaited<ReturnType<typeof supabase.auth.getUser>>
+
+      // Se houver erro de refresh token inválido, limpar cookies e redirecionar
+      if (error && (error.message?.includes('Refresh Token') || error.code === 'refresh_token_not_found')) {
+        logger.warn('Invalid refresh token, clearing session')
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        const response = NextResponse.redirect(url)
+        // Limpar todos os cookies de auth do Supabase
+        request.cookies.getAll().forEach((cookie) => {
+          if (cookie.name.startsWith('sb-')) {
+            response.cookies.delete(cookie.name)
+          }
+        })
+        return response
+      }
+
       const user = data.user
 
       if (!user) {
@@ -57,15 +73,32 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url)
       }
     } catch (error) {
+      // Timeout - permitir acesso se há token (melhor UX)
       logger.warn('Auth check timeout, allowing access with token', error)
     }
   }
 
   // Redirecionar usuário logado da página de login para o admin
   if (request.nextUrl.pathname === '/login' && accessToken) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/admin/dashboard'
-    return NextResponse.redirect(url)
+    try {
+      const { data, error } = await supabase.auth.getUser()
+      // Só redirecionar se o token for válido
+      if (!error && data.user) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/admin/dashboard'
+        return NextResponse.redirect(url)
+      }
+      // Se token inválido, limpar cookies e permitir ficar no login
+      if (error) {
+        request.cookies.getAll().forEach((cookie) => {
+          if (cookie.name.startsWith('sb-')) {
+            supabaseResponse.cookies.delete(cookie.name)
+          }
+        })
+      }
+    } catch {
+      // Erro de timeout - não redirecionar, permitir login
+    }
   }
 
   return supabaseResponse

@@ -15,6 +15,8 @@ import {
 interface ConfiguracaoTaxasRow {
   id: string
   ativo: boolean
+  exibir_catalogo: boolean
+  exibir_produto: boolean
   taxas: TaxasConfig
   created_at: string
   updated_at: string
@@ -41,6 +43,8 @@ export async function getConfiguracaoTaxas() {
         configuracao: {
           id: null,
           ativo: false,
+          exibir_catalogo: true,
+          exibir_produto: true,
           taxas: TAXAS_PADRAO,
           created_at: null,
           updated_at: null,
@@ -150,6 +154,8 @@ export async function updateConfiguracaoTaxas(config: ConfiguracaoTaxas) {
 export async function restaurarTaxasPadrao() {
   return updateConfiguracaoTaxas({
     ativo: false,
+    exibir_catalogo: true,
+    exibir_produto: true,
     taxas: TAXAS_PADRAO,
   })
 }
@@ -169,6 +175,8 @@ export async function toggleCalculadora(ativo: boolean) {
 
   return updateConfiguracaoTaxas({
     ativo,
+    exibir_catalogo: configuracao.exibir_catalogo ?? true,
+    exibir_produto: configuracao.exibir_produto ?? true,
     taxas: configuracao.taxas,
   })
 }
@@ -335,6 +343,8 @@ export async function applyPreset(presetId: string) {
   // Aplicar taxas do preset
   return updateConfiguracaoTaxas({
     ativo: configuracao?.ativo ?? false,
+    exibir_catalogo: configuracao?.exibir_catalogo ?? true,
+    exibir_produto: configuracao?.exibir_produto ?? true,
     taxas: preset.taxas,
   })
 }

@@ -18,7 +18,6 @@ import type { ProdutoComCategoria } from '@/types/produto'
 import type { TaxasConfig } from '@/lib/validations/taxas'
 import type { TrocaFormData } from '@/lib/validations/troca'
 import { estadoConservacaoLabels } from '@/lib/validations/troca'
-import { useAuth } from '@/hooks/use-auth'
 
 // Lazy load heavy modals
 const CompraOuTrocaModal = lazy(() =>
@@ -32,21 +31,11 @@ const TrocaModal = lazy(() =>
 
 export function ProdutoPageClient({ slug }: { slug: string }) {
   const searchParams = useSearchParams()
-  const { isAuthenticated } = useAuth() // Use hook que reage às mudanças de autenticação
   const [produto, setProduto] = useState<ProdutoComCategoria | null>(null)
   const [loading, setLoading] = useState(true)
   const [fotoSelecionada, setFotoSelecionada] = useState(0)
   const [calculadoraAtiva, setCalculadoraAtiva] = useState(false)
   const [taxas, setTaxas] = useState<TaxasConfig | null>(null)
-  const [produtosRelacionadosSelecionados, setProdutosRelacionadosSelecionados] = useState<
-    string[]
-  >([])
-  const [produtosRelacionadosInfo, setProdutosRelacionadosInfo] = useState<
-    Array<{ id: string; nome: string; slug: string; preco: number }>
-  >([])
-  const [custos, setCustos] = useState<
-    Array<{ id: string; custo: number; estoque: number; codigo: string | null }>
-  >([])
 
   // Estados dos modais
   const [modalCompraOuTroca, setModalCompraOuTroca] = useState(false)
@@ -68,43 +57,6 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
     produto && precoPromocional && precoPromocional < produto.preco
       ? precoPromocional
       : produto?.preco
-
-  // Ler produtos relacionados da URL ao carregar
-  useEffect(() => {
-    if (!searchParams) return
-
-    const relacionadosParam = searchParams.get('relacionados')
-    if (relacionadosParam) {
-      const ids = relacionadosParam.split(',').filter(Boolean)
-      setProdutosRelacionadosSelecionados(ids)
-    }
-  }, [searchParams])
-
-  // Buscar informações dos produtos relacionados selecionados
-  useEffect(() => {
-    async function loadProdutosRelacionadosInfo() {
-      if (produtosRelacionadosSelecionados.length === 0) {
-        setProdutosRelacionadosInfo([])
-        return
-      }
-
-      try {
-        const supabase = createClient()
-        const { data } = await supabase
-          .from('produtos')
-          .select('id, nome, slug, preco')
-          .in('id', produtosRelacionadosSelecionados)
-
-        if (data) {
-          setProdutosRelacionadosInfo(data)
-        }
-      } catch (error) {
-        logger.error('Erro ao buscar informações dos produtos relacionados:', error)
-      }
-    }
-
-    loadProdutosRelacionadosInfo()
-  }, [produtosRelacionadosSelecionados])
 
   // Polling: callback para atualizar taxas quando mudar no admin
   const handleTaxasUpdate = useCallback((config: { ativo: boolean; taxas: TaxasConfig }) => {
@@ -258,32 +210,6 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
     loadProduto()
   }, [slug])
 
-  // Carregar ou limpar custos quando autenticação mudar
-  useEffect(() => {
-    if (!produto?.id) return
-
-    const supabase = createClient()
-
-    if (isAuthenticated) {
-      // Carregar custos se autenticado
-      const loadCustos = async () => {
-        const { data: custosData } = await supabase
-          .from('produtos_custos')
-          .select('id, custo, estoque, codigo')
-          .eq('produto_id', produto.id)
-          .order('created_at', { ascending: true })
-
-        if (custosData) {
-          setCustos(custosData)
-        }
-      }
-      loadCustos()
-    } else {
-      // Limpar custos se não autenticado (logout)
-      setCustos([])
-    }
-  }, [isAuthenticated, produto?.id])
-
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -321,25 +247,6 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
   const productUrl = typeof window !== 'undefined' ? window.location.href : ''
   const codigoProduto = produto.codigo_produto ? `, código ${produto.codigo_produto}` : ''
 
-  // Criar URL com produtos relacionados selecionados
-  const urlComProdutosRelacionados = (() => {
-    if (typeof window === 'undefined' || produtosRelacionadosSelecionados.length === 0) {
-      return productUrl
-    }
-    const url = new URL(window.location.href)
-    url.searchParams.set('relacionados', produtosRelacionadosSelecionados.join(','))
-    return url.toString()
-  })()
-
-  // Construir lista de produtos relacionados para a mensagem
-  const produtosRelacionadosTexto =
-    produtosRelacionadosInfo.length > 0
-      ? `
-
-Produtos adicionais selecionados:
-${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`).join('\n')}`
-      : ''
-
   // Construir mensagem base do WhatsApp
   const buildWhatsappMessage = () => {
     let message = `Tenho interesse no ${produto.nome}${codigoProduto}, ${formatPreco(precoAtual || produto.preco)}`
@@ -355,7 +262,7 @@ ${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`)
       message += `\n\n[Fotos: Enviarei em seguida]`
     }
 
-    message += `${produtosRelacionadosTexto}\n\nLink: ${urlComProdutosRelacionados}`
+    message += `\n\nLink: ${productUrl}`
 
     return message
   }
@@ -542,12 +449,7 @@ ${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`)
 
           {/* Produtos Relacionados */}
           {produto.categoria?.id && (
-            <ProdutosRelacionados
-              produtoId={produto.id}
-              categoriaId={produto.categoria.id}
-              produtosSelecionados={produtosRelacionadosSelecionados}
-              onSelectionChange={setProdutosRelacionadosSelecionados}
-            />
+            <ProdutosRelacionados produtoId={produto.id} categoriaId={produto.categoria.id} />
           )}
 
           {/* Especificações */}
@@ -572,29 +474,6 @@ ${produtosRelacionadosInfo.map((p) => `• ${p.nome} - ${formatPreco(p.preco)}`)
                       {garantiaTexto[produto.garantia]}
                     </span>
                   </div>
-                )}
-                {isAuthenticated && custos.length > 0 && (
-                  <>
-                    <div className="my-3 border-t border-zinc-700" />
-                    <div className="rounded-md bg-zinc-800/50 p-3">
-                      <h3 className="mb-2 text-sm font-semibold text-[var(--brand-yellow)]">
-                        Preços de Custo
-                      </h3>
-                      <div className="space-y-2">
-                        {custos.map((custo, index) => (
-                          <div key={custo.id} className="flex justify-between text-sm">
-                            <span className="text-zinc-400">
-                              {custo.codigo ? `${custo.codigo}` : `Custo ${index + 1}`}
-                              {custo.estoque > 0 && ` (${custo.estoque} em estoque)`}
-                            </span>
-                            <span className="font-medium text-green-400">
-                              {formatPreco(custo.custo)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
                 )}
               </div>
             </CardContent>

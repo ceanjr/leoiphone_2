@@ -97,7 +97,6 @@ export const THEME_COLORS = {
  * URLs e endpoints
  */
 export const ENDPOINTS = {
-  olxAuth: 'https://auth.olx.com.br/oauth/token',
   supabaseStorage: 'https://aswejqbtejibrilrblnm.supabase.co/storage',
 } as const
 

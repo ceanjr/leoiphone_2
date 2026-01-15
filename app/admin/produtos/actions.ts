@@ -5,7 +5,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { produtoSchema } from '@/lib/validations/produto'
-import type { ProdutoFormData } from '@/types/produto'
+import type { ProdutoFormData, ProdutoComCategoria } from '@/types/produto'
 import { createLogger } from '@/lib/utils/logger'
 
 const logger = createLogger('ProdutosActions')
@@ -30,7 +30,7 @@ export async function getProdutos() {
 
   const { data, error } = await supabase
     .from('produtos')
-    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, cor_oficial, cores, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, categoria:categorias(id, nome, slug, ordem)`)
+    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, cor_oficial, cores, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, categoria:categorias(id, nome, slug, ordem), produtos_custos(custo)`)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
@@ -39,10 +39,21 @@ export async function getProdutos() {
     return { produtos: [], error: 'Erro ao carregar produtos' }
   }
 
-  return { produtos: data || [], error: null }
+  // Processar produtos para incluir o custo mais recente
+  const produtosComCusto = (data || []).map((produto: any) => {
+    const custos = produto.produtos_custos || []
+    const custoMaisRecente = custos.length > 0 ? custos[0].custo : null
+    return {
+      ...produto,
+      preco_custo: custoMaisRecente,
+      produtos_custos: undefined, // Remover array original
+    }
+  })
+
+  return { produtos: produtosComCusto, error: null }
 }
 
-export async function getProdutoById(id: string) {
+export async function getProdutoById(id: string): Promise<{ produto: ProdutoComCategoria | null; error: string | null }> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -57,7 +68,7 @@ export async function getProdutoById(id: string) {
     return { produto: null, error: 'Produto não encontrado' }
   }
 
-  return { produto: data, error: null }
+  return { produto: data as unknown as ProdutoComCategoria, error: null }
 }
 
 export async function createProduto(data: ProdutoFormData) {

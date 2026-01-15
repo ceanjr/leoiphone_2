@@ -20,6 +20,8 @@ import {
   Plus,
   Trash2,
   Check,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import {
   getConfiguracaoTaxas,
@@ -39,6 +41,7 @@ export default function TaxasPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [ativo, setAtivo] = useState(false)
+  const [exibirProduto, setExibirProduto] = useState(true)
   const [taxas, setTaxas] = useState<TaxasConfig>(TAXAS_PADRAO)
   const [hasChanges, setHasChanges] = useState(false)
   const [presets, setPresets] = useState<PresetTaxas[]>([])
@@ -58,6 +61,7 @@ export default function TaxasPage() {
         toast.error(configResult.error)
       } else if (configResult.configuracao) {
         setAtivo(configResult.configuracao.ativo)
+        setExibirProduto(configResult.configuracao.exibir_produto ?? true)
         setTaxas(configResult.configuracao.taxas)
       }
 
@@ -78,7 +82,7 @@ export default function TaxasPage() {
     // Não marcar como alterado durante carregamento inicial
     if (loading) return
     setHasChanges(true)
-  }, [ativo, taxas, loading])
+  }, [ativo, exibirProduto, taxas, loading])
 
   const handleTaxaChange = useCallback((parcela: keyof TaxasConfig, valor: string) => {
     const numero = parseFloat(valor)
@@ -94,7 +98,12 @@ export default function TaxasPage() {
     setSaving(true)
 
     try {
-      const result = await updateConfiguracaoTaxas({ ativo, taxas })
+      const result = await updateConfiguracaoTaxas({
+        ativo,
+        exibir_catalogo: true, // Sempre true pois controla só o header
+        exibir_produto: exibirProduto,
+        taxas,
+      })
 
       if (result.success) {
         toast.success('Configurações salvas com sucesso!')
@@ -122,6 +131,7 @@ export default function TaxasPage() {
 
       if (result.success) {
         setAtivo(false)
+        setExibirProduto(true)
         setTaxas(TAXAS_PADRAO)
         setHasChanges(false)
         toast.success('Taxas restauradas para os valores padrão!')
@@ -216,6 +226,16 @@ export default function TaxasPage() {
   const parcelas = calcularTodasParcelas(EXEMPLO_PRECO, taxas)
   const parcelaMaxima = parcelas[parcelas.length - 1]
 
+  // Verificar qual preset está ativo (corresponde às taxas atuais)
+  const isPresetActive = useCallback(
+    (presetTaxas: TaxasConfig) => {
+      return Object.keys(taxas).every(
+        (key) => taxas[key as keyof TaxasConfig] === presetTaxas[key as keyof TaxasConfig]
+      )
+    },
+    [taxas]
+  )
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -259,34 +279,92 @@ export default function TaxasPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Coluna Principal - Editor de Taxas */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Toggle Ativo/Inativo */}
+          {/* Toggle Status Geral (Header) */}
           <Card className="border-zinc-800 bg-zinc-900">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                Status da Calculadora
-                {ativo ? (
-                  <Badge className="bg-green-600">Ativa</Badge>
-                ) : (
-                  <Badge variant="secondary">Inativa</Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Ative para exibir a calculadora de parcelas nas páginas de produtos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <Label htmlFor="ativo" className="font-medium text-white">
-                    Exibir calculadora no site
-                  </Label>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    Os clientes poderão ver as opções de parcelamento
-                  </p>
+                  <CardTitle className="text-white">Calculadora no Header</CardTitle>
+                  <CardDescription className="hidden md:block">
+                    Mostrar/ocultar o botão da calculadora no cabeçalho do site
+                  </CardDescription>
                 </div>
-                <Switch id="ativo" checked={ativo} onCheckedChange={setAtivo} disabled={saving} />
+                <div className="flex gap-2">
+                  <Button
+                    variant={ativo ? 'default' : 'outline'}
+                    size="sm"
+                    className={
+                      ativo
+                        ? 'flex-1 bg-green-600 hover:bg-green-700 md:flex-none'
+                        : 'flex-1 border-zinc-700 hover:bg-zinc-800 md:flex-none'
+                    }
+                    onClick={() => setAtivo(true)}
+                    disabled={saving}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    Exibir
+                  </Button>
+                  <Button
+                    variant={!ativo ? 'default' : 'outline'}
+                    size="sm"
+                    className={
+                      !ativo
+                        ? 'flex-1 bg-red-600 hover:bg-red-700 md:flex-none'
+                        : 'flex-1 border-zinc-700 hover:bg-zinc-800 md:flex-none'
+                    }
+                    onClick={() => setAtivo(false)}
+                    disabled={saving}
+                  >
+                    <EyeOff className="mr-2 h-4 w-4" />
+                    Ocultar
+                  </Button>
+                </div>
               </div>
-            </CardContent>
+            </CardHeader>
+          </Card>
+
+          {/* Toggle Página do Produto */}
+          <Card className="border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="text-white">Simulação na Página do Produto</CardTitle>
+                  <CardDescription className="hidden md:block">
+                    Mostrar/ocultar a tabela de parcelas na página individual do produto
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant={exibirProduto ? 'default' : 'outline'}
+                    size="sm"
+                    className={
+                      exibirProduto
+                        ? 'flex-1 bg-green-600 hover:bg-green-700 md:flex-none'
+                        : 'flex-1 border-zinc-700 hover:bg-zinc-800 md:flex-none'
+                    }
+                    onClick={() => setExibirProduto(true)}
+                    disabled={saving}
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    Exibir
+                  </Button>
+                  <Button
+                    variant={!exibirProduto ? 'default' : 'outline'}
+                    size="sm"
+                    className={
+                      !exibirProduto
+                        ? 'flex-1 bg-red-600 hover:bg-red-700 md:flex-none'
+                        : 'flex-1 border-zinc-700 hover:bg-zinc-800 md:flex-none'
+                    }
+                    onClick={() => setExibirProduto(false)}
+                    disabled={saving}
+                  >
+                    <EyeOff className="mr-2 h-4 w-4" />
+                    Ocultar
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
           </Card>
 
           {/* Editor de Taxas */}
@@ -398,49 +476,65 @@ export default function TaxasPage() {
                 {/* Lista de presets */}
                 <div className="space-y-2">
                   {presets.length === 0 ? (
-                    <p className="text-center text-sm text-zinc-500 py-4">
+                    <p className="py-4 text-center text-sm text-zinc-500">
                       Nenhum preset salvo ainda
                     </p>
                   ) : (
-                    presets.map((preset) => (
-                      <div
-                        key={preset.id}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-3"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-white">
-                            {preset.nome}
-                          </p>
-                          {preset.is_default && (
-                            <Badge variant="secondary" className="mt-1 text-xs">
-                              Padrão
-                            </Badge>
-                          )}
+                    presets.map((preset) => {
+                      const isActive = isPresetActive(preset.taxas)
+                      return (
+                        <div
+                          key={preset.id}
+                          className={`flex items-center justify-between gap-2 rounded-lg border p-3 transition-all ${
+                            isActive
+                              ? 'border-[var(--brand-yellow)] bg-[var(--brand-yellow)]/5 ring-1 ring-[var(--brand-yellow)]/20'
+                              : 'border-zinc-800 bg-zinc-950'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p
+                                className={`truncate text-sm font-medium ${isActive ? 'text-[var(--brand-yellow)]' : 'text-white'}`}
+                              >
+                                {preset.nome}
+                              </p>
+                              {isActive && (
+                                <Badge className="bg-[var(--brand-yellow)] px-1.5 py-0 text-[10px] text-[var(--brand-black)]">
+                                  Ativo
+                                </Badge>
+                              )}
+                            </div>
+                            {preset.is_default && (
+                              <Badge variant="secondary" className="mt-1 text-xs">
+                                Padrão
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex flex-shrink-0 gap-1">
+                            <Button
+                              onClick={() => handleApplyPreset(preset.id!)}
+                              disabled={saving || isActive}
+                              size="sm"
+                              variant="outline"
+                              className={`h-8 w-8 p-0 ${isActive ? 'border-[var(--brand-yellow)]/30 text-[var(--brand-yellow)]' : 'border-zinc-700'}`}
+                              title={isActive ? 'Preset já aplicado' : 'Aplicar preset'}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={() => handleDeletePreset(preset.id!, preset.nome)}
+                              disabled={saving}
+                              size="sm"
+                              variant="outline"
+                              className="h-8 w-8 border-zinc-700 p-0 hover:border-red-500 hover:text-red-500"
+                              title="Deletar preset"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex flex-shrink-0 gap-1">
-                          <Button
-                            onClick={() => handleApplyPreset(preset.id!)}
-                            disabled={saving}
-                            size="sm"
-                            variant="outline"
-                            className="h-8 w-8 p-0 border-zinc-700"
-                            title="Aplicar preset"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => handleDeletePreset(preset.id!, preset.nome)}
-                            disabled={saving}
-                            size="sm"
-                            variant="outline"
-                            className="h-8 w-8 p-0 border-zinc-700 hover:border-red-500 hover:text-red-500"
-                            title="Deletar preset"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
+                      )
+                    })
                   )}
                 </div>
               </div>

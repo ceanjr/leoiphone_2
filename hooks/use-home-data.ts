@@ -2,10 +2,10 @@
  * Hook para carregar e gerenciar dados da HomePage
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ordenarProdutosPorModelo } from '@/lib/utils/produtos/helpers'
-import type { Produto, ProdutoComCategoria, ProdutoCusto } from '@/types/produto'
+import type { Produto, ProdutoComCategoria } from '@/types/produto'
 
 export interface Categoria {
   id: string
@@ -48,12 +48,11 @@ interface ProdutoSecaoRow {
   produto: Produto | null
 }
 
-export function useHomeData(isAuthenticated: boolean) {
+export function useHomeData() {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [secoes, setSecoes] = useState<Secao[]>([])
   const [produtosEmDestaqueIds, setProdutosEmDestaqueIds] = useState<string[]>([])
-  const [custosPorProduto, setCustosPorProduto] = useState<Record<string, ProdutoCusto[]>>({})
   const [loading, setLoading] = useState(true)
 
   // Carregar categorias
@@ -174,33 +173,6 @@ export function useHomeData(isAuthenticated: boolean) {
     }
   }, [])
 
-  // Carregar custos (apenas se autenticado)
-  const loadCustos = useCallback(async () => {
-    if (!isAuthenticated) {
-      setCustosPorProduto({})
-      return
-    }
-
-    const supabase = createClient()
-    const { data: custosData, error } = await supabase
-      .from('produtos_custos')
-      .select('*')
-      .order('created_at', { ascending: true })
-
-    if (!error && custosData) {
-      const custosAgrupados: Record<string, ProdutoCusto[]> = {}
-
-      ;(custosData as ProdutoCusto[]).forEach((custo) => {
-        if (!custosAgrupados[custo.produto_id]) {
-          custosAgrupados[custo.produto_id] = []
-        }
-        custosAgrupados[custo.produto_id].push(custo)
-      })
-
-      setCustosPorProduto(custosAgrupados)
-    }
-  }, [isAuthenticated])
-
   // Carregar todos os dados iniciais
   useEffect(() => {
     async function loadData() {
@@ -217,18 +189,26 @@ export function useHomeData(isAuthenticated: boolean) {
     loadData()
   }, [loadCategorias, loadProdutosDestaque, loadSecoes, loadProdutos])
 
-  // Carregar custos quando autenticação mudar
-  useEffect(() => {
-    loadCustos()
-  }, [loadCustos])
+  // Filtrar categorias que têm produtos ativos
+  const categoriasComProdutos = useMemo(() => {
+    if (categorias.length === 0 || produtos.length === 0) {
+      return categorias
+    }
+
+    return categorias.filter((categoria) => {
+      return produtos.some((produto) => {
+        const produtoCategoria = (produto as ProdutoComCategoria).categoria
+        return produtoCategoria?.id === categoria.id
+      })
+    })
+  }, [categorias, produtos])
 
   return {
     produtos,
     setProdutos,
-    categorias,
+    categorias: categoriasComProdutos,
     secoes,
     produtosEmDestaqueIds,
-    custosPorProduto,
     loading,
     loadProdutos,
   }

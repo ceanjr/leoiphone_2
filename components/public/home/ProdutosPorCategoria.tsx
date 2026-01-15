@@ -1,5 +1,5 @@
 import { ProdutoCard } from '@/components/public/produto-card'
-import type { Produto, ProdutoCusto } from '@/types/produto'
+import type { Produto } from '@/types/produto'
 
 interface Categoria {
   id: string
@@ -15,16 +15,12 @@ interface ProdutosPorCategoriaProps {
   produtosAgrupados: ProdutosAgrupados[]
   viewMode: 'grid' | 'list'
   returnParams: string
-  custosPorProduto: Record<string, ProdutoCusto[]>
-  isAuthenticated: boolean
 }
 
 export function ProdutosPorCategoria({
   produtosAgrupados,
   viewMode,
   returnParams,
-  custosPorProduto,
-  isAuthenticated,
 }: ProdutosPorCategoriaProps) {
   if (produtosAgrupados.length === 0) {
     return (
@@ -64,8 +60,6 @@ export function ProdutosPorCategoria({
                 view={viewMode}
                 priority={index < 4}
                 returnParams={returnParams}
-                custos={custosPorProduto[produto.id]}
-                isAuthenticated={isAuthenticated}
               />
             ))}
           </div>

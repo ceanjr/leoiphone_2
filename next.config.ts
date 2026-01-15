@@ -9,11 +9,9 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   reactStrictMode: true,
 
-  // Optimization: Use pre-optimized image variants instead of Vercel's optimization
-  // Images are optimized during upload, generating multiple WebP variants (thumb, small, medium, large)
-  // This eliminates Vercel's Image Optimization costs entirely (100% free)
+  // Image optimization enabled - Next.js will resize images to requested sizes
+  // remotePatterns configured for Supabase and Firebase storage
   images: {
-    unoptimized: true, // Don't use Vercel's image optimization - we pre-optimize everything
     remotePatterns: [
       {
         protocol: 'https',

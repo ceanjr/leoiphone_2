@@ -32,6 +32,8 @@ export const taxasSchema = z.object({
 // Schema completo para configurações de taxas
 export const configuracaoTaxasSchema = z.object({
   ativo: z.boolean(),
+  exibir_catalogo: z.boolean().default(true),
+  exibir_produto: z.boolean().default(true),
   taxas: taxasSchema,
 })
 

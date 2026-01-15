@@ -45,11 +45,13 @@ function BannerCarouselComponent() {
 
   const loadBanners = useCallback(async () => {
     const supabase = createClient()
-    
+
     // Optimization LCP: Single query with caching
     const { data } = await supabase
       .from('banners')
-      .select('id, titulo, subtitulo, link, imagem_url, ordem, tipo, produtos_destaque, countdown_ends_at')
+      .select(
+        'id, titulo, subtitulo, link, imagem_url, ordem, tipo, produtos_destaque, countdown_ends_at'
+      )
       .eq('ativo', true)
       .order('ordem', { ascending: true })
 
@@ -62,20 +64,24 @@ function BannerCarouselComponent() {
 
       // 1. Coletar todos os IDs de produtos de todos os banners
       const bannersComProdutos = (data as any[]).filter(
-        b => b.tipo === 'produtos_destaque' && b.produtos_destaque?.length > 0
+        (b) => b.tipo === 'produtos_destaque' && b.produtos_destaque?.length > 0
       )
 
       if (bannersComProdutos.length > 0) {
-        const todosIdsUnicos = [...new Set(
-          bannersComProdutos.flatMap(b =>
-            b.produtos_destaque.map((p: { produto_id: string }) => p.produto_id)
-          )
-        )]
+        const todosIdsUnicos = [
+          ...new Set(
+            bannersComProdutos.flatMap((b) =>
+              b.produtos_destaque.map((p: { produto_id: string }) => p.produto_id)
+            )
+          ),
+        ]
 
         // 2. Buscar TODOS os produtos de uma vez (não em loop) - Otimização: de N queries para 1 query
         const { data: todosProdutos } = await supabase
           .from('produtos')
-          .select('id, nome, slug, codigo_produto, preco, foto_principal, condicao, nivel_bateria, cores, garantia')
+          .select(
+            'id, nome, slug, codigo_produto, preco, foto_principal, condicao, nivel_bateria, cores, garantia'
+          )
           .in('id', todosIdsUnicos)
           .is('deleted_at', null)
 
@@ -84,7 +90,7 @@ function BannerCarouselComponent() {
           for (const banner of bannersComProdutos) {
             produtosMap[banner.id] = banner.produtos_destaque
               .map((pd: { produto_id: string; preco_promocional: number }) => {
-                const produto = (todosProdutos as any[]).find(p => p.id === pd.produto_id)
+                const produto = (todosProdutos as any[]).find((p) => p.id === pd.produto_id)
                 if (!produto) return null
                 return {
                   ...produto,
@@ -126,15 +132,8 @@ function BannerCarouselComponent() {
     setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length)
   }, [banners.length])
 
-  if (loading) {
-    return (
-      <div className="mb-8">
-        <div className="relative h-[300px] w-full rounded-lg bg-zinc-900 md:h-[400px] lg:h-[500px]" />
-      </div>
-    )
-  }
-
-  if (banners.length === 0) {
+  // Não mostrar nada se estiver carregando ou não houver banners
+  if (loading || banners.length === 0) {
     return null
   }
 
@@ -156,14 +155,14 @@ function BannerCarouselComponent() {
           <>
             <button
               onClick={prev}
-              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 md:left-4"
+              className="absolute top-1/2 left-2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 md:left-4"
               aria-label="Banner anterior"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
             <button
               onClick={next}
-              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 md:right-4"
+              className="absolute top-1/2 right-2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 md:right-4"
               aria-label="Próximo banner"
             >
               <ChevronRight className="h-6 w-6" />
@@ -204,14 +203,10 @@ function BannerCarouselComponent() {
         priority={currentIndex === 0} // Only first banner gets priority for LCP
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-white md:p-8 lg:p-12">
-        <h2 className="mb-2 text-2xl font-bold md:text-3xl lg:text-4xl">
-          {currentBanner.titulo}
-        </h2>
+      <div className="absolute right-0 bottom-0 left-0 p-6 text-white md:p-8 lg:p-12">
+        <h2 className="mb-2 text-2xl font-bold md:text-3xl lg:text-4xl">{currentBanner.titulo}</h2>
         {currentBanner.subtitulo && (
-          <p className="text-sm text-zinc-200 md:text-base lg:text-lg">
-            {currentBanner.subtitulo}
-          </p>
+          <p className="text-sm text-zinc-200 md:text-base lg:text-lg">{currentBanner.subtitulo}</p>
         )}
       </div>
     </div>
@@ -219,24 +214,20 @@ function BannerCarouselComponent() {
 
   return (
     <div className="relative mb-8">
-      {currentBanner.link ? (
-        <Link href={currentBanner.link}>{BannerContent}</Link>
-      ) : (
-        BannerContent
-      )}
+      {currentBanner.link ? <Link href={currentBanner.link}>{BannerContent}</Link> : BannerContent}
 
       {banners.length > 1 && (
         <>
           <button
             onClick={prev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+            className="absolute top-1/2 left-4 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
             aria-label="Banner anterior"
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
           <button
             onClick={next}
-            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
+            className="absolute top-1/2 right-4 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
             aria-label="Próximo banner"
           >
             <ChevronRight className="h-6 w-6" />
@@ -248,9 +239,7 @@ function BannerCarouselComponent() {
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`h-2 w-2 rounded-full transition-all ${
-                  index === currentIndex
-                    ? 'w-8 bg-white'
-                    : 'bg-white/50 hover:bg-white/75'
+                  index === currentIndex ? 'w-8 bg-white' : 'bg-white/50 hover:bg-white/75'
                 }`}
                 aria-label={`Ir para banner ${index + 1}`}
               />
