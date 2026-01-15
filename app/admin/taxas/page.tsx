@@ -216,6 +216,13 @@ export default function TaxasPage() {
   const parcelas = calcularTodasParcelas(EXEMPLO_PRECO, taxas)
   const parcelaMaxima = parcelas[parcelas.length - 1]
 
+  // Verificar qual preset está ativo (corresponde às taxas atuais)
+  const isPresetActive = useCallback((presetTaxas: TaxasConfig) => {
+    return Object.keys(taxas).every(
+      (key) => taxas[key as keyof TaxasConfig] === presetTaxas[key as keyof TaxasConfig]
+    )
+  }, [taxas])
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -402,45 +409,59 @@ export default function TaxasPage() {
                       Nenhum preset salvo ainda
                     </p>
                   ) : (
-                    presets.map((preset) => (
-                      <div
-                        key={preset.id}
-                        className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950 p-3"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-white">
-                            {preset.nome}
-                          </p>
-                          {preset.is_default && (
-                            <Badge variant="secondary" className="mt-1 text-xs">
-                              Padrão
-                            </Badge>
-                          )}
+                    presets.map((preset) => {
+                      const isActive = isPresetActive(preset.taxas)
+                      return (
+                        <div
+                          key={preset.id}
+                          className={`flex items-center justify-between gap-2 rounded-lg border p-3 transition-all ${
+                            isActive
+                              ? 'border-[var(--brand-yellow)] bg-[var(--brand-yellow)]/5 ring-1 ring-[var(--brand-yellow)]/20'
+                              : 'border-zinc-800 bg-zinc-950'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className={`truncate text-sm font-medium ${isActive ? 'text-[var(--brand-yellow)]' : 'text-white'}`}>
+                                {preset.nome}
+                              </p>
+                              {isActive && (
+                                <Badge className="bg-[var(--brand-yellow)] text-[var(--brand-black)] text-[10px] px-1.5 py-0">
+                                  Ativo
+                                </Badge>
+                              )}
+                            </div>
+                            {preset.is_default && (
+                              <Badge variant="secondary" className="mt-1 text-xs">
+                                Padrão
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex flex-shrink-0 gap-1">
+                            <Button
+                              onClick={() => handleApplyPreset(preset.id!)}
+                              disabled={saving || isActive}
+                              size="sm"
+                              variant="outline"
+                              className={`h-8 w-8 p-0 ${isActive ? 'border-[var(--brand-yellow)]/30 text-[var(--brand-yellow)]' : 'border-zinc-700'}`}
+                              title={isActive ? 'Preset já aplicado' : 'Aplicar preset'}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={() => handleDeletePreset(preset.id!, preset.nome)}
+                              disabled={saving}
+                              size="sm"
+                              variant="outline"
+                              className="h-8 w-8 p-0 border-zinc-700 hover:border-red-500 hover:text-red-500"
+                              title="Deletar preset"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex flex-shrink-0 gap-1">
-                          <Button
-                            onClick={() => handleApplyPreset(preset.id!)}
-                            disabled={saving}
-                            size="sm"
-                            variant="outline"
-                            className="h-8 w-8 p-0 border-zinc-700"
-                            title="Aplicar preset"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => handleDeletePreset(preset.id!, preset.nome)}
-                            disabled={saving}
-                            size="sm"
-                            variant="outline"
-                            className="h-8 w-8 p-0 border-zinc-700 hover:border-red-500 hover:text-red-500"
-                            title="Deletar preset"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
+                      )
+                    })
                   )}
                 </div>
               </div>

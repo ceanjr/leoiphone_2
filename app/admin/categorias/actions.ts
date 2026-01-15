@@ -33,6 +33,31 @@ export async function getCategorias() {
   return { categorias: data || [], error: null }
 }
 
+interface Categoria {
+  id: string
+  nome: string
+  slug: string
+  ativo: boolean
+  ordem: number
+}
+
+export async function getCategoriaById(id: string): Promise<{ categoria: Categoria | null; error: string | null }> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('categorias')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    logger.error('Erro ao buscar categoria:', error)
+    return { categoria: null, error: 'Categoria não encontrada' }
+  }
+
+  return { categoria: data as Categoria, error: null }
+}
+
 export async function createCategoria(data: { nome: string; descricao?: string; ativo?: boolean }) {
   const supabase = await createClient()
 

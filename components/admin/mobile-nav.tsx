@@ -3,57 +3,33 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
-import { Menu, X, LogOut, ExternalLink } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Menu, X, LogOut, Eye } from 'lucide-react'
 import { menuItems } from '@/components/admin/sidebar'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { logout } from '@/app/(auth)/login/actions'
-import { resetClient } from '@/lib/supabase/client'
+import { performLogout } from '@/lib/utils/auth-helpers'
 import logoImage from '@/public/images/logo.png'
 
 export function AdminMobileNav() {
   const [open, setOpen] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
 
   async function handleLogout() {
     setShowLogoutDialog(false)
     setOpen(false)
-
-    // Limpar localStorage e sessionStorage completamente antes do logout
-    try {
-      // Remover todos os itens relacionados ao Supabase do localStorage
-      const keysToRemove: string[] = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
-          keysToRemove.push(key)
-        }
-      }
-      keysToRemove.forEach(key => localStorage.removeItem(key))
-
-      // Limpar também sessionStorage
-      const sessionKeysToRemove: string[] = []
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i)
-        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
-          sessionKeysToRemove.push(key)
-        }
-      }
-      sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key))
-
-      // Resetar o singleton do Supabase client
-      resetClient()
-    } catch (e) {
-      console.error('Erro ao limpar storage:', e)
-    }
-
-    await logout()
+    await performLogout()
   }
 
   function handleNavigate() {
     setOpen(false)
+  }
+
+  function handleViewCatalog() {
+    setOpen(false)
+    router.push('/')
   }
 
   return (
@@ -111,19 +87,16 @@ export function AdminMobileNav() {
               })}
 
               {/* Catalog Link */}
-              <Link
-                href="/"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={handleNavigate}
-                className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-zinc-400 transition hover:text-white"
+              <button
+                type="button"
+                onClick={handleViewCatalog}
+                className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-zinc-400 transition hover:text-white"
               >
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400">
-                  <ExternalLink className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                 </span>
                 <span>Ver Catálogo</span>
-                <ExternalLink className="ml-auto h-3 w-3 text-zinc-600" />
-              </Link>
+              </button>
             </nav>
             <div className="border-t border-zinc-800/80 bg-zinc-950/90 px-4 py-3">
               <Button

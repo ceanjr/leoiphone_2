@@ -1,36 +1,58 @@
 'use client'
 
-/**
- * Lista de Produtos Admin - Versão Simplificada
- * Baseado no sriphone_2 que funciona perfeitamente
- */
-
 import { useState } from 'react'
-import Image from 'next/image'
-import { Edit, Trash2, Eye, EyeOff } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Edit, Trash2, Eye, EyeOff, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { deleteProduto, toggleProdutoAtivo } from '@/app/admin/produtos/actions'
 import type { ProdutoComCategoria } from '@/types/produto'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
-interface ProdutosTableSimpleProps {
-  produtos: ProdutoComCategoria[]
-  onEditProduto: (produtoId: string) => void
+interface ProductListAdminProps {
+  products: ProdutoComCategoria[]
+  onProductDeleted?: (productId: string) => void
 }
 
-export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSimpleProps) {
+export function ProductListAdmin({
+  products,
+  onProductDeleted,
+}: ProductListAdminProps) {
   const router = useRouter()
   const [deleting, setDeleting] = useState<string | null>(null)
   const [toggling, setToggling] = useState<string | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; nome: string }>({
+    open: false,
+    id: '',
+    nome: '',
+  })
 
-  const handleDelete = async (id: string, nome: string) => {
-    if (!confirm(`Tem certeza que deseja excluir "${nome}"?`)) return
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(price)
+  }
 
+  const handleDelete = async () => {
+    const { id, nome } = deleteDialog
+    setDeleteDialog({ open: false, id: '', nome: '' })
     setDeleting(id)
+
     try {
       const result = await deleteProduto(id)
       if (result.success) {
-        toast.success('Produto excluído com sucesso!')
+        toast.success(`"${nome}" excluído com sucesso!`)
+        onProductDeleted?.(id)
         router.refresh()
       } else {
         toast.error(result.error || 'Erro ao excluir produto')
@@ -59,14 +81,11 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
     }
   }
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(price)
+  const openDeleteDialog = (id: string, nome: string) => {
+    setDeleteDialog({ open: true, id, nome })
   }
 
-  if (produtos.length === 0) {
+  if (products.length === 0) {
     return (
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-12 text-center">
         <p className="text-zinc-400">Nenhum produto encontrado.</p>
@@ -82,69 +101,63 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
           <table className="w-full">
             <thead className="border-b border-zinc-800 bg-zinc-950">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
-                  Imagem
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
+                  Código
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
                   Nome
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
                   Preço
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-400">
                   Status
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-400">
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-400">
                   Ações
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800">
-              {produtos.map((produto) => (
-                <tr key={produto.id} className="transition-colors hover:bg-zinc-800/50">
-                  <td className="px-6 py-4">
-                    <div className="relative h-12 w-12 overflow-hidden rounded bg-zinc-950">
-                      {produto.foto_principal ? (
-                        <Image
-                          src={produto.foto_principal}
-                          alt={produto.nome}
-                          fill
-                          className="object-cover"
-                          sizes="48px"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-zinc-600">
-                          N/A
-                        </div>
-                      )}
-                    </div>
+              {products.map((product) => (
+                <tr key={product.id} className="transition-colors hover:bg-zinc-800/50">
+                  <td className="px-4 py-3">
+                    <span className="font-mono text-sm text-zinc-400">
+                      {product.codigo_produto || '-'}
+                    </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <div>
-                      <p className="font-medium text-white">{produto.nome}</p>
+                      <Link
+                        href={`/produto/${product.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group flex items-center gap-1 font-medium text-white hover:text-yellow-400"
+                      >
+                        {product.nome}
+                        <ExternalLink className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                      </Link>
                       <p className="text-xs text-zinc-500">
-                        {produto.categoria?.nome || '-'}
-                        {produto.codigo_produto && ` • ${produto.codigo_produto}`}
+                        {product.categoria?.nome || '-'}
                       </p>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <span className="font-semibold text-white">
-                      {formatPrice(produto.preco)}
+                      {formatPrice(product.preco)}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <button
-                      onClick={() => handleToggleActive(produto.id, produto.ativo)}
-                      disabled={toggling === produto.id}
+                      onClick={() => handleToggleActive(product.id, product.ativo)}
+                      disabled={toggling === product.id}
                       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                        produto.ativo
+                        product.ativo
                           ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
                           : 'bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20'
                       }`}
                     >
-                      {produto.ativo ? (
+                      {product.ativo ? (
                         <>
                           <Eye className="h-3 w-3" />
                           Ativo
@@ -157,18 +170,18 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
                       )}
                     </button>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => onEditProduto(produto.id)}
+                      <Link
+                        href={`/admin/produtos/${product.id}/editar`}
                         className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-yellow-400"
                         title="Editar"
                       >
                         <Edit className="h-4 w-4" />
-                      </button>
+                      </Link>
                       <button
-                        onClick={() => handleDelete(produto.id, produto.nome)}
-                        disabled={deleting === produto.id}
+                        onClick={() => openDeleteDialog(product.id, product.nome)}
+                        disabled={deleting === product.id}
                         className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                         title="Excluir"
                       >
@@ -185,59 +198,44 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
 
       {/* Mobile Cards View */}
       <div className="space-y-4 md:hidden">
-        {produtos.map((produto) => (
+        {products.map((product) => (
           <div
-            key={produto.id}
+            key={product.id}
             className="rounded-lg border border-zinc-800 bg-zinc-900 p-4"
           >
-            {/* Product Header with Image and Info */}
-            <div className="flex gap-4">
-              {/* Image */}
-              <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded bg-zinc-950">
-                {produto.foto_principal ? (
-                  <Image
-                    src={produto.foto_principal}
-                    alt={produto.nome}
-                    fill
-                    className="object-cover"
-                    sizes="80px"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-zinc-600">
-                    N/A
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-zinc-500">
-                  {produto.categoria?.nome || '-'}
-                  {produto.codigo_produto && ` • ${produto.codigo_produto}`}
-                </p>
-                <h3 className="mt-1 font-semibold text-white line-clamp-2">
-                  {produto.nome}
-                </h3>
-                <p className="mt-2 text-xl font-bold text-white">
-                  {formatPrice(produto.preco)}
-                </p>
-              </div>
+            {/* Product Info */}
+            <div>
+              <p className="text-xs text-zinc-500">
+                {product.categoria?.nome || '-'}
+                {product.codigo_produto && ` • ${product.codigo_produto}`}
+              </p>
+              <Link
+                href={`/produto/${product.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 flex items-center gap-1 font-semibold text-white hover:text-yellow-400"
+              >
+                <span className="line-clamp-2">{product.nome}</span>
+                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+              </Link>
+              <p className="mt-2 text-xl font-bold text-white">
+                {formatPrice(product.preco)}
+              </p>
             </div>
 
             {/* Actions Row */}
             <div className="mt-4 flex items-center justify-between gap-2 border-t border-zinc-800 pt-4">
               {/* Status Button */}
               <button
-                onClick={() => handleToggleActive(produto.id, produto.ativo)}
-                disabled={toggling === produto.id}
+                onClick={() => handleToggleActive(product.id, product.ativo)}
+                disabled={toggling === product.id}
                 className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                  produto.ativo
+                  product.ativo
                     ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
                     : 'bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20'
                 }`}
               >
-                {produto.ativo ? (
+                {product.ativo ? (
                   <>
                     <Eye className="h-4 w-4" />
                     Ativo
@@ -252,17 +250,17 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
 
               {/* Edit and Delete Buttons */}
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => onEditProduto(produto.id)}
+                <Link
+                  href={`/admin/produtos/${product.id}/editar`}
                   className="flex items-center gap-1 rounded-md bg-yellow-500/10 px-3 py-2 text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
                 >
                   <Edit className="h-4 w-4" />
                   Editar
-                </button>
+                </Link>
 
                 <button
-                  onClick={() => handleDelete(produto.id, produto.nome)}
-                  disabled={deleting === produto.id}
+                  onClick={() => openDeleteDialog(product.id, product.nome)}
+                  disabled={deleting === product.id}
                   className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                   title="Excluir"
                 >
@@ -273,6 +271,30 @@ export function ProdutosTableSimple({ produtos, onEditProduto }: ProdutosTableSi
           </div>
         ))}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, id: '', nome: '' })}>
+        <AlertDialogContent className="border-zinc-800 bg-zinc-900">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Excluir produto?</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              Tem certeza que deseja excluir <strong className="text-white">&quot;{deleteDialog.nome}&quot;</strong>?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

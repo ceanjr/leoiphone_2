@@ -2,7 +2,8 @@
 import { logger } from '@/lib/utils/logger'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, GripVertical, Eye, EyeOff, Search, X, Download } from 'lucide-react'
+import { Plus, Edit, Search, X, Download } from 'lucide-react'
+import { BannerList } from '@/components/admin/banners/banner-list'
 import Image from 'next/image'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+// ConfirmDialog removido - agora está no BannerList
 import { ImageUpload } from '@/components/admin/image-upload'
 import { Badge } from '@/components/ui/badge'
 import { ExportCardDialog } from '@/components/admin/export-card-dialog'
@@ -21,9 +22,6 @@ import {
   getBanners,
   createBanner,
   updateBanner,
-  deleteBanner,
-  updateOrdemBanner,
-  toggleBannerAtivo,
 } from './actions'
 
 interface Banner {
@@ -53,9 +51,7 @@ export default function BannersPage() {
   const [banners, setBanners] = useState<Banner[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
-  const [bannerToDelete, setBannerToDelete] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     titulo: '',
     subtitulo: '',
@@ -233,47 +229,7 @@ export default function BannersPage() {
     setSaving(false)
   }
 
-  async function handleDelete() {
-    if (!bannerToDelete) return
-
-    const result = await deleteBanner(bannerToDelete)
-    if (result.success) {
-      toast.success('Banner excluído com sucesso!')
-      setDeleteDialogOpen(false)
-      setBannerToDelete(null)
-      loadBanners()
-    } else {
-      toast.error(result.error || 'Erro ao excluir banner')
-    }
-  }
-
-  async function handleToggleAtivo(id: string, ativo: boolean) {
-    const result = await toggleBannerAtivo(id, !ativo)
-    if (result.success) {
-      toast.success(ativo ? 'Banner desativado' : 'Banner ativado')
-      loadBanners()
-    } else {
-      toast.error(result.error || 'Erro ao alterar status')
-    }
-  }
-
-  async function moveBanner(index: number, direction: 'up' | 'down') {
-    if (direction === 'up' && index === 0) return
-    if (direction === 'down' && index === banners.length - 1) return
-
-    const newIndex = direction === 'up' ? index - 1 : index + 1
-    const newBanners = [...banners]
-    const temp = newBanners[index]
-    newBanners[index] = newBanners[newIndex]
-    newBanners[newIndex] = temp
-
-    setBanners(newBanners)
-
-    await updateOrdemBanner(newBanners[index].id, index + 1)
-    await updateOrdemBanner(newBanners[newIndex].id, newIndex + 1)
-
-    toast.success('Ordem atualizada')
-  }
+  // handleDelete, handleToggleAtivo, moveBanner movidos para BannerList
 
   async function handleOpenExportDialog(banner: Banner) {
     if (banner.tipo !== 'produtos_destaque' || !banner.produtos_destaque.length) {
@@ -358,151 +314,8 @@ export default function BannersPage() {
         </Button>
       </div>
 
-      {banners.length === 0 ? (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8 text-center md:p-12">
-          <p className="text-zinc-400">Nenhum banner cadastrado ainda.</p>
-          <p className="mt-2 text-sm text-zinc-500">
-            Clique em &quot;Novo Banner&quot; para adicionar o primeiro banner.
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Ordem</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Preview</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Título</th>
-                  <th className="hidden px-4 py-3 text-left text-sm font-medium text-zinc-400 md:table-cell">
-                    Subtítulo
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-zinc-400">Status</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium text-zinc-400">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {banners.map((banner, index) => (
-                  <tr key={banner.id} className="border-b border-zinc-800 hover:bg-zinc-800/50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <GripVertical className="h-4 w-4 text-zinc-600" />
-                        <div className="flex flex-col gap-1">
-                          <button
-                            onClick={() => moveBanner(index, 'up')}
-                            disabled={index === 0}
-                            className="text-zinc-500 hover:text-white disabled:opacity-30"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            onClick={() => moveBanner(index, 'down')}
-                            disabled={index === banners.length - 1}
-                            className="text-zinc-500 hover:text-white disabled:opacity-30"
-                          >
-                            ↓
-                          </button>
-                        </div>
-                        <span className="text-sm text-zinc-500">{banner.ordem}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {banner.tipo === 'produtos_destaque' ? (
-                        <div className="flex h-16 w-28 items-center justify-center rounded-md border border-zinc-800 bg-zinc-950">
-                          <div className="text-center">
-                            <span className="text-2xl">🔥</span>
-                            <div className="text-[10px] text-zinc-500">
-                              {banner.produtos_destaque?.length || 0} produtos
-                            </div>
-                          </div>
-                        </div>
-                      ) : banner.imagem_url ? (
-                        <div className="relative h-16 w-28 overflow-hidden rounded-md bg-zinc-950">
-                          <Image
-                            src={banner.imagem_url}
-                            alt={banner.titulo}
-                            fill
-                            className="object-cover"
-                            sizes="112px"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-16 w-28 items-center justify-center rounded-md border border-zinc-800 bg-zinc-950">
-                          <span className="text-xs text-zinc-600">Sem imagem</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-white">{banner.titulo}</div>
-                    </td>
-                    <td className="hidden px-4 py-3 md:table-cell">
-                      <p className="max-w-xs truncate text-sm text-zinc-400">
-                        {banner.subtitulo || '-'}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleToggleAtivo(banner.id, banner.ativo)}
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold transition-colors ${
-                          banner.ativo
-                            ? 'bg-green-900/30 text-green-400 hover:bg-green-900/40'
-                            : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'
-                        }`}
-                      >
-                        {banner.ativo ? (
-                          <>
-                            <Eye className="mr-1 h-3 w-3" />
-                            Ativo
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="mr-1 h-3 w-3" />
-                            Inativo
-                          </>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        {banner.tipo === 'produtos_destaque' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenExportDialog(banner)}
-                            className="h-8 w-8 text-zinc-400 hover:text-yellow-400"
-                            title="Exportar Cards"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenDialog(banner)}
-                          className="h-8 w-8 text-zinc-400 hover:text-white"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setBannerToDelete(banner.id)
-                            setDeleteDialogOpen(true)
-                          }}
-                          className="h-8 w-8 text-zinc-400 hover:text-red-400"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Banner List com Drag-and-Drop */}
+      <BannerList banners={banners} onEdit={handleOpenDialog} />
 
       {/* Dialog Criar/Editar */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -1101,18 +914,6 @@ export default function BannersPage() {
           </div>
         </DialogContent>
       </Dialog>
-      {/* Dialog Confirmar Exclusão */}
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title="Excluir banner"
-        description="Tem certeza que deseja excluir este banner? Esta ação não pode ser desfeita."
-        confirmText="Excluir"
-        cancelText="Cancelar"
-        onConfirm={handleDelete}
-        variant="destructive"
-      />
-
       {/* Dialog de Exportação de Cards */}
       <ExportCardDialog
         open={exportDialogOpen}

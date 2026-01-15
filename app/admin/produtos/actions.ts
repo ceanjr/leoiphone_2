@@ -5,7 +5,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { produtoSchema } from '@/lib/validations/produto'
-import type { ProdutoFormData } from '@/types/produto'
+import type { ProdutoFormData, ProdutoComCategoria } from '@/types/produto'
 import { createLogger } from '@/lib/utils/logger'
 
 const logger = createLogger('ProdutosActions')
@@ -42,7 +42,7 @@ export async function getProdutos() {
   return { produtos: data || [], error: null }
 }
 
-export async function getProdutoById(id: string) {
+export async function getProdutoById(id: string): Promise<{ produto: ProdutoComCategoria | null; error: string | null }> {
   const supabase = await createClient()
 
   const { data, error } = await supabase
@@ -57,7 +57,7 @@ export async function getProdutoById(id: string) {
     return { produto: null, error: 'Produto não encontrado' }
   }
 
-  return { produto: data, error: null }
+  return { produto: data as unknown as ProdutoComCategoria, error: null }
 }
 
 export async function createProduto(data: ProdutoFormData) {

@@ -76,7 +76,6 @@ export function OptimizedImage({
       loading={priority ? 'eager' : loading || 'lazy'}
       placeholder={finalPlaceholder}
       blurDataURL={finalBlurDataURL}
-      unoptimized
       fetchPriority={fetchPriority || (priority ? 'high' : 'auto')}
     />
   )

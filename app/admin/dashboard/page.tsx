@@ -6,21 +6,13 @@ import Image from 'next/image'
 import {
   Package,
   Eye,
-  TrendingUp,
-  DollarSign,
   RefreshCw,
   Users,
   Activity,
-  RotateCcw,
-  Shuffle,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
-import { SiteMetricsCard } from '@/components/admin/site-metrics-card'
-import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { zerarVisualizacoes, aleatorizarProdutosRelacionados } from './actions'
-import { toast } from 'sonner'
 
 interface ProdutoView {
   id: string
@@ -50,11 +42,8 @@ interface AnalyticsStats {
   usuariosOnline: number
   visitantesHoje: number
   visitantesMes: number
-  conversoesHoje: number
-  conversoesMes: number
   totalProdutos: number
   produtosAtivos: number
-  totalVisualizacoes: number
   topProdutos: ProdutoView[]
   bannersDestaque: BannerHighlight[]
 }
@@ -66,21 +55,14 @@ export default function DashboardPage() {
     usuariosOnline: 0,
     visitantesHoje: 0,
     visitantesMes: 0,
-    conversoesHoje: 0,
-    conversoesMes: 0,
     totalProdutos: 0,
     produtosAtivos: 0,
-    totalVisualizacoes: 0,
     topProdutos: [],
     bannersDestaque: [],
   })
   const [period, setPeriod] = useState<PeriodFilter>('today')
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
-  const [zerandoViews, setZerandoViews] = useState(false)
-  const [showZerarDialog, setShowZerarDialog] = useState(false)
-  const [aleatorizando, setAleatorizando] = useState(false)
-  const [showAleatorizarDialog, setShowAleatorizarDialog] = useState(false)
 
   const loadStats = useCallback(async () => {
     const supabase = createClient()
@@ -96,11 +78,8 @@ export default function DashboardPage() {
       usuariosOnlineRes,
       visitantesHojeRes,
       visitantesMesRes,
-      conversoesHojeRes,
-      conversoesMesRes,
       totalProdutosRes,
       produtosAtivosRes,
-      visualizacoesRes,
       topProdutosRes,
       bannersDestaqueRes,
     ] = await Promise.all([
@@ -136,32 +115,6 @@ export default function DashboardPage() {
           return { count: 0 }
         }),
 
-      // Conversões únicas hoje (cliques no WhatsApp)
-      supabase
-        .from('conversions')
-        .select('visitor_id', { count: 'exact', head: false })
-        .gte('created_at', startOfToday.toISOString())
-        .then((res) => {
-          if (res.data) {
-            const unique = new Set(res.data.map((r: any) => r.visitor_id))
-            return { count: unique.size }
-          }
-          return { count: 0 }
-        }),
-
-      // Conversões únicas no mês
-      supabase
-        .from('conversions')
-        .select('visitor_id', { count: 'exact', head: false })
-        .gte('created_at', startOfMonth.toISOString())
-        .then((res) => {
-          if (res.data) {
-            const unique = new Set(res.data.map((r: any) => r.visitor_id))
-            return { count: unique.size }
-          }
-          return { count: 0 }
-        }),
-
       // Total produtos
       supabase.from('produtos').select('id', { count: 'exact', head: true }).is('deleted_at', null),
 
@@ -171,9 +124,6 @@ export default function DashboardPage() {
         .select('id', { count: 'exact', head: true })
         .eq('ativo', true)
         .is('deleted_at', null),
-
-      // Total visualizações
-      supabase.from('produtos').select('visualizacoes_total').is('deleted_at', null),
 
       // Top 5 produtos
       supabase
@@ -190,12 +140,6 @@ export default function DashboardPage() {
         .eq('ativo', true)
         .eq('tipo', 'produtos_destaque'),
     ])
-
-    const totalVisualizacoes =
-      visualizacoesRes.data?.reduce(
-        (acc: number, curr: any) => acc + (curr.visualizacoes_total || 0),
-        0
-      ) || 0
 
     const bannersDestaqueData = (bannersDestaqueRes.data ?? []) as Array<{
       id: string
@@ -306,11 +250,8 @@ export default function DashboardPage() {
       usuariosOnline: usuariosOnlineRes.count || 0,
       visitantesHoje: visitantesHojeRes.count || 0,
       visitantesMes: visitantesMesRes.count || 0,
-      conversoesHoje: conversoesHojeRes.count || 0,
-      conversoesMes: conversoesMesRes.count || 0,
       totalProdutos: totalProdutosRes.count || 0,
       produtosAtivos: produtosAtivosRes.count || 0,
-      totalVisualizacoes,
       topProdutos: (topProdutosRes.data as ProdutoView[]) || [],
       bannersDestaque,
     })
@@ -325,37 +266,6 @@ export default function DashboardPage() {
     const interval = setInterval(loadStats, 10000)
     return () => clearInterval(interval)
   }, [loadStats])
-
-  const handleZerarVisualizacoes = async () => {
-    setZerandoViews(true)
-    setShowZerarDialog(false)
-
-    const result = await zerarVisualizacoes()
-
-    if (result.success) {
-      toast.success(result.message)
-      await loadStats() // Recarregar estatísticas
-    } else {
-      toast.error(result.error || 'Erro ao zerar visualizações')
-    }
-
-    setZerandoViews(false)
-  }
-
-  const handleAleatorizarRelacionados = async () => {
-    setAleatorizando(true)
-    setShowAleatorizarDialog(false)
-
-    const result = await aleatorizarProdutosRelacionados()
-
-    if (result.success) {
-      toast.success(result.message)
-    } else {
-      toast.error(result.error || 'Erro ao aleatorizar produtos')
-    }
-
-    setAleatorizando(false)
-  }
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('pt-BR', {
@@ -379,9 +289,6 @@ export default function DashboardPage() {
   }
 
   const displayVisitors = period === 'today' ? stats.visitantesHoje : stats.visitantesMes
-  const displayConversoes = period === 'today' ? stats.conversoesHoje : stats.conversoesMes
-  const conversionRate =
-    displayVisitors > 0 ? ((displayConversoes / displayVisitors) * 100).toFixed(1) : '0.0'
 
   const isProduction =
     typeof window !== 'undefined' &&
@@ -408,55 +315,11 @@ export default function DashboardPage() {
             Atualizado às {formatTime(lastUpdate)} • Atualização automática a cada 10s
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={loadStats} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            <span className="hidden sm:inline">Atualizar</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAleatorizarDialog(true)}
-            disabled={aleatorizando}
-            className="gap-2 border-blue-500/20 text-blue-500 hover:bg-blue-500/10 hover:text-blue-400"
-          >
-            <Shuffle className="h-4 w-4" />
-            <span className="hidden lg:inline">Aleatorizar</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowZerarDialog(true)}
-            disabled={zerandoViews}
-            className="gap-2 border-red-500/20 text-red-500 hover:bg-red-500/10 hover:text-red-400"
-          >
-            <RotateCcw className="h-4 w-4" />
-            <span className="hidden lg:inline">Zerar Views</span>
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={loadStats} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          <span className="hidden sm:inline">Atualizar</span>
+        </Button>
       </div>
-
-      {/* Dialog de confirmação - Zerar Views */}
-      <ConfirmDialog
-        open={showZerarDialog}
-        onOpenChange={setShowZerarDialog}
-        onConfirm={handleZerarVisualizacoes}
-        title="Zerar Visualizações"
-        description="Tem certeza que deseja zerar as visualizações de TODOS os produtos? Esta ação não pode ser desfeita."
-        confirmText="Zerar Visualizações"
-        variant="destructive"
-      />
-
-      {/* Dialog de confirmação - Aleatorizar */}
-      <ConfirmDialog
-        open={showAleatorizarDialog}
-        onOpenChange={setShowAleatorizarDialog}
-        onConfirm={handleAleatorizarRelacionados}
-        title="Aleatorizar Produtos Relacionados"
-        description="Isso irá gerar uma nova ordem aleatória para os produtos relacionados em todo o site. Os usuários verão diferentes sugestões."
-        confirmText="Aleatorizar"
-        variant="default"
-      />
 
       {/* Métricas em tempo real */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -515,55 +378,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Outras métricas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-zinc-800 bg-zinc-900">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">
-              Visualizações Totais
-            </CardTitle>
-            <Eye className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {stats.totalVisualizacoes.toLocaleString('pt-BR')}
-            </div>
-            <p className="text-xs text-zinc-500">Todos os produtos</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-800 bg-zinc-900">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Taxa de Conversão</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{conversionRate}%</div>
-            <p className="text-xs text-zinc-500">
-              {displayConversoes} conversões de {displayVisitors} visitantes
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-zinc-800 bg-zinc-900">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Receita Potencial</CardTitle>
-            <DollarSign className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">
-              {stats.topProdutos
-                .reduce((acc, produto) => acc + produto.preco, 0)
-                .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </div>
-            <p className="text-xs text-zinc-500">Top 5 produtos</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Métricas do Site */}
-      <SiteMetricsCard onRefresh={loadStats} />
 
       {/* Performance dos banners de produtos em destaque */}
       <Card className="border-zinc-800 bg-zinc-900">

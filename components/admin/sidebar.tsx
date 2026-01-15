@@ -3,22 +3,21 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   Package,
   FolderTree,
   Image as ImageIcon,
   LogOut,
-  ExternalLink,
+  Eye,
   Calculator,
-  Store,
+  Link2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { logout } from '@/app/(auth)/login/actions'
-import { resetClient } from '@/lib/supabase/client'
+import { performLogout } from '@/lib/utils/auth-helpers'
 import logoImage from '@/public/images/logo.png'
 
 export const menuItems = [
@@ -48,49 +47,24 @@ export const menuItems = [
     href: '/admin/taxas',
   },
   {
-    title: 'Anúncios',
-    icon: Store,
-    href: '/admin/anuncios',
+    title: 'Produtos Relacionados',
+    icon: Link2,
+    href: '/admin/produtos-relacionados',
   },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   async function handleLogout() {
     setShowLogoutDialog(false)
+    await performLogout()
+  }
 
-    // Limpar localStorage e sessionStorage completamente antes do logout
-    try {
-      // Remover todos os itens relacionados ao Supabase do localStorage
-      const keysToRemove: string[] = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
-          keysToRemove.push(key)
-        }
-      }
-      keysToRemove.forEach(key => localStorage.removeItem(key))
-
-      // Limpar também sessionStorage
-      const sessionKeysToRemove: string[] = []
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i)
-        if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
-          sessionKeysToRemove.push(key)
-        }
-      }
-      sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key))
-
-      // Resetar o singleton do Supabase client
-      resetClient()
-    } catch (e) {
-      console.error('Erro ao limpar storage:', e)
-    }
-
-    // Agora fazer o logout no servidor
-    await logout()
+  function handleViewCatalog() {
+    router.push('/')
   }
 
   return (
@@ -136,14 +110,14 @@ export function Sidebar() {
         <div className="my-2 border-t border-zinc-800" />
 
         {/* Catalog Link */}
-        <Link
-          href="/"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white"
+        <button
+          type="button"
+          onClick={handleViewCatalog}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white"
         >
-          <ExternalLink className="h-5 w-5" />
+          <Eye className="h-5 w-5" />
           Ver Catálogo
-        </Link>
+        </button>
       </nav>
 
       {/* Logout */}

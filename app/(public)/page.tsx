@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { usePollingProdutos } from '@/hooks/use-polling-produtos'
-import { useAuth } from '@/hooks/use-auth'
 import { useHomeFilters } from '@/hooks/use-home-filters'
 import { useHomeData } from '@/hooks/use-home-data'
 import { useProdutosAgrupados } from '@/hooks/use-produtos-agrupados'
@@ -32,9 +31,6 @@ export default function HomePage() {
 }
 
 function HomePageContent() {
-  // Autenticação
-  const { isAuthenticated } = useAuth()
-
   // Filtros e URL params
   const {
     busca,
@@ -54,9 +50,8 @@ function HomePageContent() {
     categorias,
     secoes,
     produtosEmDestaqueIds,
-    custosPorProduto,
     loading,
-  } = useHomeData(isAuthenticated)
+  } = useHomeData()
 
   // Agrupamento e paginação
   const { produtosAgrupados, carregarMais, loadingMore, temMaisProdutos } = useProdutosAgrupados(
@@ -226,8 +221,6 @@ function HomePageContent() {
                     view={viewMode}
                     priority={index < 3}
                     returnParams={returnParams}
-                    custos={custosPorProduto[produto.id] || []}
-                    isAuthenticated={isAuthenticated}
                   />
                 ))}
               </div>
@@ -257,8 +250,6 @@ function HomePageContent() {
               produtosAgrupados={produtosAgrupados}
               viewMode={viewMode}
               returnParams={returnParams}
-              custosPorProduto={custosPorProduto}
-              isAuthenticated={isAuthenticated}
             />
 
             <VerMaisButton
