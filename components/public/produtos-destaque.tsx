@@ -105,10 +105,7 @@ function ProdutosDestaqueComponent({
             {subtitulo && <p className="px-8 text-sm text-zinc-400">{subtitulo}</p>}
           </div>
           {countdownEndsAt && (
-            <CountdownTimer
-              endDate={countdownEndsAt}
-              onExpire={handleCountdownExpire}
-            />
+            <CountdownTimer endDate={countdownEndsAt} onExpire={handleCountdownExpire} />
           )}
         </div>
       </div>

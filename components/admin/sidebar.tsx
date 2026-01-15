@@ -55,16 +55,11 @@ export const menuItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   async function handleLogout() {
     setShowLogoutDialog(false)
     await performLogout()
-  }
-
-  function handleViewCatalog() {
-    router.push('/')
   }
 
   return (
@@ -110,14 +105,13 @@ export function Sidebar() {
         <div className="my-2 border-t border-zinc-800" />
 
         {/* Catalog Link */}
-        <button
-          type="button"
-          onClick={handleViewCatalog}
+        <Link
+          href="/"
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-900 hover:text-white"
         >
           <Eye className="h-5 w-5" />
           Ver Catálogo
-        </button>
+        </Link>
       </nav>
 
       {/* Logout */}

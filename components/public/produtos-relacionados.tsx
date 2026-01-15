@@ -10,14 +10,31 @@ interface ProdutosRelacionadosProps {
   categoriaId: string
 }
 
-function ProdutosRelacionadosComponent({
-  produtoId,
-  categoriaId,
-}: ProdutosRelacionadosProps) {
+function ProdutosRelacionadosComponent({ produtoId, categoriaId }: ProdutosRelacionadosProps) {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [loading, setLoading] = useState(true)
+  const [enabled, setEnabled] = useState(true)
 
   useEffect(() => {
+    // Verificar se produtos relacionados estão habilitados
+    const checkEnabled = () => {
+      try {
+        const stored = localStorage.getItem('produtos_relacionados_enabled')
+        setEnabled(stored === null || stored === 'true')
+      } catch {
+        setEnabled(true)
+      }
+    }
+
+    checkEnabled()
+  }, [])
+
+  useEffect(() => {
+    if (!enabled) {
+      setLoading(false)
+      return
+    }
+
     async function loadProdutosRelacionados() {
       try {
         logger.info('[ProdutosRelacionados] Carregando...', { produtoId, categoriaId })
@@ -43,7 +60,12 @@ function ProdutosRelacionadosComponent({
     }
 
     loadProdutosRelacionados()
-  }, [produtoId, categoriaId])
+  }, [produtoId, categoriaId, enabled])
+
+  // Não exibir se desabilitado
+  if (!enabled) {
+    return null
+  }
 
   const formatPreco = (preco: number) => {
     return new Intl.NumberFormat('pt-BR', {

@@ -10,22 +10,18 @@ export const metadata = {
 }
 
 export default async function ProdutosPage() {
-  const [{ produtos }, { categorias }] = await Promise.all([
-    getProdutos(),
-    getCategorias(),
-  ])
+  const [{ produtos }, { categorias }] = await Promise.all([getProdutos(), getCategorias()])
 
   return (
     <div className="min-h-screen bg-black">
-      <Header
-        title="Produtos"
-        description="Gerencie o catálogo de produtos"
-      />
+      <Header title="Produtos" description="Gerencie o catálogo de produtos" />
 
-      <div className="p-4 md:p-6">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Barra fixa com contador e botão (sticky apenas em mobile) */}
+      <div className="sticky top-[64px] z-20 border-b border-zinc-800 bg-black px-4 py-4 backdrop-blur-sm md:static md:px-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-zinc-400">
-            {produtos.length} produto{produtos.length !== 1 ? 's' : ''} cadastrado{produtos.length !== 1 ? 's' : ''}
+            {produtos.length} produto{produtos.length !== 1 ? 's' : ''} cadastrado
+            {produtos.length !== 1 ? 's' : ''}
           </p>
 
           <Link
@@ -40,7 +36,9 @@ export default async function ProdutosPage() {
             Novo Produto
           </Link>
         </div>
+      </div>
 
+      <div className="p-4 md:p-6">
         <ProductsContent products={produtos} categories={categorias} />
       </div>
     </div>

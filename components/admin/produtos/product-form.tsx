@@ -21,17 +21,12 @@ import { CustosManager } from './custos-manager'
 import { ColorBadge } from '@/components/shared/color-badge'
 import { useIPhoneColors } from '@/hooks/use-iphone-colors'
 import { useDebounce } from '@/hooks/use-debounce'
-import {
-  createProduto,
-  updateProduto,
-} from '@/app/admin/produtos/actions'
-import {
-  getProdutoCustos,
-  substituirProdutoCustos,
-} from '@/app/admin/produtos/custos-actions'
+import { createProduto, updateProduto } from '@/app/admin/produtos/actions'
+import { getProdutoCustos, substituirProdutoCustos } from '@/app/admin/produtos/custos-actions'
 import type { ProdutoFormData } from '@/lib/validations/produto'
 import type { ProdutoComCategoria } from '@/types/produto'
 import { logger } from '@/lib/utils/logger'
+import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 interface Categoria {
   id: string
@@ -65,6 +60,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingCustos, setIsLoadingCustos] = useState(isEditing)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [formData, setFormData] = useState<Partial<ProdutoFormData>>(() => {
     if (product) {
       // Migrar cor_oficial (legado) para cores (novo array) se necessário
@@ -92,7 +88,9 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     }
     return getEmptyForm()
   })
-  const [custos, setCustos] = useState<{ custo: number; estoque: number; codigo: string | null }[]>([])
+  const [custos, setCustos] = useState<{ custo: number; estoque: number; codigo: string | null }[]>(
+    []
+  )
   const [customColorInput, setCustomColorInput] = useState('')
 
   // Track uploaded images for cleanup on cancel
@@ -128,9 +126,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
   // Track newly uploaded images
   useEffect(() => {
     const currentImages = formData.fotos || []
-    const newImages = currentImages.filter(
-      (img) => !initialImagesRef.current.includes(img)
-    )
+    const newImages = currentImages.filter((img) => !initialImagesRef.current.includes(img))
     uploadedImagesRef.current = newImages
   }, [formData.fotos])
 
@@ -184,7 +180,11 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
   // Cleanup uploaded images on cancel
   const handleCancel = async () => {
-    // TODO: Implement cleanup of newly uploaded images
+    setShowCancelDialog(true)
+  }
+
+  const confirmCancel = () => {
+    setShowCancelDialog(false)
     router.push('/admin/produtos')
   }
 
@@ -240,25 +240,23 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       if (produtoIdFinal) {
         const custosValidos = custos.filter((c) => c.custo >= 0 && c.estoque > 0)
 
-        const { error: custosError } = await substituirProdutoCustos(
-          produtoIdFinal,
-          custosValidos
-        )
+        const { error: custosError } = await substituirProdutoCustos(produtoIdFinal, custosValidos)
 
         if (custosError) {
           logger.error('Erro ao salvar custos:', custosError)
           toast.error(`Produto salvo, mas erro ao salvar custos: ${custosError}`)
-          setIsLoading(false)
-          return
+          // Não retornar aqui - produto foi salvo, apenas custos falharam
         }
       }
 
       toast.success(isEditing ? 'Produto atualizado!' : 'Produto cadastrado!')
+
+      // Redirecionar para a lista de produtos
       router.push('/admin/produtos')
-      router.refresh()
     } catch (error) {
       logger.error('Erro ao salvar produto:', error)
       toast.error('Erro inesperado ao salvar o produto')
+    } finally {
       setIsLoading(false)
     }
   }
@@ -269,9 +267,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       <section className="space-y-4">
         <div>
           <h3 className="text-lg font-semibold text-white">Fotos do Produto *</h3>
-          <p className="text-sm text-zinc-400">
-            A primeira imagem será usada como foto principal.
-          </p>
+          <p className="text-sm text-zinc-400">A primeira imagem será usada como foto principal.</p>
         </div>
 
         <ImageUpload
@@ -292,9 +288,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       <section className="space-y-4">
         <div>
           <h3 className="text-lg font-semibold text-white">Informações Básicas</h3>
-          <p className="text-sm text-zinc-400">
-            Dados exibidos no catálogo e página do produto.
-          </p>
+          <p className="text-sm text-zinc-400">Dados exibidos no catálogo e página do produto.</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -305,9 +299,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             <Input
               id="codigo_produto"
               value={formData.codigo_produto ?? ''}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, codigo_produto: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, codigo_produto: e.target.value }))}
               disabled={isLoading}
               className="border-zinc-800 bg-zinc-950 text-white"
             />
@@ -321,9 +313,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               id="nome"
               required
               value={formData.nome ?? ''}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, nome: e.target.value }))
-              }
+              onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
               disabled={isLoading}
               className="border-zinc-800 bg-zinc-950 text-white"
             />
@@ -399,9 +389,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             <Label className="text-zinc-200">Categoria *</Label>
             <Select
               value={formData.categoria_id ?? ''}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, categoria_id: value }))
-              }
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, categoria_id: value }))}
             >
               <SelectTrigger className="border-zinc-800 bg-zinc-950 text-white">
                 <SelectValue placeholder="Selecione uma categoria" />
@@ -502,9 +490,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               Preencha o nome do produto para habilitar este campo
             </p>
           ) : isIPhone && availableColors.length > 0 && availableColorsFiltered.length === 0 ? (
-            <p className="text-sm text-zinc-400">
-              ✓ Todas as cores oficiais já foram adicionadas
-            </p>
+            <p className="text-sm text-zinc-400">✓ Todas as cores oficiais já foram adicionadas</p>
           ) : isIPhone && availableColorsFiltered.length > 0 ? (
             <Select value="" onValueChange={handleAddColor} disabled={isLoading}>
               <SelectTrigger className="border-zinc-800 bg-zinc-950 text-white">
@@ -551,9 +537,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           <Textarea
             id="descricao"
             value={formData.descricao ?? ''}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, descricao: e.target.value }))
-            }
+            onChange={(e) => setFormData((prev) => ({ ...prev, descricao: e.target.value }))}
             disabled={isLoading}
             className="min-h-[100px] border-zinc-800 bg-zinc-950 text-white"
             rows={4}
@@ -580,9 +564,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       <section className="space-y-4">
         <div>
           <h3 className="text-lg font-semibold text-white">Acessórios Inclusos</h3>
-          <p className="text-sm text-zinc-400">
-            Marque os itens que acompanham o produto.
-          </p>
+          <p className="text-sm text-zinc-400">Marque os itens que acompanham o produto.</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
@@ -605,7 +587,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                 }
                 disabled={isLoading}
               />
-              <span className="text-sm font-medium capitalize text-zinc-200">
+              <span className="text-sm font-medium text-zinc-200 capitalize">
                 {item === 'pelicula' ? 'Película' : item}
               </span>
             </label>
@@ -628,11 +610,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             Carregando custos...
           </div>
         ) : (
-          <CustosManager
-            custos={custos}
-            onChange={setCustos}
-            disabled={isLoading}
-          />
+          <CustosManager custos={custos} onChange={setCustos} disabled={isLoading} />
         )}
       </section>
 
@@ -665,6 +643,18 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           )}
         </Button>
       </div>
+
+      {/* Dialog de confirmação de cancelamento */}
+      <ConfirmDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        onConfirm={confirmCancel}
+        title="Cancelar edição?"
+        description="Tem certeza que deseja cancelar? Todas as alterações não salvas serão perdidas."
+        confirmText="Sim, cancelar"
+        cancelText="Continuar editando"
+        variant="destructive"
+      />
     </form>
   )
 }

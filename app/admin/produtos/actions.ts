@@ -30,7 +30,7 @@ export async function getProdutos() {
 
   const { data, error } = await supabase
     .from('produtos')
-    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, cor_oficial, cores, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, categoria:categorias(id, nome, slug, ordem)`)
+    .select(`id, codigo_produto, nome, slug, descricao, preco, nivel_bateria, condicao, categoria_id, garantia, cor_oficial, cores, acessorios, fotos, foto_principal, ativo, estoque, visualizacoes_total, created_at, updated_at, deleted_at, categoria:categorias(id, nome, slug, ordem), produtos_custos(custo)`)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
@@ -39,7 +39,18 @@ export async function getProdutos() {
     return { produtos: [], error: 'Erro ao carregar produtos' }
   }
 
-  return { produtos: data || [], error: null }
+  // Processar produtos para incluir o custo mais recente
+  const produtosComCusto = (data || []).map((produto: any) => {
+    const custos = produto.produtos_custos || []
+    const custoMaisRecente = custos.length > 0 ? custos[0].custo : null
+    return {
+      ...produto,
+      preco_custo: custoMaisRecente,
+      produtos_custos: undefined, // Remover array original
+    }
+  })
+
+  return { produtos: produtosComCusto, error: null }
 }
 
 export async function getProdutoById(id: string): Promise<{ produto: ProdutoComCategoria | null; error: string | null }> {

@@ -100,7 +100,7 @@ function ProdutoCardComponent({
     return (
       <Link href={productUrl} prefetch={true}>
         <div
-          className="group overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-yellow)] hover:shadow-[var(--brand-yellow)]/20 hover:shadow-xl active:scale-[0.98]"
+          className="group mb-2 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-yellow)] hover:shadow-[var(--brand-yellow)]/20 hover:shadow-xl active:scale-[0.98]"
           onMouseEnter={handleMouseEnter}
         >
           <div className="flex flex-row">
@@ -122,17 +122,17 @@ function ProdutoCardComponent({
               )}
             </div>
 
-            <div className="flex flex-1 flex-row items-center justify-between gap-3 p-3 sm:p-4">
+            <div className="relative flex flex-1 flex-row items-center justify-between gap-3 p-3 sm:p-4">
+              {produto.codigo_produto && (
+                <span className="absolute top-1 right-2 text-[11px] text-zinc-500">
+                  ({produto.codigo_produto})
+                </span>
+              )}
               <div className="min-w-0 flex-1">
-                <div className="mb-1 flex items-start gap-2">
-                  <h3 className="text-base font-semibold text-white transition-colors group-hover:text-[var(--brand-yellow)] sm:text-lg">
+                <div className="">
+                  <h3 className="text-[18px] font-semibold text-white transition-colors group-hover:text-[var(--brand-yellow)] sm:text-lg">
                     {produto.nome}
                   </h3>
-                  {produto.codigo_produto && (
-                    <span className="absolute top-0 right-0 flex-shrink-0 px-3 pt-1 text-[11px] text-zinc-500">
-                      ({produto.codigo_produto})
-                    </span>
-                  )}
                 </div>
 
                 {produto.descricao && (
@@ -140,6 +140,8 @@ function ProdutoCardComponent({
                     {produto.descricao}
                   </p>
                 )}
+
+                {!produto.descricao && <div className="h-2"></div>}
 
                 <div className="flex flex-wrap items-center gap-2">
                   {produto.condicao === 'novo' && produto.nivel_bateria == null && (
@@ -174,7 +176,7 @@ function ProdutoCardComponent({
               </div>
 
               <div className="flex flex-shrink-0 flex-col items-end gap-1">
-                <p className="text-lg font-bold whitespace-nowrap text-[var(--brand-yellow)] sm:text-xl">
+                <p className="text-xl font-bold whitespace-nowrap text-[var(--brand-yellow)] sm:text-2xl">
                   {formatPreco(produto.preco)}
                 </p>
               </div>
@@ -244,8 +246,8 @@ function ProdutoCardComponent({
               {produto.nome}
             </h3>
             {produto.codigo_produto && (
-              <span className="mt-0.5 flex-shrink-0 text-[10px] text-zinc-500">
-                {produto.codigo_produto}
+              <span className="mt-0.5 flex-shrink-0 text-[11px] text-zinc-400">
+                ({produto.codigo_produto})
               </span>
             )}
           </div>

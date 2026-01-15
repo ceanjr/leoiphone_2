@@ -18,7 +18,6 @@ import type { ProdutoComCategoria } from '@/types/produto'
 import type { TaxasConfig } from '@/lib/validations/taxas'
 import type { TrocaFormData } from '@/lib/validations/troca'
 import { estadoConservacaoLabels } from '@/lib/validations/troca'
-import { useAuth } from '@/hooks/use-auth'
 
 // Lazy load heavy modals
 const CompraOuTrocaModal = lazy(() =>
@@ -32,15 +31,11 @@ const TrocaModal = lazy(() =>
 
 export function ProdutoPageClient({ slug }: { slug: string }) {
   const searchParams = useSearchParams()
-  const { isAuthenticated } = useAuth() // Use hook que reage às mudanças de autenticação
   const [produto, setProduto] = useState<ProdutoComCategoria | null>(null)
   const [loading, setLoading] = useState(true)
   const [fotoSelecionada, setFotoSelecionada] = useState(0)
   const [calculadoraAtiva, setCalculadoraAtiva] = useState(false)
   const [taxas, setTaxas] = useState<TaxasConfig | null>(null)
-  const [custos, setCustos] = useState<
-    Array<{ id: string; custo: number; estoque: number; codigo: string | null }>
-  >([])
 
   // Estados dos modais
   const [modalCompraOuTroca, setModalCompraOuTroca] = useState(false)
@@ -214,32 +209,6 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
 
     loadProduto()
   }, [slug])
-
-  // Carregar ou limpar custos quando autenticação mudar
-  useEffect(() => {
-    if (!produto?.id) return
-
-    const supabase = createClient()
-
-    if (isAuthenticated) {
-      // Carregar custos se autenticado
-      const loadCustos = async () => {
-        const { data: custosData } = await supabase
-          .from('produtos_custos')
-          .select('id, custo, estoque, codigo')
-          .eq('produto_id', produto.id)
-          .order('created_at', { ascending: true })
-
-        if (custosData) {
-          setCustos(custosData)
-        }
-      }
-      loadCustos()
-    } else {
-      // Limpar custos se não autenticado (logout)
-      setCustos([])
-    }
-  }, [isAuthenticated, produto?.id])
 
   if (loading) {
     return (
@@ -480,10 +449,7 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
 
           {/* Produtos Relacionados */}
           {produto.categoria?.id && (
-            <ProdutosRelacionados
-              produtoId={produto.id}
-              categoriaId={produto.categoria.id}
-            />
+            <ProdutosRelacionados produtoId={produto.id} categoriaId={produto.categoria.id} />
           )}
 
           {/* Especificações */}

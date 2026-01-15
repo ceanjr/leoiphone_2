@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Edit, Trash2, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { Edit, Trash2, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   DndContext,
@@ -45,8 +45,6 @@ function SortableCategoryItem({
   category,
   index,
   totalCategories,
-  onMoveUp,
-  onMoveDown,
   onDelete,
   onToggleAtivo,
   isDeleting,
@@ -54,20 +52,13 @@ function SortableCategoryItem({
   category: Categoria
   index: number
   totalCategories: number
-  onMoveUp: (id: string) => void
-  onMoveDown: (id: string) => void
   onDelete: (id: string, nome: string) => void
   onToggleAtivo: (id: string, ativo: boolean) => void
   isDeleting: string | null
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: category.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: category.id,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -87,20 +78,14 @@ function SortableCategoryItem({
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab touch-none select-none p-1 text-zinc-500 hover:text-zinc-300 active:cursor-grabbing"
+        className="cursor-grab touch-none p-1 text-zinc-500 select-none hover:text-zinc-300 active:cursor-grabbing"
         style={{
           WebkitUserSelect: 'none',
           userSelect: 'none',
           touchAction: 'none',
         }}
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          className="rotate-90"
-        >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" className="rotate-90">
           <circle cx="7" cy="10" r="1.5" />
           <circle cx="13" cy="10" r="1.5" />
           <circle cx="7" cy="6" r="1.5" />
@@ -110,33 +95,8 @@ function SortableCategoryItem({
         </svg>
       </div>
 
-      {/* Arrows */}
-      <div className="flex flex-col gap-0.5">
-        <button
-          type="button"
-          onClick={() => onMoveUp(category.id)}
-          disabled={index === 0}
-          className="text-zinc-500 hover:text-yellow-500 disabled:cursor-not-allowed disabled:opacity-30"
-          title="Mover para cima"
-        >
-          <ChevronUp className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onMoveDown(category.id)}
-          disabled={index === totalCategories - 1}
-          className="text-zinc-500 hover:text-yellow-500 disabled:cursor-not-allowed disabled:opacity-30"
-          title="Mover para baixo"
-        >
-          <ChevronDown className="h-4 w-4" />
-        </button>
-      </div>
-
       {/* Category Info */}
-      <div
-        className="flex-1 select-none"
-        style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
-      >
+      <div className="flex-1 select-none" style={{ WebkitUserSelect: 'none', userSelect: 'none' }}>
         <p className="font-medium text-white">{category.nome}</p>
         <p className="text-xs text-zinc-500">{category.slug}</p>
       </div>
@@ -237,26 +197,6 @@ export function CategoryList({ categories: initialCategories }: CategoryListProp
     }
   }
 
-  const handleMoveUp = async (id: string) => {
-    const index = categories.findIndex((cat) => cat.id === id)
-    if (index === 0) return
-
-    const newCategories = arrayMove(categories, index, index - 1)
-    setCategories(newCategories)
-    updateCategoryOrder(newCategories)
-    toast.success('Ordem atualizada')
-  }
-
-  const handleMoveDown = async (id: string) => {
-    const index = categories.findIndex((cat) => cat.id === id)
-    if (index === categories.length - 1) return
-
-    const newCategories = arrayMove(categories, index, index + 1)
-    setCategories(newCategories)
-    updateCategoryOrder(newCategories)
-    toast.success('Ordem atualizada')
-  }
-
   const handleDeleteClick = (id: string, nome: string) => {
     setCategoryToDelete({ id, nome })
     setDeleteDialogOpen(true)
@@ -288,9 +228,7 @@ export function CategoryList({ categories: initialCategories }: CategoryListProp
 
     if (result.success) {
       setCategories((prev) =>
-        prev.map((cat) =>
-          cat.id === id ? { ...cat, ativo: !currentAtivo } : cat
-        )
+        prev.map((cat) => (cat.id === id ? { ...cat, ativo: !currentAtivo } : cat))
       )
       toast.success(currentAtivo ? 'Categoria desativada' : 'Categoria ativada')
     } else {
@@ -301,9 +239,7 @@ export function CategoryList({ categories: initialCategories }: CategoryListProp
   if (categories.length === 0) {
     return (
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-12 text-center">
-        <p className="text-zinc-400">
-          Nenhuma categoria cadastrada. Crie sua primeira categoria!
-        </p>
+        <p className="text-zinc-400">Nenhuma categoria cadastrada. Crie sua primeira categoria!</p>
       </div>
     )
   }
@@ -311,11 +247,7 @@ export function CategoryList({ categories: initialCategories }: CategoryListProp
   return (
     <>
       <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext
             items={categories.map((cat) => cat.id)}
             strategy={verticalListSortingStrategy}
@@ -326,8 +258,6 @@ export function CategoryList({ categories: initialCategories }: CategoryListProp
                 category={category}
                 index={index}
                 totalCategories={categories.length}
-                onMoveUp={handleMoveUp}
-                onMoveDown={handleMoveDown}
                 onDelete={handleDeleteClick}
                 onToggleAtivo={handleToggleAtivo}
                 isDeleting={deleting}

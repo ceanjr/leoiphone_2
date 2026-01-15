@@ -44,14 +44,8 @@ function HomePageContent() {
   } = useHomeFilters()
 
   // Dados da página
-  const {
-    produtos,
-    setProdutos,
-    categorias,
-    secoes,
-    produtosEmDestaqueIds,
-    loading,
-  } = useHomeData()
+  const { produtos, setProdutos, categorias, secoes, produtosEmDestaqueIds, loading } =
+    useHomeData()
 
   // Agrupamento e paginação
   const { produtosAgrupados, carregarMais, loadingMore, temMaisProdutos } = useProdutosAgrupados(
@@ -167,7 +161,7 @@ function HomePageContent() {
                 variant="outline"
                 onClick={limparFiltros}
                 size="sm"
-                className="min-h-[44px] bg-black sm:w-auto"
+                className="min-h-[44px] bg-black sm:mb-4 sm:w-auto"
               >
                 <X className="mr-2 h-4 w-4" />
                 Limpar

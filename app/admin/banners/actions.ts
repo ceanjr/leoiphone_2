@@ -24,16 +24,26 @@ export async function getBanners() {
   return { banners: data || [], error: null }
 }
 
+export async function getBannerById(id: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.from('banners').select('*').eq('id', id).single()
+
+  if (error) {
+    logger.error('Erro ao buscar banner:', error)
+    return { banner: null, error: 'Erro ao carregar banner' }
+  }
+
+  return { banner: data, error: null }
+}
+
 export async function createBanner(data: {
   titulo: string
   subtitulo?: string
-  link?: string
   imagem_url: string
   tipo: 'banner' | 'produtos_destaque'
   produtos_destaque?: Array<{ produto_id: string; preco_promocional: number }>
   countdown_ends_at?: string | null
-  active_from?: string | null
-  active_until?: string | null
   ativo?: boolean
 }) {
   const supabase = await createClient()
@@ -65,14 +75,10 @@ export async function createBanner(data: {
     .insert({
       titulo: data.titulo.trim(),
       subtitulo: data.subtitulo?.trim() || null,
-      link: data.link?.trim() || null,
-      tipo_link: 'externo',
       imagem_url: data.imagem_url || null,
       tipo: data.tipo,
       produtos_destaque: data.produtos_destaque || [],
       countdown_ends_at: data.countdown_ends_at || null,
-      active_from: data.active_from || null,
-      active_until: data.active_until || null,
       ativo: data.ativo ?? true,
       ordem: novaOrdem,
     })
@@ -95,13 +101,10 @@ export async function updateBanner(
   data: {
     titulo: string
     subtitulo?: string
-    link?: string
     imagem_url: string
     tipo: 'banner' | 'produtos_destaque'
     produtos_destaque?: Array<{ produto_id: string; preco_promocional: number }>
     countdown_ends_at?: string | null
-    active_from?: string | null
-    active_until?: string | null
     ativo?: boolean
   }
 ) {
@@ -120,14 +123,10 @@ export async function updateBanner(
     .update({
       titulo: data.titulo.trim(),
       subtitulo: data.subtitulo?.trim() || null,
-      link: data.link?.trim() || null,
-      tipo_link: 'externo',
       imagem_url: data.imagem_url || null,
       tipo: data.tipo,
       produtos_destaque: data.produtos_destaque || [],
       countdown_ends_at: data.countdown_ends_at || null,
-      active_from: data.active_from || null,
-      active_until: data.active_until || null,
       ativo: data.ativo ?? true,
     })
     .eq('id', id)
@@ -178,6 +177,20 @@ export async function updateOrdemBanner(id: string, novaOrdem: number) {
 export async function toggleBannerAtivo(id: string, ativo: boolean) {
   const supabase = await createClient()
 
+  // Se estiver ativando um banner, primeiro desativa todos os outros
+  if (ativo) {
+    const { error: deactivateError } = await (supabase as any)
+      .from('banners')
+      .update({ ativo: false })
+      .neq('id', id)
+
+    if (deactivateError) {
+      logger.error('Erro ao desativar outros banners:', deactivateError)
+      return { success: false, error: 'Erro ao desativar outros banners' }
+    }
+  }
+
+  // Atualiza o banner selecionado
   const { error } = await (supabase as any)
     .from('banners')
     .update({ ativo })
@@ -186,6 +199,30 @@ export async function toggleBannerAtivo(id: string, ativo: boolean) {
   if (error) {
     logger.error('Erro ao alterar status do banner:', error)
     return { success: false, error: 'Erro ao alterar status' }
+  }
+
+  // Se ativou o banner, move para ordem 1 e ajusta os outros
+  if (ativo) {
+    // Buscar ordem atual do banner
+    const { data: currentBanner } = await supabase
+      .from('banners')
+      .select('ordem')
+      .eq('id', id)
+      .single<{ ordem: number }>()
+
+    if (currentBanner && currentBanner.ordem !== 1) {
+      // Incrementar ordem de todos os banners com ordem < ordem_atual
+      await (supabase as any)
+        .from('banners')
+        .update({ ordem: supabase.rpc('increment_ordem') as any })
+        .lt('ordem', currentBanner.ordem)
+
+      // Mover banner ativado para ordem 1
+      await (supabase as any)
+        .from('banners')
+        .update({ ordem: 1 })
+        .eq('id', id)
+    }
   }
 
   revalidatePath('/admin/banners')

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
@@ -21,7 +21,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Edit, Trash2, Eye, EyeOff, ChevronUp, ChevronDown, ImageIcon, Package } from 'lucide-react'
+import { GripVertical, Edit, Trash2, Eye, EyeOff, Package } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,16 +51,12 @@ interface Banner {
 
 interface BannerListProps {
   banners: Banner[]
-  onEdit: (banner: Banner) => void
 }
 
 function SortableBannerItem({
   banner,
   index,
   totalItems,
-  onEdit,
-  onMoveUp,
-  onMoveDown,
   onToggle,
   onDelete,
   isToggling,
@@ -69,22 +65,14 @@ function SortableBannerItem({
   banner: Banner
   index: number
   totalItems: number
-  onEdit: (banner: Banner) => void
-  onMoveUp: () => void
-  onMoveDown: () => void
   onToggle: () => void
   onDelete: () => void
   isToggling: boolean
   isDeleting: boolean
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: banner.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: banner.id,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -96,126 +84,166 @@ function SortableBannerItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group flex items-center gap-3 rounded-lg border bg-zinc-900 p-3 transition-all ${
+      className={`group rounded-lg border bg-zinc-900 p-4 transition-all ${
         isDragging
           ? 'z-50 border-yellow-500 shadow-lg shadow-yellow-500/20'
           : 'border-zinc-800 hover:border-zinc-700'
       }`}
     >
-      {/* Drag Handle */}
-      <button
-        {...attributes}
-        {...listeners}
-        className="cursor-grab touch-none rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400 active:cursor-grabbing"
-        title="Arrastar para reordenar"
-      >
-        <GripVertical className="h-5 w-5" />
-      </button>
+      {/* Desktop Layout */}
+      <div className="hidden items-center gap-3 md:flex">
+        {/* Drag Handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab touch-none rounded p-1 text-zinc-600 transition-colors hover:bg-zinc-800 hover:text-zinc-400 active:cursor-grabbing"
+          title="Arrastar para reordenar"
+        >
+          <GripVertical className="h-5 w-5" />
+        </button>
 
-      {/* Preview */}
-      <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded bg-zinc-950">
-        {banner.tipo === 'banner' && banner.imagem_url ? (
-          <Image
-            src={banner.imagem_url}
-            alt={banner.titulo}
-            fill
-            className="object-cover"
-            sizes="96px"
-            unoptimized
-          />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-1">
-            {banner.tipo === 'produtos_destaque' ? (
-              <>
-                <Package className="h-5 w-5 text-zinc-600" />
-                <span className="text-[10px] text-zinc-600">
-                  {banner.produtos_destaque?.length || 0} produtos
-                </span>
-              </>
-            ) : (
-              <ImageIcon className="h-6 w-6 text-zinc-600" />
+        {/* Info */}
+        <div className="min-w-0 flex-1">
+          <h3 className="mb-1 truncate font-medium text-white">{banner.titulo}</h3>
+          <div className="flex items-center gap-2 text-xs text-zinc-500">
+            <span
+              className={`rounded px-1.5 py-0.5 ${
+                banner.tipo === 'banner'
+                  ? 'bg-blue-500/10 text-blue-400'
+                  : 'bg-purple-500/10 text-purple-400'
+              }`}
+            >
+              {banner.tipo === 'banner' ? 'Imagem' : 'Produtos'}
+            </span>
+            {banner.tipo === 'produtos_destaque' && (
+              <span className="flex items-center gap-1">
+                <Package className="h-3 w-3" />
+                {banner.produtos_destaque?.length || 0} produtos
+              </span>
             )}
+            {banner.countdown_ends_at && <span className="text-yellow-400">Com countdown</span>}
           </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate font-medium text-white">{banner.titulo}</h3>
-        <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <span className={`rounded px-1.5 py-0.5 ${
-            banner.tipo === 'banner'
-              ? 'bg-blue-500/10 text-blue-400'
-              : 'bg-purple-500/10 text-purple-400'
-          }`}>
-            {banner.tipo === 'banner' ? 'Imagem' : 'Produtos'}
-          </span>
-          {banner.countdown_ends_at && (
-            <span className="text-yellow-400">Com countdown</span>
-          )}
         </div>
-      </div>
 
-      {/* Mobile: Arrows */}
-      <div className="flex flex-col gap-1 md:hidden">
-        <button
-          onClick={onMoveUp}
-          disabled={index === 0}
-          className="rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-30"
-          title="Mover para cima"
-        >
-          <ChevronUp className="h-4 w-4" />
-        </button>
-        <button
-          onClick={onMoveDown}
-          disabled={index === totalItems - 1}
-          className="rounded p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-30"
-          title="Mover para baixo"
-        >
-          <ChevronDown className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-1">
-        {/* Toggle Status */}
+        {/* Status Toggle */}
         <button
           onClick={onToggle}
           disabled={isToggling}
-          className={`rounded-full p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
             banner.ativo
               ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
               : 'bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20'
           }`}
-          title={banner.ativo ? 'Desativar' : 'Ativar'}
         >
-          {banner.ativo ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          {banner.ativo ? (
+            <>
+              <Eye className="h-3 w-3" />
+              Ativo
+            </>
+          ) : (
+            <>
+              <EyeOff className="h-3 w-3" />
+              Inativo
+            </>
+          )}
         </button>
 
-        {/* Edit */}
-        <button
-          onClick={() => onEdit(banner)}
-          className="rounded p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-yellow-400"
-          title="Editar"
-        >
-          <Edit className="h-4 w-4" />
-        </button>
+        {/* Actions */}
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/admin/banners/${banner.id}/editar`}
+            className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+            title="Editar"
+          >
+            <Edit className="h-4 w-4" />
+          </Link>
+          <button
+            onClick={onDelete}
+            disabled={isDeleting}
+            className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Excluir"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
 
-        {/* Delete */}
-        <button
-          onClick={onDelete}
-          disabled={isDeleting}
-          className="rounded p-2 text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-          title="Excluir"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+      {/* Mobile Layout */}
+      <div className="md:hidden">
+        {/* Banner Info */}
+        <div className="mb-3">
+          <h3 className="text-lg font-semibold text-white">{banner.titulo}</h3>
+          <div className="mt-2 flex items-center gap-2 text-xs">
+            <span
+              className={`rounded px-1.5 py-0.5 ${
+                banner.tipo === 'banner'
+                  ? 'bg-blue-500/10 text-blue-400'
+                  : 'bg-purple-500/10 text-purple-400'
+              }`}
+            >
+              {banner.tipo === 'banner' ? 'Imagem' : 'Produtos'}
+            </span>
+            {banner.tipo === 'produtos_destaque' && (
+              <span className="flex items-center gap-1 text-zinc-500">
+                <Package className="h-3 w-3" />
+                {banner.produtos_destaque?.length || 0} produtos
+              </span>
+            )}
+            {banner.countdown_ends_at && <span className="text-yellow-400">Com countdown</span>}
+          </div>
+        </div>
+
+        {/* Actions Row */}
+        <div className="flex items-center justify-between gap-2 border-t border-zinc-800 pt-4">
+          {/* Status Button */}
+          <button
+            onClick={onToggle}
+            disabled={isToggling}
+            className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              banner.ativo
+                ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
+                : 'bg-zinc-500/10 text-zinc-400 hover:bg-zinc-500/20'
+            }`}
+          >
+            {banner.ativo ? (
+              <>
+                <Eye className="h-4 w-4" />
+                Ativo
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-4 w-4" />
+                Inativo
+              </>
+            )}
+          </button>
+
+          {/* Edit and Delete Buttons */}
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/admin/banners/${banner.id}/editar`}
+              className="flex items-center gap-1 rounded-md bg-yellow-500/10 px-3 py-2 text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
+            >
+              <Edit className="h-4 w-4" />
+              Editar
+            </Link>
+            <button
+              onClick={onDelete}
+              disabled={isDeleting}
+              className="flex items-center gap-1 rounded-md bg-red-500/10 p-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Excluir"
+            >
+              <Trash2 className="h-4 w-4" />
+              Apagar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
-export function BannerList({ banners: initialBanners, onEdit }: BannerListProps) {
+export function BannerList({ banners: initialBanners }: BannerListProps) {
   const router = useRouter()
   const [banners, setBanners] = useState(initialBanners)
   const [toggling, setToggling] = useState<string | null>(null)
@@ -259,38 +287,28 @@ export function BannerList({ banners: initialBanners, onEdit }: BannerListProps)
     }
   }
 
-  const handleMoveUp = async (index: number) => {
-    if (index === 0) return
-    const newBanners = arrayMove(banners, index, index - 1)
-    setBanners(newBanners)
-
-    await updateOrdemBanner(newBanners[index - 1].id, index)
-    await updateOrdemBanner(newBanners[index].id, index + 1)
-
-    toast.success('Ordem atualizada')
-    router.refresh()
-  }
-
-  const handleMoveDown = async (index: number) => {
-    if (index === banners.length - 1) return
-    const newBanners = arrayMove(banners, index, index + 1)
-    setBanners(newBanners)
-
-    await updateOrdemBanner(newBanners[index].id, index + 1)
-    await updateOrdemBanner(newBanners[index + 1].id, index + 2)
-
-    toast.success('Ordem atualizada')
-    router.refresh()
-  }
-
   const handleToggle = async (id: string, currentStatus: boolean) => {
     setToggling(id)
     const result = await toggleBannerAtivo(id, !currentStatus)
     if (result.success) {
-      setBanners((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, ativo: !currentStatus } : b))
-      )
-      toast.success(currentStatus ? 'Banner desativado' : 'Banner ativado')
+      // Se ativou, desativa todos os outros e move para o topo
+      if (!currentStatus) {
+        setBanners((prev) => {
+          const updated = prev.map((b) => ({
+            ...b,
+            ativo: b.id === id,
+          }))
+          // Move o banner ativado para o início
+          const activatedBanner = updated.find((b) => b.id === id)
+          const otherBanners = updated.filter((b) => b.id !== id)
+          return activatedBanner ? [activatedBanner, ...otherBanners] : updated
+        })
+        toast.success('Banner ativado e movido para o topo')
+      } else {
+        setBanners((prev) => prev.map((b) => (b.id === id ? { ...b, ativo: false } : b)))
+        toast.success('Banner desativado')
+      }
+      router.refresh()
     } else {
       toast.error(result.error || 'Erro ao alterar status')
     }
@@ -323,15 +341,8 @@ export function BannerList({ banners: initialBanners, onEdit }: BannerListProps)
 
   return (
     <>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={banners.map((b) => b.id)}
-          strategy={verticalListSortingStrategy}
-        >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={banners.map((b) => b.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {banners.map((banner, index) => (
               <SortableBannerItem
@@ -339,11 +350,10 @@ export function BannerList({ banners: initialBanners, onEdit }: BannerListProps)
                 banner={banner}
                 index={index}
                 totalItems={banners.length}
-                onEdit={onEdit}
-                onMoveUp={() => handleMoveUp(index)}
-                onMoveDown={() => handleMoveDown(index)}
                 onToggle={() => handleToggle(banner.id, banner.ativo)}
-                onDelete={() => setDeleteDialog({ open: true, id: banner.id, titulo: banner.titulo })}
+                onDelete={() =>
+                  setDeleteDialog({ open: true, id: banner.id, titulo: banner.titulo })
+                }
                 isToggling={toggling === banner.id}
                 isDeleting={deleting === banner.id}
               />
@@ -353,13 +363,17 @@ export function BannerList({ banners: initialBanners, onEdit }: BannerListProps)
       </DndContext>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, id: '', titulo: '' })}>
+      <AlertDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => !open && setDeleteDialog({ open: false, id: '', titulo: '' })}
+      >
         <AlertDialogContent className="border-zinc-800 bg-zinc-900">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Excluir banner?</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">
-              Tem certeza que deseja excluir <strong className="text-white">&quot;{deleteDialog.titulo}&quot;</strong>?
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir{' '}
+              <strong className="text-white">&quot;{deleteDialog.titulo}&quot;</strong>? Esta ação
+              não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
