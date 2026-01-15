@@ -10,7 +10,6 @@ import { usePollingProdutos } from '@/hooks/use-polling-produtos'
 import { useHomeFilters } from '@/hooks/use-home-filters'
 import { useHomeData } from '@/hooks/use-home-data'
 import { useProdutosAgrupados } from '@/hooks/use-produtos-agrupados'
-import { getSecaoConfig } from '@/lib/config/secao-config'
 import { ordenarProdutosPorModelo } from '@/lib/utils/produtos/helpers'
 import { ProductsByCategorySkeleton } from '@/components/shared/loading-skeleton'
 import {
@@ -44,7 +43,7 @@ function HomePageContent() {
   } = useHomeFilters()
 
   // Dados da página
-  const { produtos, setProdutos, categorias, secoes, produtosEmDestaqueIds, loading } =
+  const { produtos, setProdutos, categorias, produtosEmDestaqueIds, loading } =
     useHomeData()
 
   // Agrupamento e paginação
@@ -172,56 +171,6 @@ function HomePageContent() {
       </div>
 
       <div className="container mx-auto px-4 pb-8">
-        {/* Seções de Destaque (Promoções, Lançamentos, etc) */}
-        {secoes.map((secao) => {
-          const config = getSecaoConfig(secao.tipo)
-
-          return (
-            <section
-              key={secao.id}
-              className="mb-12 rounded-lg border-2 p-6"
-              style={{
-                borderColor: config.borderColor,
-                background: config.bgGradient,
-              }}
-            >
-              <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{config.icon}</span>
-                  <div>
-                    <h2 className="text-2xl font-bold text-[var(--brand-yellow)]">
-                      {secao.titulo}
-                    </h2>
-                    {secao.subtitulo && <p className="text-sm text-zinc-400">{secao.subtitulo}</p>}
-                  </div>
-                </div>
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${config.badgeColor}`}
-                >
-                  {config.badge}
-                </span>
-              </div>
-              <div
-                className={
-                  viewMode === 'list'
-                    ? 'flex flex-col gap-3'
-                    : 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'
-                }
-              >
-                {secao.produtos.map((produto, index) => (
-                  <ProdutoCard
-                    key={produto.id}
-                    produto={produto}
-                    view={viewMode}
-                    priority={index < 3}
-                    returnParams={returnParams}
-                  />
-                ))}
-              </div>
-            </section>
-          )
-        })}
-
         {/* Resultados e Toggle de Visualização */}
         <div className="mb-4 flex items-center justify-between">
           <div className="text-sm text-zinc-400">

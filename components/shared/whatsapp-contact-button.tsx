@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState, memo } from 'react'
-import { logger } from '@/lib/utils/logger'
 import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { Button, type ButtonProps } from '@/components/ui/button'
@@ -12,32 +11,16 @@ import {
   BottomSheetTitle,
 } from '@/components/ui/bottom-sheet'
 import { Badge } from '@/components/ui/badge'
-import { createClient } from '@/lib/supabase/client'
 
 const CONTACTS = [
   { label: 'Léo iPhone (Léo)', number: '77988343473' },
   { label: 'Léo iPhone (Júnior)', number: '77981341126' },
 ] as const
 
-// Função para pegar visitor_id
-function getVisitorId(): string {
-  if (typeof window === 'undefined') return ''
-  return localStorage.getItem('visitor_id') || ''
-}
-
-// Verificar se está em produção
-function isProduction(): boolean {
-  if (typeof window === 'undefined') return false
-  const hostname = window.location.hostname
-  return hostname.includes('leoiphone.com.br') || hostname.includes('vercel.app')
-}
-
 interface WhatsAppContactButtonProps extends ButtonProps {
   message?: string
   triggerIcon?: boolean
   label?: string
-  produtoId?: string
-  produtoNome?: string
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
@@ -47,8 +30,6 @@ export const WhatsAppContactButton = memo(function WhatsAppContactButton({
   triggerIcon = false,
   className,
   label,
-  produtoId,
-  produtoNome,
   open: controlledOpen,
   onOpenChange,
   ...buttonProps
@@ -65,34 +46,12 @@ export const WhatsAppContactButton = memo(function WhatsAppContactButton({
   }, [message])
 
   function handleContact(number: string) {
-    // Abrir WhatsApp imediatamente
     const url = baseMessage
-      ? `https://wa.me/55${number}?text=${baseMessage}` // Adicionar código do Brasil
+      ? `https://wa.me/55${number}?text=${baseMessage}`
       : `https://wa.me/55${number}`
 
-    window.location.href = url // Usar location.href ao invés de window.open para melhor compatibilidade mobile
+    window.location.href = url
     setOpen(false)
-
-    // Rastrear conversão de forma assíncrona (não bloqueia o redirecionamento)
-    if (isProduction()) {
-      const visitorId = getVisitorId()
-      if (visitorId) {
-        const supabase = createClient()
-        ;(supabase as any)
-          .from('conversions')
-          .insert({
-            visitor_id: visitorId,
-            produto_id: produtoId || null,
-            produto_nome: produtoNome || null,
-          })
-          .then(() => {
-            logger.debug('[Conversion] Rastreada:', { produtoId, produtoNome })
-          })
-          .catch((error: any) => {
-            logger.error('[Conversion] Erro ao rastrear:', error)
-          })
-      }
-    }
   }
 
   return (

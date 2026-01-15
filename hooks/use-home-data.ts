@@ -14,14 +14,6 @@ export interface Categoria {
   ordem: number
 }
 
-export interface Secao {
-  id: string
-  tipo: 'destaques' | 'promocoes' | 'lancamentos'
-  titulo: string
-  subtitulo: string | null
-  produtos: Produto[]
-}
-
 export interface ProdutosAgrupados {
   categoria: Categoria
   produtos: Produto[]
@@ -36,22 +28,9 @@ interface BannerAtivoRow {
   tipo: 'banner' | 'produtos_destaque'
 }
 
-interface SecaoHomeRow {
-  id: string
-  tipo: Secao['tipo']
-  titulo: string
-  subtitulo: string | null
-}
-
-interface ProdutoSecaoRow {
-  ordem: number
-  produto: Produto | null
-}
-
 export function useHomeData() {
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [secoes, setSecoes] = useState<Secao[]>([])
   const [produtosEmDestaqueIds, setProdutosEmDestaqueIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -89,54 +68,6 @@ export function useHomeData() {
       })
       setProdutosEmDestaqueIds(idsDestaque)
     }
-  }, [])
-
-  // Carregar seções de destaque (OTIMIZADO: elimina query N+1)
-  const loadSecoes = useCallback(async () => {
-    const supabase = createClient()
-
-    // 1. Buscar todas as seções ativas
-    const { data: secoesData } = await supabase
-      .from('secoes_home')
-      .select('id, tipo, titulo, subtitulo')
-      .eq('ativo', true)
-      .order('ordem', { ascending: true })
-
-    if (!secoesData || secoesData.length === 0) {
-      setSecoes([])
-      return
-    }
-
-    const secoesBase = (secoesData ?? []) as SecaoHomeRow[]
-    const secaoIds = secoesBase.map(s => s.id)
-
-    // 2. Buscar TODAS as relações de uma vez (não em loop) - Otimização: de N+1 queries para 2 queries
-    const { data: todasRelacoes } = await supabase
-      .from('produtos_secoes')
-      .select(
-        `
-        secao_id,
-        ordem,
-        produto:produtos(*)
-      `
-      )
-      .in('secao_id', secaoIds)
-      .order('ordem', { ascending: true })
-
-    // 3. Agrupar produtos por seção no cliente (operação local, não query)
-    const secoesComProdutos = secoesBase.map(secao => {
-      const produtosSecao = ((todasRelacoes ?? []) as any[])
-        .filter(rel => rel.secao_id === secao.id)
-        .map(rel => rel.produto)
-        .filter((p): p is Produto => Boolean(p && p.ativo && !p.deleted_at))
-
-      return {
-        ...secao,
-        produtos: produtosSecao,
-      }
-    })
-
-    setSecoes(secoesComProdutos.filter((s) => s.produtos.length > 0))
   }, [])
 
   // Carregar produtos
@@ -180,14 +111,13 @@ export function useHomeData() {
       await Promise.all([
         loadCategorias(),
         loadProdutosDestaque(),
-        loadSecoes(),
         loadProdutos(),
       ])
       setLoading(false)
     }
 
     loadData()
-  }, [loadCategorias, loadProdutosDestaque, loadSecoes, loadProdutos])
+  }, [loadCategorias, loadProdutosDestaque, loadProdutos])
 
   // Filtrar categorias que têm produtos ativos
   const categoriasComProdutos = useMemo(() => {
@@ -207,7 +137,6 @@ export function useHomeData() {
     produtos,
     setProdutos,
     categorias: categoriasComProdutos,
-    secoes,
     produtosEmDestaqueIds,
     loading,
     loadProdutos,

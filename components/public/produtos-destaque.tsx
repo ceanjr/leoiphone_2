@@ -1,14 +1,12 @@
 'use client'
 
-import { memo, useState } from 'react'
+import { memo } from 'react'
 import { OptimizedImage } from '@/components/shared/optimized-image'
 import Link from 'next/link'
 import { Flame } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { CountdownTimer } from '@/components/ui/countdown-timer'
-import { trackBannerProductClick } from '@/app/admin/dashboard/actions'
 import { autoDisableBannerOnExpire } from '@/app/admin/banners/actions'
-import { getOrCreateVisitorId } from '@/lib/utils/visitor'
 import { logger } from '@/lib/utils/logger'
 
 interface ProdutoDestaque {
@@ -40,8 +38,6 @@ function ProdutosDestaqueComponent({
   bannerId,
   countdownEndsAt,
 }: ProdutosDestaqueProps) {
-  const [trackingStates, setTrackingStates] = useState<Record<string, boolean>>({})
-
   // Desativar banner quando countdown expirar
   const handleCountdownExpire = async () => {
     try {
@@ -54,41 +50,6 @@ function ProdutosDestaqueComponent({
       }
     } catch (error) {
       logger.error('[ProdutosDestaque] Exceção ao desativar banner:', error)
-    }
-  }
-
-  const handleClick = async (productId: string) => {
-    // Evitar múltiplos cliques no mesmo produto
-    if (trackingStates[productId]) return
-
-    setTrackingStates((prev) => ({ ...prev, [productId]: true }))
-
-    try {
-      // Pegar visitor_id do sistema de cookies
-      const visitorId = getOrCreateVisitorId()
-
-      if (!visitorId) {
-        logger.warn('[ProdutosDestaque] visitor_id não encontrado')
-        return
-      }
-
-      // Registrar clique (não aguardar para não bloquear navegação)
-      trackBannerProductClick(bannerId, productId, visitorId)
-        .then((result) => {
-          if (!result.success) {
-            logger.error('[ProdutosDestaque] Erro ao registrar clique:', result.error)
-          }
-        })
-        .catch((err) => {
-          logger.error('[ProdutosDestaque] Exceção ao registrar clique:', err)
-        })
-    } catch (error) {
-      logger.error('[ProdutosDestaque] Erro no handleClick:', error)
-    } finally {
-      // Resetar após 1 segundo para permitir novo clique se necessário
-      setTimeout(() => {
-        setTrackingStates((prev) => ({ ...prev, [productId]: false }))
-      }, 1000)
     }
   }
 
@@ -134,7 +95,6 @@ function ProdutosDestaqueComponent({
               <Link
                 key={produto.id}
                 href={`/produto/${produto.slug}?preco_promo=${produto.preco_promocional}`}
-                onClick={() => handleClick(produto.id)}
                 className="group min-w-[240px] flex-shrink-0 rounded-lg border border-zinc-800 bg-zinc-950 p-3 transition-all hover:border-[var(--brand-yellow)] hover:shadow-[var(--brand-yellow)]/10 hover:shadow-lg md:min-w-0 md:p-4"
               >
                 {/* Badge de Desconto */}

@@ -552,8 +552,6 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
       <WhatsAppContactButton
         message={whatsappMessage}
         label=""
-        produtoId={produto.id}
-        produtoNome={produto.nome}
         open={whatsappModalOpen}
         onOpenChange={setWhatsappModalOpen}
         className="hidden"
