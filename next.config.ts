@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   // Image optimization enabled - Next.js will resize images to requested sizes
-  // remotePatterns configured for Supabase and Firebase storage
+  // remotePatterns configured for Supabase, Firebase and Cloudinary storage
   images: {
     remotePatterns: [
       {
@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'aswejqbtejibrilrblnm.supabase.co',
         pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/dvwtcedfs/**',
       },
     ],
     dangerouslyAllowSVG: true,

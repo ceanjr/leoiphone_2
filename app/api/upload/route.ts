@@ -66,7 +66,10 @@ export async function POST(request: NextRequest) {
 
     // Fazer upload de todas as variantes
     const uploadPromises = variants.map(async (variant) => {
-      const filePath = `produtos/${variant.filename}`
+      // Upload direto para a raiz do bucket (sem prefixo produtos/)
+      // O bucket já se chama 'produtos', então o caminho final será:
+      // produtos/{filename} em vez de produtos/produtos/{filename}
+      const filePath = variant.filename
 
       const { error: uploadError } = await supabase.storage
         .from('produtos')
@@ -142,9 +145,10 @@ export async function DELETE(request: NextRequest) {
     const baseFileName = basePath.split('/').pop()
 
     // Listar todas as variantes da imagem
+    // Buscar na raiz do bucket (sem subpasta produtos/)
     const { data: files, error: listError } = await supabase.storage
       .from('produtos')
-      .list('produtos', {
+      .list('', {
         search: baseFileName || undefined,
       })
 
@@ -162,9 +166,10 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Filtrar apenas variantes da mesma imagem
+    // Caminhos agora estão na raiz do bucket (sem produtos/)
     const variantPaths = files
       ?.filter(file => file.name.startsWith(baseFileName || ''))
-      .map(file => `produtos/${file.name}`) || []
+      .map(file => file.name) || []
 
     // Se não encontrou variantes, usa o path original
     const pathsToDelete = variantPaths.length > 0 ? variantPaths : [path]

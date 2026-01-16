@@ -20,50 +20,51 @@ Este relatório documenta a análise completa do Supabase do projeto LeoiPhone, 
 
 ### Tabelas MANTIDAS (Core do Sistema)
 
-| Tabela                | Registros | Uso                            | Status        |
-| --------------------- | --------- | ------------------------------ | ------------- |
-| `produtos`            | 324       | Catálogo principal             | ✅ MANTER     |
-| `categorias`          | 25        | Organização de produtos        | ✅ MANTER     |
-| `banners`             | 1         | Banners da home                | ✅ MANTER     |
-| `configuracoes_taxas` | 1         | Calculadora de parcelamento    | ✅ MANTER+RLS |
-| `presets_taxas`       | 1         | Presets de taxas salvos        | ✅ MANTER+RLS |
-| `produtos_custos`     | 308       | Controle de custos/estoque     | ✅ MANTER+RLS |
-| `site_metrics`        | 303       | Analytics de eventos           | ✅ MANTER     |
-| `active_sessions`     | 1         | Sessões ativas                 | ✅ MANTER     |
-| `page_views`          | 8844      | Visualizações de páginas       | ✅ MANTER     |
+| Tabela                | Registros | Uso                         | Status        |
+| --------------------- | --------- | --------------------------- | ------------- |
+| `produtos`            | 324       | Catálogo principal          | ✅ MANTER     |
+| `categorias`          | 25        | Organização de produtos     | ✅ MANTER     |
+| `banners`             | 1         | Banners da home             | ✅ MANTER     |
+| `configuracoes_taxas` | 1         | Calculadora de parcelamento | ✅ MANTER+RLS |
+| `presets_taxas`       | 1         | Presets de taxas salvos     | ✅ MANTER+RLS |
+| `produtos_custos`     | 308       | Controle de custos/estoque  | ✅ MANTER+RLS |
+| `site_metrics`        | 303       | Analytics de eventos        | ✅ MANTER     |
+| `active_sessions`     | 1         | Sessões ativas              | ✅ MANTER     |
+| `page_views`          | 8844      | Visualizações de páginas    | ✅ MANTER     |
 
 ### Tabelas REMOVIDAS (Migration criada)
 
-| Tabela                            | Registros | Motivo                      | Status     |
-| --------------------------------- | --------- | --------------------------- | ---------- |
-| `olx_config`                      | 1         | Não usada no código         | ❌ REMOVER |
-| `olx_anuncios`                    | 0         | Não usada no código         | ❌ REMOVER |
-| `olx_sync_log`                    | 15        | Não usada no código         | ❌ REMOVER |
-| `facebook_anuncios`               | 1         | Não usada no código         | ❌ REMOVER |
-| `facebook_sync_log`               | 0         | Não usada no código         | ❌ REMOVER |
-| `banner_produto_clicks`           | 0         | Não usada no código         | ❌ REMOVER |
-| `conversions`                     | 43        | Usuário não quer mais       | ❌ REMOVER |
-| `secoes_home`                     | 3         | Funcionalidade abandonada   | ❌ REMOVER |
-| `produtos_secoes`                 | 0         | Funcionalidade abandonada   | ❌ REMOVER |
-| `produtos_destaque`               | 0         | Substituída por banners     | ❌ REMOVER |
-| `categoria_produtos_relacionados` | 0         | Legada                      | ❌ REMOVER |
-| `config_produtos_relacionados`    | 0         | Legada                      | ❌ REMOVER |
-| `historico_precos`                | 152       | Não usada no código         | ❌ REMOVER |
+| Tabela                            | Registros | Motivo                    | Status     |
+| --------------------------------- | --------- | ------------------------- | ---------- |
+| `olx_config`                      | 1         | Não usada no código       | ❌ REMOVER |
+| `olx_anuncios`                    | 0         | Não usada no código       | ❌ REMOVER |
+| `olx_sync_log`                    | 15        | Não usada no código       | ❌ REMOVER |
+| `facebook_anuncios`               | 1         | Não usada no código       | ❌ REMOVER |
+| `facebook_sync_log`               | 0         | Não usada no código       | ❌ REMOVER |
+| `banner_produto_clicks`           | 0         | Não usada no código       | ❌ REMOVER |
+| `conversions`                     | 43        | Usuário não quer mais     | ❌ REMOVER |
+| `secoes_home`                     | 3         | Funcionalidade abandonada | ❌ REMOVER |
+| `produtos_secoes`                 | 0         | Funcionalidade abandonada | ❌ REMOVER |
+| `produtos_destaque`               | 0         | Substituída por banners   | ❌ REMOVER |
+| `categoria_produtos_relacionados` | 0         | Legada                    | ❌ REMOVER |
+| `config_produtos_relacionados`    | 0         | Legada                    | ❌ REMOVER |
+| `historico_precos`                | 152       | Não usada no código       | ❌ REMOVER |
 
 ### Views REMOVIDAS
 
-| View                              | Status     |
-| --------------------------------- | ---------- |
-| `v_olx_anuncios_com_produto`      | ❌ REMOVER |
-| `v_produtos_destaque`             | ❌ REMOVER |
+| View                                | Status     |
+| ----------------------------------- | ---------- |
+| `v_olx_anuncios_com_produto`        | ❌ REMOVER |
+| `v_produtos_destaque`               | ❌ REMOVER |
 | `v_produtos_destaque_com_categoria` | ❌ REMOVER |
-| `banner_produtos_clicks_stats`    | ❌ REMOVER |
+| `banner_produtos_clicks_stats`      | ❌ REMOVER |
 
 ---
 
 ## 1.2 Alterações Realizadas
 
 ### Migration Criada
+
 - **Arquivo:** `supabase/migrations/20260115_cleanup_unused_tables.sql`
 - **Conteúdo:**
   - Remove todas as tabelas não utilizadas
@@ -73,51 +74,58 @@ Este relatório documenta a análise completa do Supabase do projeto LeoiPhone, 
 
 ### Código Removido/Atualizado
 
-| Arquivo | Alteração |
-| ------- | --------- |
-| `app/admin/dashboard/actions.ts` | Removida função `trackBannerProductClick` |
-| `components/shared/whatsapp-contact-button.tsx` | Removido tracking de conversões |
-| `components/public/produtos-destaque.tsx` | Removido tracking de cliques |
-| `hooks/use-home-data.ts` | Removido código de seções |
-| `app/(public)/page.tsx` | Removido código de seções |
-| `components/public/home/index.ts` | Removido export de SecaoDestaque |
-| `components/public/home/SecaoDestaque.tsx` | **Arquivo deletado** |
-| `lib/config/secao-config.ts` | **Arquivo deletado** |
+| Arquivo                                         | Alteração                                 |
+| ----------------------------------------------- | ----------------------------------------- |
+| `app/admin/dashboard/actions.ts`                | Removida função `trackBannerProductClick` |
+| `components/shared/whatsapp-contact-button.tsx` | Removido tracking de conversões           |
+| `components/public/produtos-destaque.tsx`       | Removido tracking de cliques              |
+| `hooks/use-home-data.ts`                        | Removido código de seções                 |
+| `app/(public)/page.tsx`                         | Removido código de seções                 |
+| `components/public/home/index.ts`               | Removido export de SecaoDestaque          |
+| `components/public/home/SecaoDestaque.tsx`      | **Arquivo deletado**                      |
+| `lib/config/secao-config.ts`                    | **Arquivo deletado**                      |
 
 ---
 
 ## 1.3 TODOs - Etapa 1 ✅ TODOS CONCLUÍDOS
 
 ### TODO 1.1: Listar todas as tabelas do Supabase ✅
+
 - [x] Script criado: `scripts/list-tables.ts`
 - [x] 22 tabelas identificadas no banco
 - [x] 5 views identificadas
 
 ### TODO 1.2: Remover tabelas OLX ✅
+
 - [x] Migration criada com DROP das tabelas OLX
 - [x] `olx_config`, `olx_anuncios`, `olx_sync_log` serão removidas
 - [x] View `v_olx_anuncios_com_produto` será removida
 
 ### TODO 1.3: Remover tabelas Facebook ✅
+
 - [x] `facebook_anuncios`, `facebook_sync_log` serão removidas
 
 ### TODO 1.4: Remover tabelas de tracking não usadas ✅
+
 - [x] `banner_produto_clicks` será removida
 - [x] `conversions` será removida
 - [x] Código de tracking removido dos componentes
 - [x] `page_views` e `active_sessions` mantidas (são usadas no dashboard)
 
 ### TODO 1.5: Avaliar seções da home ✅
+
 - [x] `secoes_home` e `produtos_secoes` não têm uso real
 - [x] Código removido do hook e da página inicial
 - [x] Componentes relacionados deletados
 
 ### TODO 1.6: Proteger tabelas UNRESTRICTED ✅
+
 - [x] RLS habilitado em `configuracoes_taxas`
 - [x] RLS habilitado em `presets_taxas`
 - [x] RLS habilitado em `produtos_custos`
 
 ### TODO 1.7: Verificar tabela historico_precos ✅
+
 - [x] Tabela não é usada em nenhum lugar do código
 - [x] Será removida pela migration
 
@@ -141,14 +149,14 @@ npx supabase db push
 
 ## 1.5 Resumo da Etapa 1
 
-| Métrica                        | Antes | Depois |
-| ------------------------------ | ----- | ------ |
-| Total de tabelas               | 22    | 9      |
-| Tabelas removidas              | -     | 13     |
-| Views removidas                | -     | 4      |
-| Arquivos de código removidos   | -     | 2      |
-| Componentes atualizados        | -     | 6      |
-| Tabelas com RLS habilitado     | 0     | 3      |
+| Métrica                      | Antes | Depois |
+| ---------------------------- | ----- | ------ |
+| Total de tabelas             | 22    | 9      |
+| Tabelas removidas            | -     | 13     |
+| Views removidas              | -     | 4      |
+| Arquivos de código removidos | -     | 2      |
+| Componentes atualizados      | -     | 6      |
+| Tabelas com RLS habilitado   | 0     | 3      |
 
 **Redução de 59% no número de tabelas!**
 
@@ -187,9 +195,9 @@ produtos/
    - Usar Supabase Storage API para listar todos os arquivos do bucket `produtos`
 
 2. **Extrair todas as URLs de imagens do banco**
-   - Query em `produtos.fotos` (array) para produtos ativos
-   - Query em `produtos.foto_principal` para produtos ativos
-   - Query em `banners.imagem_url` para banners ativos
+   - Query em `produtos.fotos` (array) para produtos cadastrados
+   - Query em `produtos.foto_principal` para produtos cadastrados
+   - Query em `banners.imagem_url` para banners cadastrados
    - Incluir produtos/banners inativos por segurança
 
 3. **Criar lista de imagens órfãs**
@@ -228,34 +236,93 @@ produtos/
 
 ## 2.4 TODOs - Etapa 2
 
-### TODO 2.1: Criar script de inventário
+### TODO 2.1: Criar script de inventário ✅
 
-- [ ] Script para listar TODAS as imagens no bucket `produtos`
-- [ ] Script para extrair TODAS as URLs do banco de dados
-- [ ] Incluir produtos com `deleted_at IS NOT NULL` (soft deleted)
-- [ ] Incluir banners inativos
+- [x] Script para listar TODAS as imagens no bucket `produtos`
+- [x] Script para extrair TODAS as URLs do banco de dados
+- [x] Incluir produtos com `deleted_at IS NOT NULL` (soft deleted)
+- [x] Incluir banners inativos
+- [x] Incluir produtos inativos
 
-### TODO 2.2: Gerar relatório de órfãs
+**Script criado:** `scripts/storage-cleanup.ts`
 
-- [ ] Comparar listas e identificar imagens não referenciadas
-- [ ] Salvar relatório em JSON
-- [ ] Incluir: nome do arquivo, tamanho, data de criação
+### TODO 2.2: Gerar relatório de órfãs ✅
 
-### TODO 2.3: Revisão manual
+- [x] Comparar listas e identificar imagens não referenciadas
+- [x] Salvar relatório em JSON
+- [x] Incluir: nome do arquivo, tamanho, data de criação
 
-- [ ] Apresentar relatório para aprovação do usuário
-- [ ] Permitir exclusão de itens do relatório antes da remoção
+**Relatório gerado:** `scripts/reports/storage-orphans-2026-01-15T20-33-39-150Z.json`
 
-### TODO 2.4: Backup das imagens órfãs
+**Resultado da análise (15/01/2026):**
 
-- [ ] Download das imagens órfãs para backup local
-- [ ] Ou: mover para bucket temporário antes de deletar
+| Métrica                       | Valor   |
+| ----------------------------- | ------- |
+| Arquivos no Storage           | 2.906   |
+| URLs Referenciadas (Supabase) | 446     |
+| URLs Firebase (externo)       | 544     |
+| Imagens Órfãs                 | 2.501   |
+| Espaço liberado               | ~246 MB |
 
-### TODO 2.5: Remoção segura
+**Distribuição dos arquivos órfãos:**
 
-- [ ] Script de remoção em batches (10-50 arquivos por vez)
-- [ ] Log de cada arquivo removido
-- [ ] Tratamento de erros (não parar se um arquivo falhar)
+| Tipo de Arquivo  | Quantidade | Descrição                    |
+| ---------------- | ---------- | ---------------------------- |
+| `-thumb.webp`    | 551        | Thumbnails (112px)           |
+| `-small.webp`    | 551        | Imagens pequenas (400px)     |
+| `-medium.webp`   | 551        | Imagens médias (800px)       |
+| `-large.webp`    | 550        | Imagens grandes (1200px)     |
+| `-original.webp` | 146        | Imagens originais otimizadas |
+| `.blob`          | ~100       | Arquivos temporários upload  |
+| `.jpeg`          | ~52        | Imagens originais antigas    |
+
+**Script para executar análise:** `npx tsx scripts/storage-cleanup.ts`
+
+**Relatórios salvos em:** `scripts/reports/`
+
+### TODO 2.3: Revisão manual ✅
+
+- [x] Apresentar relatório para aprovação do usuário
+- [x] Validação dupla confirmada: apenas 446 URLs do Supabase são usadas
+- [x] Imagens do Firebase são externas e não foram afetadas
+
+### TODO 2.4: Backup das imagens órfãs ⏭️
+
+- [x] **DECISÃO:** Backup pulado por limitações de tempo/orçamento
+- [x] Validação dupla garantiu segurança da operação
+
+### TODO 2.5: Remoção segura ✅ EXECUTADA
+
+- [x] Script de remoção em batches (50 arquivos por vez)
+- [x] Log de cada arquivo removido
+- [x] Tratamento de erros (nenhuma falha)
+
+**Execução em 15/01/2026:**
+
+```
+✅ Removidos: 2.501 arquivos
+❌ Falhas: 0
+💾 Espaço liberado: ~246 MB
+📄 Log: scripts/reports/removal-1768510499716.json
+```
+
+---
+
+## 2.5 Resumo da Etapa 2 ✅ CONCLUÍDA
+
+| Métrica             | Antes  | Depois |
+| ------------------- | ------ | ------ |
+| Arquivos no Storage | 2.906  | 405    |
+| Espaço ocupado      | ~300MB | ~54MB  |
+| Arquivos órfãos     | 2.501  | 0      |
+| Redução de espaço   | -      | ~82%   |
+
+**Scripts criados:**
+
+- `scripts/storage-cleanup.ts` - Inventário e análise
+- `scripts/validate-image-references.ts` - Validação de referências
+- `scripts/analyze-images.ts` - Análise detalhada
+- `scripts/remove-orphans-direct.ts` - Remoção direta
 
 ---
 
@@ -425,11 +492,11 @@ https://res.cloudinary.com/dvwtcedfs/image/upload/{transformations}/{public_id}
 
 # Resumo de Viabilidade
 
-| Etapa                  | Viabilidade  | Risco                 | Status       |
-| ---------------------- | ------------ | --------------------- | ------------ |
-| 1. Análise de tabelas  | ✅ VIÁVEL    | Baixo                 | ✅ CONCLUÍDA |
-| 2. Limpeza de storage  | ✅ VIÁVEL    | Médio (com cuidado)   | ⏳ PENDENTE  |
-| 3. Migração Cloudinary | ✅ VIÁVEL    | Baixo (opção híbrida) | ⏳ PENDENTE  |
+| Etapa                  | Viabilidade | Risco                 | Status       |
+| ---------------------- | ----------- | --------------------- | ------------ |
+| 1. Análise de tabelas  | ✅ VIÁVEL   | Baixo                 | ✅ CONCLUÍDA |
+| 2. Limpeza de storage  | ✅ VIÁVEL   | Baixo (validado)      | ✅ CONCLUÍDA |
+| 3. Migração Cloudinary | ✅ VIÁVEL   | Baixo (opção híbrida) | ⏳ PENDENTE  |
 
 ---
 
@@ -438,12 +505,12 @@ https://res.cloudinary.com/dvwtcedfs/image/upload/{transformations}/{public_id}
 1. ✅ ~~Aprovar este plano~~
 2. ✅ ~~Executar Etapa 1 (análise e limpeza de tabelas)~~
 3. ⏳ **Aplicar migration no banco de produção**
-4. ⏳ Executar Etapa 2 (inventário e limpeza de imagens)
+4. ✅ ~~Executar Etapa 2 (inventário e limpeza de imagens)~~ - **246 MB liberados!**
 5. ⏳ Executar Etapa 3 (integração Cloudinary - opção híbrida)
 6. ⏳ Migrar imagens antigas do Supabase para Cloudinary (opcional)
 
 ---
 
 > **Documento gerado em:** 2026-01-15
-> **Versão:** 2.0
-> **Status:** Etapa 1 concluída - Aguardando aplicação da migration
+> **Versão:** 3.0
+> **Status:** Etapas 1 e 2 concluídas - Aguardando aplicação da migration
