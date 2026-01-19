@@ -173,9 +173,9 @@ export function CalculadoraTaxasDialog({
           </BottomSheetTrigger>
         )}
 
-        <BottomSheetContent className="max-w-6xl border-[#1f1f1f] bg-[#000000]">
+        <BottomSheetContent className="max-w-6xl border-[#1f1f1f] bg-[#000000] max-sm:min-h-[80vh]">
           <BottomSheetHeader>
-            <BottomSheetTitle className="text-xl font-semibold text-white">
+            <BottomSheetTitle className="text-xl font-semibold text-[var(--brand-yellow)]">
               Calculadora de Parcelamento
             </BottomSheetTitle>
             <BottomSheetDescription className="text-[#a0a0a0]">
@@ -189,7 +189,7 @@ export function CalculadoraTaxasDialog({
               <Label htmlFor="valor" className="text-sm text-white">
                 Valor da Simulação
               </Label>
-              <div className="relative">
+              <div className="relative mt-1">
                 <span className="absolute top-1/2 left-3 -translate-y-1/2 text-[#a0a0a0]">R$</span>
                 <Input
                   id="valor"
@@ -290,7 +290,7 @@ export function CalculadoraTaxasDialog({
                 </p>
               </div>
             ) : (
-              <div className="flex h-64 items-center justify-center rounded-lg border border-[#1f1f1f] bg-[#0d0d0d] shadow-[0_0_20px_rgba(255,255,255,0.03)]">
+              <div className="flex h-[474px] items-center justify-center rounded-lg border border-[#1f1f1f] bg-[#0d0d0d] shadow-[0_0_20px_rgba(255,255,255,0.03)]">
                 <p className="text-center text-sm text-[#666666]">
                   Digite um valor acima para ver as opções de parcelamento
                 </p>

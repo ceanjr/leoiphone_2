@@ -176,14 +176,19 @@ export function CategoryList({ categories: initialCategories }: CategoryListProp
       ordem: index + 1,
     }))
 
-    for (const update of updates) {
-      await updateOrdemCategoria(update.id, update.ordem)
+    const results = await Promise.all(
+      updates.map((update) => updateOrdemCategoria(update.id, update.ordem))
+    )
+
+    const hasError = results.some((result) => !result.success)
+    if (hasError) {
+      throw new Error('Erro ao atualizar ordem de uma ou mais categorias')
     }
 
     router.refresh()
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
@@ -192,8 +197,15 @@ export function CategoryList({ categories: initialCategories }: CategoryListProp
 
       const newCategories = arrayMove(categories, oldIndex, newIndex)
       setCategories(newCategories)
-      updateCategoryOrder(newCategories)
-      toast.success('Ordem atualizada')
+
+      try {
+        await updateCategoryOrder(newCategories)
+        toast.success('Ordem atualizada')
+      } catch (error) {
+        toast.error('Erro ao atualizar ordem')
+        // Reverter para a ordem original em caso de erro
+        setCategories(categories)
+      }
     }
   }
 
