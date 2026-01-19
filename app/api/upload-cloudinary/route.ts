@@ -5,15 +5,33 @@ import { logger } from '@/lib/utils/logger'
 import { UPLOAD_LIMITS } from '@/lib/config/constants'
 import { v2 as cloudinary } from 'cloudinary'
 
+// Verificar variáveis de ambiente do Cloudinary
+const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+const apiKey = process.env.CLOUDINARY_API_KEY
+const apiSecret = process.env.CLOUDINARY_API_SECRET
+
 // Configuração Cloudinary
 cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!,
-  api_key: process.env.CLOUDINARY_API_KEY!,
-  api_secret: process.env.CLOUDINARY_API_SECRET!,
+  cloud_name: cloudName,
+  api_key: apiKey,
+  api_secret: apiSecret,
 })
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar se as variáveis de ambiente estão configuradas
+    if (!cloudName || !apiKey || !apiSecret) {
+      logger.error('Cloudinary não configurado. Variáveis faltando:', {
+        cloudName: !!cloudName,
+        apiKey: !!apiKey,
+        apiSecret: !!apiSecret,
+      })
+      return NextResponse.json(
+        { error: 'Configuração do servidor incompleta. Contate o administrador.' },
+        { status: 500 }
+      )
+    }
+
     // Rate limiting: 20 uploads por minuto por IP
     const clientIP = getClientIP(request)
     const rateLimitResult = checkRateLimit(clientIP, { interval: 60000, maxRequests: 20 })
@@ -99,7 +117,17 @@ export async function POST(request: NextRequest) {
       bytes: uploadResult.bytes,
     })
   } catch (error) {
-    logger.error('Erro no upload Cloudinary:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+    logger.error('Erro no upload Cloudinary:', errorMessage, error)
+
+    // Verificar se é erro de autenticação do Cloudinary
+    if (errorMessage.includes('Invalid API Key') || errorMessage.includes('Invalid Signature')) {
+      return NextResponse.json(
+        { error: 'Erro de autenticação com o servidor de imagens' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Erro interno no servidor' },
       { status: 500 }
