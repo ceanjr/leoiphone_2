@@ -96,6 +96,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
   // Track uploaded images for cleanup on cancel
   const uploadedImagesRef = useRef<string[]>([])
   const initialImagesRef = useRef<string[]>(product?.fotos ?? [])
+  // Rastrear imagens removidas durante edição (para deletar ao salvar)
+  const removedImagesRef = useRef<string[]>([])
 
   // Debounce do nome do produto para evitar processamento excessivo
   const debouncedNome = useDebounce(formData.nome || '', 500)
@@ -188,6 +190,68 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     router.push('/admin/produtos')
   }
 
+  // Função para extrair publicId de uma URL do Cloudinary
+  const extractCloudinaryPublicId = (url: string): string | null => {
+    try {
+      // URL típica: https://res.cloudinary.com/xxx/image/upload/v123/leoiphone/produtos/id/timestamp-random.jpg
+      const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z]+)?(?:\?|$)/i)
+      if (match && match[1]) {
+        return match[1]
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  // Função para deletar imagem do Cloudinary
+  const deleteFromCloudinary = async (imageUrl: string): Promise<boolean> => {
+    const publicId = extractCloudinaryPublicId(imageUrl)
+    if (!publicId) {
+      logger.warn('Não foi possível extrair publicId da URL:', imageUrl)
+      return false
+    }
+
+    try {
+      const response = await fetch(
+        `/api/upload-cloudinary?publicId=${encodeURIComponent(publicId)}`,
+        {
+          method: 'DELETE',
+        }
+      )
+
+      if (!response.ok) {
+        const error = await response.json()
+        logger.error('Erro ao deletar do Cloudinary:', error)
+        return false
+      }
+
+      logger.info('Imagem deletada do Cloudinary:', publicId)
+      return true
+    } catch (error) {
+      logger.error('Erro ao deletar do Cloudinary:', error)
+      return false
+    }
+  }
+
+  // Handler para remoção de imagem
+  const handleImageRemove = async (imageUrl: string) => {
+    if (isEditing) {
+      // Modo edição: apenas rastrear para deletar ao salvar
+      // Só rastrear se era uma imagem original (não uma nova que ainda não foi salva)
+      if (initialImagesRef.current.includes(imageUrl)) {
+        removedImagesRef.current.push(imageUrl)
+        logger.info('Imagem marcada para remoção ao salvar:', imageUrl)
+      } else {
+        // Imagem nova (ainda não salva no produto): deletar imediatamente
+        await deleteFromCloudinary(imageUrl)
+      }
+    } else {
+      // Modo criação: deletar imediatamente do Cloudinary
+      await deleteFromCloudinary(imageUrl)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (isLoading) return
@@ -251,6 +315,23 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
       toast.success(isEditing ? 'Produto atualizado!' : 'Produto cadastrado!')
 
+      // Se editando, deletar imagens removidas do Cloudinary após salvar com sucesso
+      if (isEditing && removedImagesRef.current.length > 0) {
+        logger.info('Deletando imagens removidas do Cloudinary:', removedImagesRef.current.length)
+        // Deletar em background, não bloquear a navegação
+        Promise.all(removedImagesRef.current.map((url) => deleteFromCloudinary(url)))
+          .then((results) => {
+            const deletedCount = results.filter(Boolean).length
+            logger.info(
+              `Imagens deletadas do Cloudinary: ${deletedCount}/${removedImagesRef.current.length}`
+            )
+          })
+          .catch((error) => {
+            logger.error('Erro ao deletar imagens do Cloudinary:', error)
+          })
+        removedImagesRef.current = []
+      }
+
       // Redirecionar para a lista de produtos
       router.push('/admin/produtos')
     } catch (error) {
@@ -279,6 +360,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               foto_principal: images[0] || undefined,
             }))
           }
+          onImageRemove={handleImageRemove}
           maxImages={5}
           disabled={isLoading}
         />
@@ -342,6 +424,27 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           </div>
 
           <div className="space-y-2">
+            <Label className="text-zinc-200">Condição *</Label>
+            <Select
+              value={formData.condicao ?? 'seminovo'}
+              onValueChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  condicao: value as 'novo' | 'seminovo',
+                }))
+              }
+            >
+              <SelectTrigger className="border-zinc-800 bg-zinc-950 text-white">
+                <SelectValue placeholder="Selecione a condição" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="novo">Novo</SelectItem>
+                <SelectItem value="seminovo">Seminovo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="nivel_bateria" className="text-zinc-200">
               Nível de Bateria (%)
             </Label>
@@ -362,27 +465,6 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               disabled={isLoading}
               className="border-zinc-800 bg-zinc-950 text-white"
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-zinc-200">Condição *</Label>
-            <Select
-              value={formData.condicao ?? 'seminovo'}
-              onValueChange={(value) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  condicao: value as 'novo' | 'seminovo',
-                }))
-              }
-            >
-              <SelectTrigger className="border-zinc-800 bg-zinc-950 text-white">
-                <SelectValue placeholder="Selecione a condição" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="novo">Novo</SelectItem>
-                <SelectItem value="seminovo">Seminovo</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">
@@ -408,26 +490,6 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                 )}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="estoque" className="text-zinc-200">
-              Estoque (un.)
-            </Label>
-            <Input
-              id="estoque"
-              type="number"
-              min="0"
-              value={formData.estoque ?? 1}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  estoque: e.target.value ? parseInt(e.target.value, 10) : 1,
-                }))
-              }
-              disabled={isLoading}
-              className="border-zinc-800 bg-zinc-950 text-white"
-            />
           </div>
 
           <div className="space-y-2">

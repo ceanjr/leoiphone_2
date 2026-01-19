@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Filter } from 'lucide-react'
 import type { ProdutoComCategoria } from '@/types/produto'
 import { ProductListAdmin } from './product-list-admin'
@@ -18,14 +19,56 @@ interface ProductsContentProps {
 }
 
 export function ProductsContent({ products, categories }: ProductsContentProps) {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
-  const [selectedStatus, setSelectedStatus] = useState<string>('ativo')
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  // Inicializar estados a partir da URL
+  const initialCategory = searchParams?.get('categoria') ?? ''
+  const initialStatus = searchParams?.get('status') ?? 'ativo'
+
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(initialCategory)
+  const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus)
   const [localProducts, setLocalProducts] = useState<ProdutoComCategoria[]>(products)
+
+  // Atualizar URL quando filtros mudarem
+  const updateURL = useCallback(
+    (category: string, status: string) => {
+      const params = new URLSearchParams()
+      if (category) params.set('categoria', category)
+      if (status !== 'ativo') params.set('status', status)
+
+      const query = params.toString()
+      const target = query ? `/admin/produtos?${query}` : '/admin/produtos'
+      router.replace(target, { scroll: false })
+    },
+    [router]
+  )
+
+  // Sincronizar com URL ao carregar
+  useEffect(() => {
+    if (!searchParams) return
+    const paramCategory = searchParams.get('categoria') ?? ''
+    const paramStatus = searchParams.get('status') ?? 'ativo'
+
+    setSelectedCategoryId(paramCategory)
+    setSelectedStatus(paramStatus)
+  }, [searchParams])
 
   // Sincronizar produtos locais com props quando mudarem
   useEffect(() => {
     setLocalProducts(products)
   }, [products])
+
+  // Handlers com atualização de URL
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategoryId(value)
+    updateURL(value, selectedStatus)
+  }
+
+  const handleStatusChange = (value: string) => {
+    setSelectedStatus(value)
+    updateURL(selectedCategoryId, value)
+  }
 
   // Handler para remoção de produto da lista local
   const handleProductDeleted = (productId: string) => {
@@ -75,7 +118,7 @@ export function ProductsContent({ products, categories }: ProductsContentProps) 
             <Filter className="pointer-events-none absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-zinc-500" />
             <select
               value={selectedCategoryId}
-              onChange={(e) => setSelectedCategoryId(e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full appearance-none rounded-lg border border-zinc-700 bg-zinc-900 py-2.5 pr-10 pl-10 text-sm text-white transition-colors focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 focus:outline-none"
             >
               <option value="">Todas as Categorias</option>
@@ -104,13 +147,13 @@ export function ProductsContent({ products, categories }: ProductsContentProps) 
         </div>
 
         {/* Toggle Switch de Status */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium tracking-wider text-zinc-500 uppercase">
-            Mostrar:
+        <div className="flex flex-col">
+          <span className="mb-2 text-xs font-medium tracking-wider text-zinc-500 uppercase">
+            Mostrar
           </span>
-          <div className="inline-flex rounded-lg border border-zinc-700 bg-zinc-900 p-1">
+          <div className="inline-flex self-start rounded-lg border border-zinc-700 bg-zinc-900 p-1">
             <button
-              onClick={() => setSelectedStatus('ativo')}
+              onClick={() => handleStatusChange('ativo')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-all ${
                 selectedStatus === 'ativo'
                   ? 'bg-green-500/50 text-white shadow-sm'
@@ -120,7 +163,7 @@ export function ProductsContent({ products, categories }: ProductsContentProps) 
               Ativo
             </button>
             <button
-              onClick={() => setSelectedStatus('inativo')}
+              onClick={() => handleStatusChange('inativo')}
               className={`rounded-md px-4 py-2 text-sm font-medium transition-all ${
                 selectedStatus === 'inativo'
                   ? 'bg-zinc-700 text-white shadow-sm'

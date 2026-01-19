@@ -15,7 +15,8 @@ export function useProdutosAgrupados(
   produtosIniciais: any[],
   produtosEmDestaqueIds: string[],
   categoriaFiltro: string,
-  busca: string
+  busca: string,
+  condicaoFiltro: 'todos' | 'novo' | 'seminovo' = 'todos'
 ) {
   const [todasCategorias, setTodasCategorias] = useState<ProdutosAgrupados[]>([])
   const [categoriasExibidas, setCategoriasExibidas] = useState(1)
@@ -28,6 +29,7 @@ export function useProdutosAgrupados(
       categoriaId: categoriaFiltro,
       busca,
       excluirIds: produtosEmDestaqueIds,
+      condicao: condicaoFiltro,
     })
 
     // Ordenar produtos
@@ -52,7 +54,7 @@ export function useProdutosAgrupados(
     }
 
     setCategoriasExibidas(categoriasIniciais || 1)
-  }, [produtosIniciais, produtosEmDestaqueIds, categoriaFiltro, busca])
+  }, [produtosIniciais, produtosEmDestaqueIds, categoriaFiltro, busca, condicaoFiltro])
 
   // Produtos agrupados visíveis
   const produtosAgrupados = useMemo(() => {

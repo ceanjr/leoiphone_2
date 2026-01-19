@@ -43,8 +43,7 @@ function HomePageContent() {
   } = useHomeFilters()
 
   // Dados da página
-  const { produtos, setProdutos, categorias, produtosEmDestaqueIds, loading } =
-    useHomeData()
+  const { produtos, setProdutos, categorias, produtosEmDestaqueIds, loading } = useHomeData()
 
   // Agrupamento e paginação
   const { produtosAgrupados, carregarMais, loadingMore, temMaisProdutos } = useProdutosAgrupados(
@@ -176,12 +175,9 @@ function HomePageContent() {
           <div className="text-sm text-zinc-400">
             {loading
               ? 'Carregando...'
-              : `${produtos.length} produto(s) encontrado(s) • Exibindo ${produtosAgrupados.reduce((acc, g) => acc + g.produtos.length, 0)} produtos`}
+              : `Exibindo ${produtosAgrupados.reduce((acc, g) => acc + g.produtos.length, 0)} de ${produtos.length} produtos disponíveis`}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-zinc-500 sm:inline">Visualização:</span>
-            <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
-          </div>
+          <ViewToggle viewMode={viewMode} onViewModeChange={handleViewModeChange} />
         </div>
 
         {/* Grid de Produtos Agrupados por Categoria */}

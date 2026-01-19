@@ -5,8 +5,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Edit, Trash2, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
-import { deleteProduto, toggleProdutoAtivo, updateProduto } from '@/app/admin/produtos/actions'
+import { deleteProduto, toggleProdutoAtivo, updateProdutoPreco } from '@/app/admin/produtos/actions'
 import type { ProdutoComCategoria } from '@/types/produto'
+import { Badge } from '@/components/ui/badge'
+import { BatteryIcon } from '@/components/shared/battery-icon'
+import { getCorOficial, getContrastColor } from '@/lib/data/iphone-cores'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +24,143 @@ import {
 interface ProductListAdminProps {
   products: ProdutoComCategoria[]
   onProductDeleted?: (productId: string) => void
+}
+
+// Mapeamento de cores com hex (fallback completo)
+const COR_HEX_MAP: Record<string, { nome: string; hex: string }> = {
+  // Português
+  dourado: { nome: 'Dourado', hex: '#F9E5C9' },
+  prata: { nome: 'Prata', hex: '#E3E4E5' },
+  preto: { nome: 'Preto', hex: '#1F2020' },
+  branco: { nome: 'Branco', hex: '#F9F6F2' },
+  azul: { nome: 'Azul', hex: '#2B74C7' },
+  vermelho: { nome: 'Vermelho', hex: '#BA0C2E' },
+  verde: { nome: 'Verde', hex: '#4E5851' },
+  roxo: { nome: 'Roxo', hex: '#D1C4E9' },
+  amarelo: { nome: 'Amarelo', hex: '#FFD954' },
+  rosa: { nome: 'Rosa', hex: '#F9E0EB' },
+  cinza: { nome: 'Cinza', hex: '#53565A' },
+  coral: { nome: 'Coral', hex: '#FF6A4D' },
+  grafite: { nome: 'Grafite', hex: '#54524F' },
+  bronze: { nome: 'Bronze', hex: '#C4A77D' },
+  titanio: { nome: 'Titânio', hex: '#8A8D8F' },
+  'ouro rosa': { nome: 'Ouro Rosa', hex: '#E1CEC1' },
+  'preto fosco': { nome: 'Preto Fosco', hex: '#0D0D0D' },
+  'meia noite': { nome: 'Meia-Noite', hex: '#1F2020' },
+  'meia-noite': { nome: 'Meia-Noite', hex: '#1F2020' },
+  estelar: { nome: 'Estelar', hex: '#F9F6F2' },
+  'azul pacifico': { nome: 'Azul Pacífico', hex: '#4F6D7A' },
+  'azul sierra': { nome: 'Azul Sierra', hex: '#A5C7D3' },
+  'verde alpino': { nome: 'Verde Alpino', hex: '#576856' },
+  'roxo profundo': { nome: 'Roxo Profundo', hex: '#5E5171' },
+  'titanio natural': { nome: 'Titânio Natural', hex: '#8A8D8F' },
+  'titanio azul': { nome: 'Titânio Azul', hex: '#3D4654' },
+  'titanio branco': { nome: 'Titânio Branco', hex: '#F2F1EB' },
+  'titanio preto': { nome: 'Titânio Preto', hex: '#3C3C3D' },
+  'titanio deserto': { nome: 'Titânio Deserto', hex: '#C4A77D' },
+  // Inglês
+  gold: { nome: 'Gold', hex: '#F9E5C9' },
+  silver: { nome: 'Silver', hex: '#E3E4E5' },
+  black: { nome: 'Black', hex: '#1F2020' },
+  white: { nome: 'White', hex: '#F9F6F2' },
+  blue: { nome: 'Blue', hex: '#2B74C7' },
+  red: { nome: 'Red', hex: '#BA0C2E' },
+  green: { nome: 'Green', hex: '#4E5851' },
+  purple: { nome: 'Purple', hex: '#D1C4E9' },
+  yellow: { nome: 'Yellow', hex: '#FFD954' },
+  pink: { nome: 'Pink', hex: '#F9E0EB' },
+  gray: { nome: 'Gray', hex: '#53565A' },
+  grey: { nome: 'Grey', hex: '#53565A' },
+  graphite: { nome: 'Graphite', hex: '#54524F' },
+  titanium: { nome: 'Titanium', hex: '#8A8D8F' },
+  'rose gold': { nome: 'Rose Gold', hex: '#E1CEC1' },
+  rosegold: { nome: 'Rose Gold', hex: '#E1CEC1' },
+  'jet black': { nome: 'Jet Black', hex: '#0D0D0D' },
+  jetblack: { nome: 'Jet Black', hex: '#0D0D0D' },
+  'space gray': { nome: 'Space Gray', hex: '#53565A' },
+  spacegray: { nome: 'Space Gray', hex: '#53565A' },
+  'space grey': { nome: 'Space Gray', hex: '#53565A' },
+  'space black': { nome: 'Space Black', hex: '#1F2020' },
+  spaceblack: { nome: 'Space Black', hex: '#1F2020' },
+  midnight: { nome: 'Midnight', hex: '#1F2020' },
+  starlight: { nome: 'Starlight', hex: '#F9F6F2' },
+  'pacific blue': { nome: 'Pacific Blue', hex: '#4F6D7A' },
+  pacificblue: { nome: 'Pacific Blue', hex: '#4F6D7A' },
+  'sierra blue': { nome: 'Sierra Blue', hex: '#A5C7D3' },
+  sierrablue: { nome: 'Sierra Blue', hex: '#A5C7D3' },
+  'alpine green': { nome: 'Alpine Green', hex: '#576856' },
+  alpinegreen: { nome: 'Alpine Green', hex: '#576856' },
+  'deep purple': { nome: 'Deep Purple', hex: '#5E5171' },
+  deeppurple: { nome: 'Deep Purple', hex: '#5E5171' },
+  'natural titanium': { nome: 'Natural Titanium', hex: '#8A8D8F' },
+  naturaltitanium: { nome: 'Natural Titanium', hex: '#8A8D8F' },
+  'blue titanium': { nome: 'Blue Titanium', hex: '#3D4654' },
+  bluetitanium: { nome: 'Blue Titanium', hex: '#3D4654' },
+  'white titanium': { nome: 'White Titanium', hex: '#F2F1EB' },
+  whitetitanium: { nome: 'White Titanium', hex: '#F2F1EB' },
+  'black titanium': { nome: 'Black Titanium', hex: '#3C3C3D' },
+  blacktitanium: { nome: 'Black Titanium', hex: '#3C3C3D' },
+  'desert titanium': { nome: 'Desert Titanium', hex: '#C4A77D' },
+  deserttitanium: { nome: 'Desert Titanium', hex: '#C4A77D' },
+  teal: { nome: 'Teal', hex: '#5AACB3' },
+  ultramarine: { nome: 'Ultramarine', hex: '#3F51B5' },
+  'midnight green': { nome: 'Midnight Green', hex: '#4E5851' },
+  midnightgreen: { nome: 'Midnight Green', hex: '#4E5851' },
+  '(product)red': { nome: '(PRODUCT)RED', hex: '#BA0C2E' },
+  'product red': { nome: 'PRODUCT RED', hex: '#BA0C2E' },
+  productred: { nome: 'PRODUCT RED', hex: '#BA0C2E' },
+}
+
+// Helper para normalizar o nome da cor para busca
+function normalizarCor(cor: string): string {
+  return cor
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/\s+/g, ' ') // Normaliza espaços múltiplos
+}
+
+// Helper para obter cores do produto (oficiais ou personalizadas)
+function getCoresFromProduct(product: ProdutoComCategoria) {
+  // Obter lista de cores - priorizar array 'cores', fallback para 'cor_oficial' legado
+  let listaCores: string[] = []
+
+  if (product.cores && product.cores.length > 0) {
+    listaCores = product.cores
+  } else if (product.cor_oficial) {
+    // Fallback para campo legado cor_oficial
+    listaCores = [product.cor_oficial]
+  }
+
+  if (listaCores.length === 0) {
+    return []
+  }
+
+  return listaCores.map((corNome) => {
+    // Tentar obter cor oficial primeiro
+    const corOficial = getCorOficial(product.nome, corNome)
+    if (corOficial) {
+      return corOficial
+    }
+
+    // Fallback: tentar encontrar no mapeamento direto (case insensitive, sem acentos)
+    const corNormalizada = normalizarCor(corNome)
+    const corMapeada = COR_HEX_MAP[corNormalizada]
+
+    if (corMapeada) {
+      return {
+        nome: corMapeada.nome, // Usa o nome formatado do mapeamento
+        hex: corMapeada.hex,
+      }
+    }
+
+    // Cor totalmente personalizada: usa fundo cinza
+    return {
+      nome: corNome,
+      hex: '#52525b', // zinc-600
+    }
+  })
 }
 
 export function ProductListAdmin({ products, onProductDeleted }: ProductListAdminProps) {
@@ -110,17 +250,7 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
 
     setUpdatingPrice(true)
     try {
-      const product = products.find((p) => p.id === productId)
-      if (!product) {
-        toast.error('Produto não encontrado')
-        return
-      }
-
-      const result = await updateProduto(productId, {
-        ...product,
-        preco: price,
-        descricao: product.descricao === null ? undefined : product.descricao,
-      })
+      const result = await updateProdutoPreco(productId, price)
 
       if (result.success) {
         toast.success('Preço atualizado!')
@@ -306,20 +436,60 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
       <div className="space-y-4 md:hidden">
         {products.map((product) => (
           <div key={product.id} className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+            {/* Header com código em destaque */}
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs text-zinc-500">{product.categoria?.nome || '-'}</p>
+              {product.codigo_produto && (
+                <span className="rounded bg-zinc-800 px-2 py-0.5 font-mono text-sm font-semibold text-yellow-400">
+                  {product.codigo_produto}
+                </span>
+              )}
+            </div>
+
             {/* Product Info */}
             <div>
-              <p className="text-xs text-zinc-500">
-                {product.categoria?.nome || '-'}
-                {product.codigo_produto && ` • ${product.codigo_produto}`}
-              </p>
               <Link
                 href={`/produto/${product.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1 flex items-center gap-1 text-lg font-semibold text-white hover:text-yellow-400"
+                className="flex items-center gap-1 text-lg font-semibold text-white hover:text-yellow-400"
               >
                 <span className="line-clamp-2">{product.nome}</span>
               </Link>
+
+              {/* Badges de Cor, Bateria e Condição */}
+              {(() => {
+                const cores = getCoresFromProduct(product)
+                return (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    {cores.map((cor, index) => (
+                      <Badge
+                        key={index}
+                        className="px-2 py-0.5 text-xs"
+                        style={{
+                          backgroundColor: cor.hex,
+                          color: getContrastColor(cor.hex),
+                        }}
+                      >
+                        {cor.nome}
+                      </Badge>
+                    ))}
+                    {product.nivel_bateria ? (
+                      <Badge className="flex items-center gap-1.5 bg-zinc-700 px-2 py-0.5 text-xs text-white">
+                        <BatteryIcon level={product.nivel_bateria} />
+                        <span>{product.nivel_bateria}%</span>
+                      </Badge>
+                    ) : product.condicao === 'novo' ? (
+                      <Badge className="bg-green-600 px-2 py-0.5 text-xs text-white">Novo</Badge>
+                    ) : (
+                      <Badge className="bg-amber-600 px-2 py-0.5 text-xs text-white">
+                        Seminovo
+                      </Badge>
+                    )}
+                  </div>
+                )
+              })()}
+
               <div className="mt-2 flex items-baseline gap-2">
                 {/* Edição inline de preço no mobile */}
                 {editingPriceMobile === product.id ? (

@@ -51,7 +51,7 @@ export function agruparProdutosPorCategoria(produtos: any[]): ProdutosAgrupados[
 }
 
 /**
- * Filtra produtos por categoria, busca e IDs excluídos
+ * Filtra produtos por categoria, busca, condição e IDs excluídos
  */
 export function filtrarProdutos(
   produtos: any[],
@@ -59,6 +59,7 @@ export function filtrarProdutos(
     categoriaId?: string
     busca?: string
     excluirIds?: string[]
+    condicao?: 'todos' | 'novo' | 'seminovo'
   }
 ): any[] {
   let filtered = [...produtos]
@@ -71,6 +72,11 @@ export function filtrarProdutos(
   // Filtrar por categoria
   if (options.categoriaId && options.categoriaId !== 'todas') {
     filtered = filtered.filter((p) => p.categoria_id === options.categoriaId)
+  }
+
+  // Filtrar por condição
+  if (options.condicao && options.condicao !== 'todos') {
+    filtered = filtered.filter((p) => p.condicao === options.condicao)
   }
 
   // Filtrar por busca

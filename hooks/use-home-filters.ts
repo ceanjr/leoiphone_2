@@ -6,6 +6,8 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import type { ProductFilters } from '@/components/public/filters/filters-drawer'
 
+export type CondicaoFiltro = 'todos' | 'novo' | 'seminovo'
+
 export function useHomeFilters() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -15,10 +17,12 @@ export function useHomeFilters() {
   const initialBusca = searchParams?.get('busca') ?? ''
   const initialCategoria = searchParams?.get('categoria') ?? 'todas'
   const initialViewMode = (searchParams?.get('view') ?? 'list') as 'grid' | 'list'
+  const initialCondicao = (searchParams?.get('condicao') ?? 'todos') as CondicaoFiltro
 
   const [busca, setBusca] = useState(initialBusca)
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>(initialCategoria)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(initialViewMode)
+  const [condicaoFiltro, setCondicaoFiltro] = useState<CondicaoFiltro>(initialCondicao)
   const [advancedFilters, setAdvancedFilters] = useState<ProductFilters>({
     priceMin: null,
     priceMax: null,
@@ -33,10 +37,12 @@ export function useHomeFilters() {
     const paramBusca = searchParams.get('busca') ?? ''
     const paramCategoria = searchParams.get('categoria') ?? 'todas'
     const paramViewMode = searchParams.get('view') ?? 'list'
+    const paramCondicao = searchParams.get('condicao') ?? 'todos'
 
     setBusca(paramBusca)
     setCategoriaFiltro(paramCategoria)
     setViewMode(paramViewMode as 'grid' | 'list')
+    setCondicaoFiltro(paramCondicao as CondicaoFiltro)
   }, [searchParams])
 
   // Carregar filtros salvos
@@ -52,12 +58,13 @@ export function useHomeFilters() {
   }, [])
 
   // Atualizar URL com filtros
-  const updateURL = (newBusca?: string, newCategoria?: string, newViewMode?: 'grid' | 'list') => {
+  const updateURL = (newBusca?: string, newCategoria?: string, newViewMode?: 'grid' | 'list', newCondicao?: CondicaoFiltro) => {
     const params = new URLSearchParams(searchParams?.toString())
 
     const finalBusca = newBusca !== undefined ? newBusca : busca
     const finalCategoria = newCategoria !== undefined ? newCategoria : categoriaFiltro
     const finalViewMode = newViewMode !== undefined ? newViewMode : viewMode
+    const finalCondicao = newCondicao !== undefined ? newCondicao : condicaoFiltro
 
     if (finalBusca.trim()) {
       params.set('busca', finalBusca.trim())
@@ -75,6 +82,12 @@ export function useHomeFilters() {
       params.set('view', finalViewMode)
     } else {
       params.delete('view')
+    }
+
+    if (finalCondicao !== 'todos') {
+      params.set('condicao', finalCondicao)
+    } else {
+      params.delete('condicao')
     }
 
     const query = params.toString()
@@ -96,9 +109,15 @@ export function useHomeFilters() {
     updateURL(undefined, undefined, mode)
   }
 
+  const handleCondicaoChange = (value: CondicaoFiltro) => {
+    setCondicaoFiltro(value)
+    updateURL(undefined, undefined, undefined, value)
+  }
+
   const limparFiltros = () => {
     setBusca('')
     setCategoriaFiltro('todas')
+    setCondicaoFiltro('todos')
     setAdvancedFilters({
       priceMin: null,
       priceMax: null,
@@ -116,10 +135,13 @@ export function useHomeFilters() {
     setCategoriaFiltro,
     viewMode,
     setViewMode,
+    condicaoFiltro,
+    setCondicaoFiltro,
     advancedFilters,
     setAdvancedFilters,
     handleCategoriaChange,
     handleViewModeChange,
+    handleCondicaoChange,
     limparFiltros,
     updateURL,
   }

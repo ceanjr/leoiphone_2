@@ -261,6 +261,7 @@ export function getContrastColor(hexColor: string): string {
 }
 
 const COR_MAP: Record<string, string> = {
+  // Cores em inglês (Title Case)
   'Space Gray': 'cinza',
   Silver: 'prata',
   Gold: 'dourado',
@@ -299,7 +300,64 @@ const COR_MAP: Record<string, string> = {
   'Black Titanium': 'preto',
   'Desert Titanium': 'bronze',
   Teal: 'verde',
-  Ultramarine: 'azul'
+  Ultramarine: 'azul',
+  // Cores em inglês (lowercase) - para compatibilidade
+  'space gray': 'cinza',
+  silver: 'prata',
+  gold: 'dourado',
+  'rose gold': 'ouro rosa',
+  'jet black': 'preto fosco',
+  black: 'preto',
+  white: 'branco',
+  blue: 'azul',
+  yellow: 'amarelo',
+  coral: 'coral',
+  green: 'verde',
+  purple: 'roxo',
+  'midnight green': 'verde',
+  graphite: 'cinza',
+  'pacific blue': 'azul',
+  midnight: 'preto',
+  starlight: 'branco',
+  pink: 'rosa',
+  'sierra blue': 'azul',
+  'alpine green': 'verde',
+  'deep purple': 'roxo',
+  'space black': 'cinza',
+  'natural titanium': 'cinza',
+  'blue titanium': 'azul',
+  'white titanium': 'branco',
+  'black titanium': 'preto',
+  'desert titanium': 'bronze',
+  teal: 'verde',
+  ultramarine: 'azul',
+  // Cores em português
+  preto: 'preto',
+  branco: 'branco',
+  azul: 'azul',
+  verde: 'verde',
+  amarelo: 'amarelo',
+  rosa: 'rosa',
+  roxo: 'roxo',
+  cinza: 'cinza',
+  prata: 'prata',
+  dourado: 'dourado',
+  'ouro rosa': 'ouro rosa',
+  grafite: 'cinza',
+  bronze: 'bronze',
+}
+
+/**
+ * Normaliza o nome da cor para busca no mapeamento
+ * Remove acentos, normaliza espaços e converte para minúsculo
+ */
+function normalizarCor(cor: string): string {
+  return cor
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/\s+/g, ' ') // Normaliza espaços múltiplos
 }
 
 /**
@@ -314,7 +372,11 @@ export function getCorOficial(nomeModelo: string, corOficial: string) {
     return null
   }
 
-  const corMapeada = COR_MAP[corOficial] || corOficial.toLowerCase()
+  // Normaliza a cor de entrada
+  const corNormalizada = normalizarCor(corOficial)
+  
+  // Tenta mapear usando o COR_MAP (busca por chave original e normalizada)
+  const corMapeada = COR_MAP[corOficial] || COR_MAP[corNormalizada] || corNormalizada
 
   return coresDisponiveis[corMapeada] || null
 }
