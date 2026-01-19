@@ -33,7 +33,9 @@ function useGestures(
   onPinchZoom: (scale: number) => void,
   onDoubleTap: () => void
 ) {
-  const touchStartRef = useRef<{ x: number; y: number; distance: number; time: number } | null>(null)
+  const touchStartRef = useRef<{ x: number; y: number; distance: number; time: number } | null>(
+    null
+  )
   const lastTapRef = useRef<number>(0)
   const lastScaleRef = useRef(1)
 
@@ -58,54 +60,63 @@ function useGestures(
     }
   }, [])
 
-  const handleTouchMove = useCallback((e: TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length === 2 && touchStartRef.current) {
-      // Pinch zoom
-      e.preventDefault()
+  const handleTouchMove = useCallback(
+    (e: TouchEvent<HTMLDivElement>) => {
+      if (e.touches.length === 2 && touchStartRef.current) {
+        // Pinch zoom
+        e.preventDefault()
 
-      const touch1 = e.touches[0]
-      const touch2 = e.touches[1]
-      const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY)
+        const touch1 = e.touches[0]
+        const touch2 = e.touches[1]
+        const distance = Math.hypot(
+          touch2.clientX - touch1.clientX,
+          touch2.clientY - touch1.clientY
+        )
 
-      const scale = distance / touchStartRef.current.distance
-      const newScale = Math.min(Math.max(lastScaleRef.current * scale, 1), 4)
+        const scale = distance / touchStartRef.current.distance
+        const newScale = Math.min(Math.max(lastScaleRef.current * scale, 1), 4)
 
-      onPinchZoom(newScale)
-    }
-  }, [onPinchZoom])
-
-  const handleTouchEnd = useCallback((e: TouchEvent<HTMLDivElement>) => {
-    if (!touchStartRef.current) return
-
-    const touch = e.changedTouches[0]
-    const deltaX = touch.clientX - touchStartRef.current.x
-    const deltaY = touch.clientY - touchStartRef.current.y
-    const deltaTime = Date.now() - touchStartRef.current.time
-    const distance = Math.hypot(deltaX, deltaY)
-
-    // Detectar double tap
-    const now = Date.now()
-    if (deltaTime < 300 && distance < 10) {
-      if (now - lastTapRef.current < 300) {
-        onDoubleTap()
-        lastTapRef.current = 0
-        touchStartRef.current = null
-        return
+        onPinchZoom(newScale)
       }
-      lastTapRef.current = now
-    }
+    },
+    [onPinchZoom]
+  )
 
-    // Detectar swipe (movimento rápido e horizontal)
-    if (deltaTime < 300 && Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 2) {
-      if (deltaX > 0) {
-        onSwipeRight()
-      } else {
-        onSwipeLeft()
+  const handleTouchEnd = useCallback(
+    (e: TouchEvent<HTMLDivElement>) => {
+      if (!touchStartRef.current) return
+
+      const touch = e.changedTouches[0]
+      const deltaX = touch.clientX - touchStartRef.current.x
+      const deltaY = touch.clientY - touchStartRef.current.y
+      const deltaTime = Date.now() - touchStartRef.current.time
+      const distance = Math.hypot(deltaX, deltaY)
+
+      // Detectar double tap
+      const now = Date.now()
+      if (deltaTime < 300 && distance < 10) {
+        if (now - lastTapRef.current < 300) {
+          onDoubleTap()
+          lastTapRef.current = 0
+          touchStartRef.current = null
+          return
+        }
+        lastTapRef.current = now
       }
-    }
 
-    touchStartRef.current = null
-  }, [onSwipeLeft, onSwipeRight, onDoubleTap])
+      // Detectar swipe (movimento rápido e horizontal)
+      if (deltaTime < 300 && Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 2) {
+        if (deltaX > 0) {
+          onSwipeRight()
+        } else {
+          onSwipeLeft()
+        }
+      }
+
+      touchStartRef.current = null
+    },
+    [onSwipeLeft, onSwipeRight, onDoubleTap]
+  )
 
   return { handleTouchStart, handleTouchMove, handleTouchEnd }
 }
@@ -131,10 +142,7 @@ function ImageGalleryWithZoomComponent({
     if (!showFullscreen) return
 
     // Preload apenas imagens adjacentes que ainda não foram carregadas
-    const adjacentImages = [
-      images[selectedIndex - 1],
-      images[selectedIndex + 1],
-    ].filter(Boolean)
+    const adjacentImages = [images[selectedIndex - 1], images[selectedIndex + 1]].filter(Boolean)
 
     adjacentImages.forEach((src) => {
       const img = new Image()
@@ -150,14 +158,17 @@ function ImageGalleryWithZoomComponent({
   }, [selectedIndex])
 
   // Navegação entre imagens com feedback visual
-  const handleImageChange = useCallback((newIndex: number) => {
-    if (newIndex < 0 || newIndex >= images.length) return
+  const handleImageChange = useCallback(
+    (newIndex: number) => {
+      if (newIndex < 0 || newIndex >= images.length) return
 
-    setIsTransitioning(true)
-    onIndexChange(newIndex)
+      setIsTransitioning(true)
+      onIndexChange(newIndex)
 
-    setTimeout(() => setIsTransitioning(false), 300)
-  }, [images.length, onIndexChange])
+      setTimeout(() => setIsTransitioning(false), 300)
+    },
+    [images.length, onIndexChange]
+  )
 
   // Gestos customizados
   const handlePinchZoom = useCallback((newScale: number) => {
@@ -306,21 +317,24 @@ function ImageGalleryWithZoomComponent({
   }, [showFullscreen, selectedIndex, closeFullscreen, handleImageChange, scale])
 
   // Zoom com mouse (desktop)
-  const handleMouseZoom = useCallback((zoomIn: boolean) => {
-    const newScale = zoomIn ? Math.min(scale + 0.5, 4) : Math.max(scale - 0.5, 1)
-    setScale(newScale)
-    setIsZoomed(newScale > 1)
-    if (newScale === 1) {
-      setPosition({ x: 0, y: 0 })
-    }
-  }, [scale])
+  const handleMouseZoom = useCallback(
+    (zoomIn: boolean) => {
+      const newScale = zoomIn ? Math.min(scale + 0.5, 4) : Math.max(scale - 0.5, 1)
+      setScale(newScale)
+      setIsZoomed(newScale > 1)
+      if (newScale === 1) {
+        setPosition({ x: 0, y: 0 })
+      }
+    },
+    [scale]
+  )
 
   return (
     <>
       {/* Galeria principal */}
       <div className="relative">
         <div
-          className="relative aspect-square overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 cursor-pointer"
+          className="relative aspect-square cursor-pointer overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950"
           onClick={openFullscreen}
           role="button"
           aria-label={`Abrir visualização em tela cheia de ${productName}`}
@@ -344,7 +358,7 @@ function ImageGalleryWithZoomComponent({
                 priority={selectedIndex === 0}
               />
               {/* Indicador de zoom */}
-              <div className="absolute bottom-4 right-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-2 text-white backdrop-blur-sm">
+              <div className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-2 text-white backdrop-blur-sm">
                 <ZoomIn className="h-4 w-4" />
                 <span className="text-xs">Toque para ampliar</span>
               </div>
@@ -413,7 +427,7 @@ function ImageGalleryWithZoomComponent({
         >
           {/* Container interno com safe areas e conteúdo */}
           <div
-            className="relative h-full w-full flex items-center justify-center"
+            className="relative flex h-full w-full items-center justify-center"
             style={{
               // Safe areas para notch e bordas arredondadas
               paddingTop: 'env(safe-area-inset-top, 0)',
@@ -422,164 +436,166 @@ function ImageGalleryWithZoomComponent({
               paddingRight: 'env(safe-area-inset-right, 0)',
             }}
           >
-          {/* Botão fechar - tamanho ≥44px para acessibilidade */}
-          <button
-            onClick={closeFullscreen}
-            className="absolute right-4 top-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black/80 active:scale-95 transition-all"
-            aria-label="Fechar visualização"
-            style={{
-              minWidth: '44px',
-              minHeight: '44px',
-              top: 'max(1rem, env(safe-area-inset-top, 0))',
-              right: 'max(1rem, env(safe-area-inset-right, 0))',
-            }}
-          >
-            <X className="h-6 w-6" />
-          </button>
-
-          {/* Controles de navegação - botões ≥44px */}
-          {images.length > 1 && (
-            <>
-              <button
-                onClick={() => handleImageChange(selectedIndex - 1)}
-                disabled={selectedIndex === 0}
-                className="absolute left-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black/80 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                aria-label="Imagem anterior"
-                style={{
-                  minWidth: '44px',
-                  minHeight: '44px',
-                  left: 'max(1rem, env(safe-area-inset-left, 0))',
-                }}
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </button>
-
-              <button
-                onClick={() => handleImageChange(selectedIndex + 1)}
-                disabled={selectedIndex === images.length - 1}
-                className="absolute right-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black/80 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                aria-label="Próxima imagem"
-                style={{
-                  minWidth: '44px',
-                  minHeight: '44px',
-                  right: 'max(1rem, env(safe-area-inset-right, 0))',
-                }}
-              >
-                <ChevronRight className="h-6 w-6" />
-              </button>
-            </>
-          )}
-
-          {/* Controles de zoom (desktop) - botões ≥44px */}
-          <div
-            className="absolute bottom-20 right-4 z-10 hidden gap-2 md:flex"
-            style={{
-              right: 'max(1rem, env(safe-area-inset-right, 0))',
-            }}
-          >
+            {/* Botão fechar - tamanho ≥44px para acessibilidade */}
             <button
-              onClick={() => handleMouseZoom(true)}
-              disabled={scale >= 4}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black/80 active:scale-95 transition-all disabled:opacity-30"
-              aria-label="Ampliar"
-              style={{ minWidth: '44px', minHeight: '44px' }}
-            >
-              <ZoomIn className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => handleMouseZoom(false)}
-              disabled={scale <= 1}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black/80 active:scale-95 transition-all disabled:opacity-30"
-              aria-label="Reduzir"
-              style={{ minWidth: '44px', minHeight: '44px' }}
-            >
-              <ZoomOut className="h-5 w-5" />
-            </button>
-          </div>
-
-          {/* Área da imagem com gestos */}
-          <div
-            className="relative h-full w-full touch-none select-none"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onDoubleClick={handleDoubleTap}
-            onClick={(e) => {
-              // Fechar ao clicar fora da imagem (área preta)
-              if (e.target === e.currentTarget && !isZoomed) {
-                closeFullscreen()
-              }
-            }}
-          >
-            <div
-              className={`absolute inset-0 flex items-center justify-center transition-opacity ${
-                isTransitioning ? 'opacity-0' : 'opacity-100'
-              }`}
+              onClick={closeFullscreen}
+              className="absolute top-4 right-4 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-95"
+              aria-label="Fechar visualização"
               style={{
-                transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
-                transition: isTransitioning ? 'opacity 0.3s ease-out' : 'transform 0.2s ease-out',
+                minWidth: '44px',
+                minHeight: '44px',
+                top: 'max(1rem, env(safe-area-inset-top, 0))',
+                right: 'max(1rem, env(safe-area-inset-right, 0))',
               }}
             >
-              <OptimizedImage
-                key={`lightbox-${selectedIndex}-${images[selectedIndex]}`}
-                src={images[selectedIndex]}
-                alt={`${productName} - Imagem ${selectedIndex + 1} de ${images.length}`}
-                width={1200}
-                height={1200}
-                className="max-h-full max-w-full object-contain"
-              />
+              <X className="h-6 w-6" />
+            </button>
+
+            {/* Controles de navegação - botões ≥44px */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={() => handleImageChange(selectedIndex - 1)}
+                  disabled={selectedIndex === 0}
+                  className="absolute top-1/2 left-4 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Imagem anterior"
+                  style={{
+                    minWidth: '44px',
+                    minHeight: '44px',
+                    left: 'max(1rem, env(safe-area-inset-left, 0))',
+                  }}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+
+                <button
+                  onClick={() => handleImageChange(selectedIndex + 1)}
+                  disabled={selectedIndex === images.length - 1}
+                  className="absolute top-1/2 right-4 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Próxima imagem"
+                  style={{
+                    minWidth: '44px',
+                    minHeight: '44px',
+                    right: 'max(1rem, env(safe-area-inset-right, 0))',
+                  }}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+
+            {/* Controles de zoom (desktop) - botões ≥44px */}
+            <div
+              className="absolute right-4 bottom-20 z-10 hidden gap-2 md:flex"
+              style={{
+                right: 'max(1rem, env(safe-area-inset-right, 0))',
+              }}
+            >
+              <button
+                onClick={() => handleMouseZoom(true)}
+                disabled={scale >= 4}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-95 disabled:opacity-30"
+                aria-label="Ampliar"
+                style={{ minWidth: '44px', minHeight: '44px' }}
+              >
+                <ZoomIn className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => handleMouseZoom(false)}
+                disabled={scale <= 1}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm transition-all hover:bg-black/80 active:scale-95 disabled:opacity-30"
+                aria-label="Reduzir"
+                style={{ minWidth: '44px', minHeight: '44px' }}
+              >
+                <ZoomOut className="h-5 w-5" />
+              </button>
             </div>
 
-            {/* Instruções de uso */}
-            {!isZoomed && (
+            {/* Área da imagem com gestos */}
+            <div
+              className="relative h-full w-full touch-none select-none"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onDoubleClick={handleDoubleTap}
+              onClick={(e) => {
+                // Fechar ao clicar fora da imagem (área preta)
+                if (e.target === e.currentTarget && !isZoomed) {
+                  closeFullscreen()
+                }
+              }}
+            >
               <div
-                className="pointer-events-none absolute bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-center text-sm text-white backdrop-blur-sm"
+                className={`absolute inset-0 flex items-center justify-center transition-opacity ${
+                  isTransitioning ? 'opacity-0' : 'opacity-100'
+                }`}
                 style={{
-                  bottom: 'max(5rem, env(safe-area-inset-bottom, 0))',
+                  transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
+                  transition: isTransitioning ? 'opacity 0.3s ease-out' : 'transform 0.2s ease-out',
                 }}
               >
-                <p className="md:hidden">Deslize para navegar • Belisque para zoom</p>
-                <p className="hidden md:block">Use as setas ou clique duas vezes para zoom</p>
+                <OptimizedImage
+                  key={`lightbox-${selectedIndex}-${images[selectedIndex]}`}
+                  src={images[selectedIndex]}
+                  alt={`${productName} - Imagem ${selectedIndex + 1} de ${images.length}`}
+                  width={1200}
+                  height={1200}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+
+              {/* Instruções de uso */}
+              {!isZoomed && (
+                <div
+                  className="pointer-events-none absolute bottom-20 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-center text-sm text-white backdrop-blur-sm"
+                  style={{
+                    bottom: 'max(5rem, env(safe-area-inset-bottom, 0))',
+                  }}
+                >
+                  <p className="md:hidden">Deslize para navegar • Belisque para zoom</p>
+                  <p className="hidden md:block">Use as setas ou clique duas vezes para zoom</p>
+                </div>
+              )}
+            </div>
+
+            {/* Indicador de posição melhorado */}
+            {images.length > 1 && (
+              <div
+                className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm"
+                aria-live="polite"
+                aria-atomic="true"
+                style={{
+                  bottom: 'max(2rem, env(safe-area-inset-bottom, 0))',
+                }}
+              >
+                {selectedIndex + 1} / {images.length}
               </div>
             )}
-          </div>
 
-          {/* Indicador de posição melhorado */}
-          {images.length > 1 && (
-            <div
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm"
-              aria-live="polite"
-              aria-atomic="true"
-              style={{
-                bottom: 'max(2rem, env(safe-area-inset-bottom, 0))',
-              }}
-            >
-              {selectedIndex + 1} / {images.length}
-            </div>
-          )}
-
-          {/* Navegação por miniaturas (mobile landscape) */}
-          {images.length > 1 && (
-            <div
-              className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 overflow-x-auto px-4 md:hidden"
-              style={{
-                bottom: 'max(1rem, env(safe-area-inset-bottom, 0))',
-              }}
-            >
-              {images.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleImageChange(index)}
-                  className={`h-2 shrink-0 rounded-full transition-all ${
-                    selectedIndex === index ? 'w-8 bg-yellow-500' : 'w-2 bg-white/40 hover:bg-white/60'
-                  }`}
-                  aria-label={`Ir para imagem ${index + 1}`}
-                  aria-current={selectedIndex === index ? 'true' : 'false'}
-                  style={{ minWidth: '8px', minHeight: '8px' }}
-                />
-              ))}
-            </div>
-          )}
+            {/* Navegação por miniaturas (mobile landscape) */}
+            {images.length > 1 && (
+              <div
+                className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 overflow-x-auto px-4 md:hidden"
+                style={{
+                  bottom: 'max(1rem, env(safe-area-inset-bottom, 0))',
+                }}
+              >
+                {images.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleImageChange(index)}
+                    className={`h-2 shrink-0 rounded-full transition-all ${
+                      selectedIndex === index
+                        ? 'w-8 bg-yellow-500'
+                        : 'w-2 bg-white/40 hover:bg-white/60'
+                    }`}
+                    aria-label={`Ir para imagem ${index + 1}`}
+                    aria-current={selectedIndex === index ? 'true' : 'false'}
+                    style={{ minWidth: '8px', minHeight: '8px' }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
