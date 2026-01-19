@@ -126,22 +126,19 @@ function ImageGalleryWithZoomComponent({
   const triggerRef = useRef<HTMLElement | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
 
-  // Preload imagens adjacentes (performance)
+  // Preload imagens adjacentes (performance) - usa Image() para evitar warning de preload não utilizado
   useEffect(() => {
     if (!showFullscreen) return
 
-    const imagesToPreload = [
+    // Preload apenas imagens adjacentes que ainda não foram carregadas
+    const adjacentImages = [
       images[selectedIndex - 1],
-      images[selectedIndex],
       images[selectedIndex + 1],
     ].filter(Boolean)
 
-    imagesToPreload.forEach((src) => {
-      const link = document.createElement('link')
-      link.rel = 'preload'
-      link.as = 'image'
-      link.href = src
-      document.head.appendChild(link)
+    adjacentImages.forEach((src) => {
+      const img = new Image()
+      img.src = src
     })
   }, [selectedIndex, images, showFullscreen])
 

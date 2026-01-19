@@ -163,30 +163,20 @@ export function ProdutoPageClient({ slug }: { slug: string }) {
         logger.warn('Não foi possível contabilizar a visualização do produto:', incrementError)
       }
 
-      // Preload de TODAS as imagens para garantir transições instantâneas
-      if (produtoData.fotos && produtoData.fotos.length > 0) {
-        // Primeira imagem: preload de alta prioridade
-        const link = document.createElement('link')
-        link.rel = 'preload'
-        link.as = 'image'
-        link.href = produtoData.fotos[0]
-        document.head.appendChild(link)
-
-        // Todas as outras imagens: preload em background
-        // Isso garante que ao trocar de foto não há delay
-        if (produtoData.fotos.length > 1) {
-          produtoData.fotos.slice(1).forEach((fotoUrl, index) => {
-            const img = new Image()
-            img.src = fotoUrl
-            // Opcional: adicionar onload para debug
-            if (process.env.NODE_ENV === 'development') {
-              img.onload = () => logger.log(`[Performance] Imagem ${index + 2} carregada`)
-            }
-          })
-          logger.log(
-            `[Performance] Preload de ${produtoData.fotos.length - 1} imagens adicionais iniciado`
-          )
-        }
+      // Preload das imagens adicionais para garantir transições instantâneas na galeria
+      // A primeira imagem já é carregada pelo Next.js Image com priority
+      if (produtoData.fotos && produtoData.fotos.length > 1) {
+        produtoData.fotos.slice(1).forEach((fotoUrl, index) => {
+          const img = new Image()
+          img.src = fotoUrl
+          // Opcional: adicionar onload para debug
+          if (process.env.NODE_ENV === 'development') {
+            img.onload = () => logger.log(`[Performance] Imagem ${index + 2} carregada`)
+          }
+        })
+        logger.log(
+          `[Performance] Preload de ${produtoData.fotos.length - 1} imagens adicionais iniciado`
+        )
       }
 
       // Buscar configuração da calculadora de parcelas

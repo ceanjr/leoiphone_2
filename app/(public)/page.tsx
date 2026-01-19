@@ -15,7 +15,7 @@ import { ProductsByCategorySkeleton } from '@/components/shared/loading-skeleton
 import {
   BuscaForm,
   ViewToggle,
-  VerMaisButton,
+  InfiniteScrollTrigger,
   CategoriaFilterBar,
   ProdutosPorCategoria,
 } from '@/components/public/home'
@@ -191,10 +191,11 @@ function HomePageContent() {
               returnParams={returnParams}
             />
 
-            <VerMaisButton
-              onClick={carregarMais}
+            <InfiniteScrollTrigger
+              onLoadMore={carregarMais}
               loading={loadingMore}
-              temMaisProdutos={temMaisProdutos}
+              hasMore={temMaisProdutos}
+              threshold={200}
             />
           </>
         ) : (
