@@ -138,6 +138,12 @@ export default function DashboardPage() {
     })
   }
 
+  // Nome do mês atual capitalizado (ex: "Janeiro") - deve estar antes de qualquer return condicional
+  const currentMonthName = useMemo(() => {
+    const monthName = format(new Date(), 'MMMM', { locale: ptBR })
+    return monthName.charAt(0).toUpperCase() + monthName.slice(1)
+  }, [])
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center p-6">
@@ -152,12 +158,6 @@ export default function DashboardPage() {
   }
 
   const displayVisitors = period === 'today' ? stats.visitantesHoje : stats.visitantesMes
-
-  // Nome do mês atual capitalizado (ex: "Janeiro")
-  const currentMonthName = useMemo(() => {
-    const monthName = format(new Date(), 'MMMM', { locale: ptBR })
-    return monthName.charAt(0).toUpperCase() + monthName.slice(1)
-  }, [])
 
   const isProduction =
     typeof window !== 'undefined' &&
