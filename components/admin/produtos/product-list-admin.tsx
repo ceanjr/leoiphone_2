@@ -285,32 +285,26 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
       const slugName = product.slug || product.nome.toLowerCase().replace(/\s+/g, '-')
 
-      if (isMobile) {
-        // Mobile: download individual de cada foto
-        for (let i = 0; i < fotos.length; i++) {
-          const response = await fetch(fotos[i])
+      // Baixar todas as imagens como blobs
+      const imageFiles: File[] = await Promise.all(
+        fotos.map(async (fotoUrl, index) => {
+          const response = await fetch(fotoUrl)
           const blob = await response.blob()
           const extension = blob.type.split('/')[1] || 'jpg'
-          const fileName = `${slugName}-${i + 1}.${extension}`
+          const fileName = `${slugName}-${index + 1}.${extension}`
+          return new File([blob], fileName, { type: blob.type })
+        })
+      )
 
-          // Criar link temporário para download
-          const url = window.URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = fileName
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          window.URL.revokeObjectURL(url)
-
-          // Pequena pausa entre downloads para evitar bloqueio
-          if (i < fotos.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500))
-          }
-        }
-        toast.success(`${fotos.length} foto(s) baixada(s)`)
+      if (isMobile && navigator.share && navigator.canShare?.({ files: imageFiles })) {
+        // Mobile: usar Web Share API para compartilhar/salvar na galeria
+        await navigator.share({
+          files: imageFiles,
+          title: `Fotos - ${product.nome}`,
+        })
+        toast.success(`${fotos.length} foto(s) compartilhada(s)`)
       } else {
-        // Desktop: criar ZIP com todas as fotos
+        // Desktop ou fallback: criar ZIP com todas as fotos
         const zip = new JSZip()
         const folder = zip.folder(slugName)
 
@@ -318,15 +312,9 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
           throw new Error('Erro ao criar pasta no ZIP')
         }
 
-        // Baixar todas as imagens e adicionar ao ZIP
-        await Promise.all(
-          fotos.map(async (fotoUrl, index) => {
-            const response = await fetch(fotoUrl)
-            const blob = await response.blob()
-            const extension = blob.type.split('/')[1] || 'jpg'
-            folder.file(`${slugName}-${index + 1}.${extension}`, blob)
-          })
-        )
+        imageFiles.forEach((file) => {
+          folder.file(file.name, file)
+        })
 
         // Gerar e baixar o ZIP
         const zipBlob = await zip.generateAsync({ type: 'blob' })
@@ -334,6 +322,10 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
         toast.success(`ZIP com ${fotos.length} foto(s) baixado`)
       }
     } catch (error) {
+      // Se o usuário cancelar o share, não mostrar erro
+      if (error instanceof Error && error.name === 'AbortError') {
+        return
+      }
       console.error('Erro ao baixar fotos:', error)
       toast.error('Erro ao baixar fotos')
     } finally {
@@ -446,7 +438,9 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                     {product.condicao === 'novo' ? (
                       <Badge className="bg-green-600 px-2 py-0.5 text-xs text-white">Novo</Badge>
                     ) : product.condicao === 'seminovo' ? (
-                      <Badge className="bg-amber-600 px-2 py-0.5 text-xs text-white">Seminovo</Badge>
+                      <Badge className="bg-amber-600 px-2 py-0.5 text-xs text-white">
+                        Seminovo
+                      </Badge>
                     ) : (
                       <span className="text-zinc-500">-</span>
                     )}
@@ -707,6 +701,19 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                 )}
               </button>
 
+              <button
+                onClick={() => handleDownloadPhotos(product)}
+                disabled={downloadingPhotos === product.id || !product.fotos?.length}
+                className="flex items-center gap-1 rounded-md bg-blue-500/10 px-3 py-2 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                title="Baixar Fotos"
+              >
+                {downloadingPhotos === product.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+              </button>
+
               {/* Edit, Photos and Delete Buttons */}
               <div className="flex items-center gap-2">
                 <Link
@@ -716,20 +723,6 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                   <Edit className="h-4 w-4" />
                   Editar
                 </Link>
-
-                <button
-                  onClick={() => handleDownloadPhotos(product)}
-                  disabled={downloadingPhotos === product.id || !product.fotos?.length}
-                  className="flex items-center gap-1 rounded-md bg-blue-500/10 px-3 py-2 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Baixar Fotos"
-                >
-                  {downloadingPhotos === product.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
-                  )}
-                  Fotos
-                </button>
 
                 <button
                   onClick={() => openDeleteDialog(product.id, product.nome)}
