@@ -1,12 +1,14 @@
 'use client'
 import { logger } from '@/lib/utils/logger'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import { Package, Eye, RefreshCw, Users, Activity } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 interface ProdutoView {
   id: string
@@ -151,6 +153,12 @@ export default function DashboardPage() {
 
   const displayVisitors = period === 'today' ? stats.visitantesHoje : stats.visitantesMes
 
+  // Nome do mês atual capitalizado (ex: "Janeiro")
+  const currentMonthName = useMemo(() => {
+    const monthName = format(new Date(), 'MMMM', { locale: ptBR })
+    return monthName.charAt(0).toUpperCase() + monthName.slice(1)
+  }, [])
+
   const isProduction =
     typeof window !== 'undefined' &&
     (window.location.hostname.includes('leoiphone.com.br') ||
@@ -218,12 +226,12 @@ export default function DashboardPage() {
                   onClick={() => setPeriod('month')}
                   className="h-7 px-2 text-xs"
                 >
-                  Mês
+                  {currentMonthName}
                 </Button>
               </div>
             </div>
             <p className="mt-1 text-xs text-zinc-500">
-              {period === 'today' ? 'Últimas 24h' : 'Últimos 30 dias'}
+              {period === 'today' ? 'Desde 00:00' : `Mês de ${currentMonthName}`}
             </p>
           </CardContent>
         </Card>
