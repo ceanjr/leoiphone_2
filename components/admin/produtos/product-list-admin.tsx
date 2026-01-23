@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Edit, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Edit, Trash2, Eye, EyeOff, Download, Loader2 } from 'lucide-react'
+import JSZip from 'jszip'
+import { saveAs } from 'file-saver'
 import { toast } from 'sonner'
 import { deleteProduto, toggleProdutoAtivo, updateProdutoPreco } from '@/app/admin/produtos/actions'
 import type { ProdutoComCategoria } from '@/types/produto'
@@ -177,6 +179,7 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
   const [editingPriceMobile, setEditingPriceMobile] = useState<string | null>(null)
   const [mobilePriceValue, setMobilePriceValue] = useState('')
   const [updatingPrice, setUpdatingPrice] = useState(false)
+  const [downloadingPhotos, setDownloadingPhotos] = useState<string | null>(null)
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -267,6 +270,77 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
     }
   }
 
+  // Função para baixar fotos do produto
+  const handleDownloadPhotos = async (product: ProdutoComCategoria) => {
+    const fotos = product.fotos || []
+
+    if (fotos.length === 0) {
+      toast.error('Este produto não possui fotos')
+      return
+    }
+
+    setDownloadingPhotos(product.id)
+
+    try {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      const slugName = product.slug || product.nome.toLowerCase().replace(/\s+/g, '-')
+
+      if (isMobile) {
+        // Mobile: download individual de cada foto
+        for (let i = 0; i < fotos.length; i++) {
+          const response = await fetch(fotos[i])
+          const blob = await response.blob()
+          const extension = blob.type.split('/')[1] || 'jpg'
+          const fileName = `${slugName}-${i + 1}.${extension}`
+
+          // Criar link temporário para download
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = fileName
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+
+          // Pequena pausa entre downloads para evitar bloqueio
+          if (i < fotos.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+          }
+        }
+        toast.success(`${fotos.length} foto(s) baixada(s)`)
+      } else {
+        // Desktop: criar ZIP com todas as fotos
+        const zip = new JSZip()
+        const folder = zip.folder(slugName)
+
+        if (!folder) {
+          throw new Error('Erro ao criar pasta no ZIP')
+        }
+
+        // Baixar todas as imagens e adicionar ao ZIP
+        await Promise.all(
+          fotos.map(async (fotoUrl, index) => {
+            const response = await fetch(fotoUrl)
+            const blob = await response.blob()
+            const extension = blob.type.split('/')[1] || 'jpg'
+            folder.file(`${slugName}-${index + 1}.${extension}`, blob)
+          })
+        )
+
+        // Gerar e baixar o ZIP
+        const zipBlob = await zip.generateAsync({ type: 'blob' })
+        saveAs(zipBlob, `${slugName}-fotos.zip`)
+        toast.success(`ZIP com ${fotos.length} foto(s) baixado`)
+      }
+    } catch (error) {
+      console.error('Erro ao baixar fotos:', error)
+      toast.error('Erro ao baixar fotos')
+    } finally {
+      setDownloadingPhotos(null)
+    }
+  }
+
   if (products.length === 0) {
     return (
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-12 text-center">
@@ -288,6 +362,15 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-400 uppercase">
                   Nome
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-400 uppercase">
+                  Cor
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-400 uppercase">
+                  Bateria
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-400 uppercase">
+                  Estado
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-400 uppercase">
                   Preço{' '}
@@ -326,6 +409,47 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                       </Link>
                       <p className="text-xs text-zinc-500">{product.categoria?.nome || '-'}</p>
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {(() => {
+                      const cores = getCoresFromProduct(product)
+                      if (cores.length === 0) return <span className="text-zinc-500">-</span>
+                      return (
+                        <div className="flex flex-wrap gap-1">
+                          {cores.map((cor, index) => (
+                            <Badge
+                              key={index}
+                              className="px-2 py-0.5 text-xs"
+                              style={{
+                                backgroundColor: cor.hex,
+                                color: getContrastColor(cor.hex),
+                              }}
+                            >
+                              {cor.nome}
+                            </Badge>
+                          ))}
+                        </div>
+                      )
+                    })()}
+                  </td>
+                  <td className="px-4 py-3">
+                    {product.nivel_bateria ? (
+                      <div className="flex items-center gap-1.5">
+                        <BatteryIcon level={product.nivel_bateria} />
+                        <span className="text-sm text-zinc-300">{product.nivel_bateria}%</span>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-500">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {product.condicao === 'novo' ? (
+                      <Badge className="bg-green-600 px-2 py-0.5 text-xs text-white">Novo</Badge>
+                    ) : product.condicao === 'seminovo' ? (
+                      <Badge className="bg-amber-600 px-2 py-0.5 text-xs text-white">Seminovo</Badge>
+                    ) : (
+                      <span className="text-zinc-500">-</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {/* Edição inline de preço no desktop */}
@@ -415,6 +539,18 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                       >
                         <Edit className="h-4 w-4" />
                       </Link>
+                      <button
+                        onClick={() => handleDownloadPhotos(product)}
+                        disabled={downloadingPhotos === product.id || !product.fotos?.length}
+                        className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-blue-500/10 hover:text-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="Baixar Fotos"
+                      >
+                        {downloadingPhotos === product.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4" />
+                        )}
+                      </button>
                       <button
                         onClick={() => openDeleteDialog(product.id, product.nome)}
                         disabled={deleting === product.id}
@@ -571,7 +707,7 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                 )}
               </button>
 
-              {/* Edit and Delete Buttons */}
+              {/* Edit, Photos and Delete Buttons */}
               <div className="flex items-center gap-2">
                 <Link
                   href={`/admin/produtos/${product.id}/editar`}
@@ -580,6 +716,20 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                   <Edit className="h-4 w-4" />
                   Editar
                 </Link>
+
+                <button
+                  onClick={() => handleDownloadPhotos(product)}
+                  disabled={downloadingPhotos === product.id || !product.fotos?.length}
+                  className="flex items-center gap-1 rounded-md bg-blue-500/10 px-3 py-2 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Baixar Fotos"
+                >
+                  {downloadingPhotos === product.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  Fotos
+                </button>
 
                 <button
                   onClick={() => openDeleteDialog(product.id, product.nome)}
