@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Edit, Trash2, Eye, EyeOff, Download, Loader2 } from 'lucide-react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
@@ -167,6 +167,7 @@ function getCoresFromProduct(product: ProdutoComCategoria) {
 
 export function ProductListAdmin({ products, onProductDeleted }: ProductListAdminProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [deleting, setDeleting] = useState<string | null>(null)
   const [toggling, setToggling] = useState<string | null>(null)
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; id: string; nome: string }>({
@@ -186,6 +187,17 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
       style: 'currency',
       currency: 'BRL',
     }).format(price)
+  }
+
+  // Gerar URL de edição preservando filtros atuais
+  const getEditUrl = (productId: string) => {
+    const categoria = searchParams?.get('categoria')
+    const status = searchParams?.get('status')
+    const params = new URLSearchParams()
+    if (categoria) params.set('categoria', categoria)
+    if (status) params.set('status', status)
+    const query = params.toString()
+    return `/admin/produtos/${productId}/editar${query ? `?${query}` : ''}`
   }
 
   const handleDelete = async () => {
@@ -356,6 +368,9 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                   Nome
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-400 uppercase">
+                  Descrição
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-400 uppercase">
                   Cor
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-zinc-400 uppercase">
@@ -401,6 +416,15 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                       </Link>
                       <p className="text-xs text-zinc-500">{product.categoria?.nome || '-'}</p>
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {product.descricao ? (
+                      <p className="max-w-[200px] truncate text-sm text-zinc-400" title={product.descricao}>
+                        {product.descricao}
+                      </p>
+                    ) : (
+                      <span className="text-zinc-500">-</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {(() => {
@@ -527,7 +551,7 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <Link
-                        href={`/admin/produtos/${product.id}/editar`}
+                        href={getEditUrl(product.id)}
                         className="rounded-md p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-yellow-400"
                         title="Editar"
                       >
@@ -586,6 +610,11 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
               >
                 <span className="line-clamp-2">{product.nome}</span>
               </Link>
+
+              {/* Descrição do produto */}
+              {product.descricao && (
+                <p className="mt-1 line-clamp-2 text-sm text-zinc-400">{product.descricao}</p>
+              )}
 
               {/* Badges de Cor, Bateria e Condição */}
               {(() => {
@@ -717,7 +746,7 @@ export function ProductListAdmin({ products, onProductDeleted }: ProductListAdmi
               {/* Edit, Photos and Delete Buttons */}
               <div className="flex items-center gap-2">
                 <Link
-                  href={`/admin/produtos/${product.id}/editar`}
+                  href={getEditUrl(product.id)}
                   className="flex items-center gap-1 rounded-md bg-yellow-500/10 px-3 py-2 text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
                 >
                   <Edit className="h-4 w-4" />

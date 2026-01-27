@@ -36,6 +36,7 @@ interface Categoria {
 interface ProductFormProps {
   product?: ProdutoComCategoria
   categories: Categoria[]
+  returnUrl?: string
 }
 
 const getEmptyForm = (): Partial<ProdutoFormData> => ({
@@ -54,7 +55,7 @@ const getEmptyForm = (): Partial<ProdutoFormData> => ({
   estoque: 1,
 })
 
-export function ProductForm({ product, categories }: ProductFormProps) {
+export function ProductForm({ product, categories, returnUrl = '/admin/produtos' }: ProductFormProps) {
   const router = useRouter()
   const isEditing = !!product
 
@@ -187,7 +188,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
   const confirmCancel = () => {
     setShowCancelDialog(false)
-    router.push('/admin/produtos')
+    router.push(returnUrl)
   }
 
   // Função para extrair publicId de uma URL do Cloudinary
@@ -332,8 +333,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
         removedImagesRef.current = []
       }
 
-      // Redirecionar para a lista de produtos
-      router.push('/admin/produtos')
+      // Redirecionar para a lista de produtos (preservando filtros)
+      router.push(returnUrl)
     } catch (error) {
       logger.error('Erro ao salvar produto:', error)
       toast.error('Erro inesperado ao salvar o produto')
