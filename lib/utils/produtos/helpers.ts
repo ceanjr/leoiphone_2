@@ -88,8 +88,8 @@ export function ordenarProdutosPorModelo<T extends Produto>(produtos: T[]): T[] 
       }
     }
 
-    // Se não conseguiu ordenar por capacidade ou são iguais, ordenar alfabeticamente
-    return a.nome.localeCompare(b.nome)
+    // Se não conseguiu ordenar por capacidade ou são iguais, ordenar por preço (menor primeiro)
+    return a.preco - b.preco
   })
 }
 

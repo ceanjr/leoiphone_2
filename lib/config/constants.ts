@@ -48,7 +48,7 @@ export const ORDEM_MODELOS = [
 /**
  * Ordem de capacidades de armazenamento
  */
-export const ORDEM_CAPACIDADES = ['64GB', '128GB', '256GB', '512GB', '1TB', '2TB'] as const
+export const ORDEM_CAPACIDADES = ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB', '2TB'] as const
 
 /**
  * Intervalos de polling (em milissegundos)
