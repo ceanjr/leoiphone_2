@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { WhatsAppContactButton } from '@/components/shared/whatsapp-contact-button'
-import { CalculadoraTaxasDialog } from '@/components/public/calculadora/calculadora-taxas-dialog'
 import { useAuth } from '@/hooks/use-auth'
 import { usePollingTaxas } from '@/hooks/use-polling-taxas'
 import type { TaxasConfig } from '@/lib/validations/taxas'
@@ -22,12 +21,10 @@ import logoImage from '@/public/images/logo.png'
 
 export function PublicHeader() {
   const { isAuthenticated, loading } = useAuth()
-  const [calculadoraOpen, setCalculadoraOpen] = useState(false)
   const [whatsappOpen, setWhatsappOpen] = useState(false)
-  const [calculadoraAtiva, setCalculadoraAtiva] = useState(true) // Assume ativo por padrão
+  const [calculadoraAtiva, setCalculadoraAtiva] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Polling: verificar se calculadora está ativa
   const handleTaxasUpdate = useCallback((config: { ativo: boolean; taxas: TaxasConfig }) => {
     setCalculadoraAtiva(config.ativo)
   }, [])
@@ -42,7 +39,7 @@ export function PublicHeader() {
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/80">
       <div className="container mx-auto px-4">
         <div className="flex h-14 items-center justify-between gap-3 sm:h-16">
-          {/* Logo - Using static import for better caching */}
+          {/* Logo */}
           <Link href="/" className="flex flex-shrink-0 items-center">
             <div className="relative h-8 w-24 sm:h-10 sm:w-32">
               <Image
@@ -56,10 +53,9 @@ export function PublicHeader() {
             </div>
           </Link>
 
-          {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Desktop Actions - hidden on mobile */}
+          {/* Desktop Actions */}
           <div className="hidden items-center gap-3 sm:flex">
             <WhatsAppContactButton
               className="min-h-[44px] bg-[var(--brand-yellow)] font-medium text-[var(--brand-black)] hover:bg-[var(--brand-yellow)]/90"
@@ -67,7 +63,14 @@ export function PublicHeader() {
               message="Olá, vim do catálogo do Léo iPhone."
             />
 
-            {calculadoraAtiva && <CalculadoraTaxasDialog triggerClassName="min-h-[44px]" />}
+            {calculadoraAtiva && (
+              <Button asChild variant="outline" className="min-h-[44px]">
+                <Link href="/calculadora">
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Calculadora de Taxas
+                </Link>
+              </Button>
+            )}
 
             {!loading && (
               <Button asChild variant="outline" className="min-h-[44px]">
@@ -78,27 +81,26 @@ export function PublicHeader() {
             )}
           </div>
 
-          {/* Mobile Menu - visible only on mobile */}
+          {/* Mobile Menu */}
           <div className="flex sm:hidden">
             <DropdownMenu onOpenChange={setMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="group rounded-mdtext-zinc-300 flex min-h-[38px] min-w-[38px] flex-col items-center justify-center gap-[5px] transition-colors hover:text-white active:text-[var(--brand-yellow)]"
+                  className="group rounded-md text-zinc-300 flex min-h-[38px] min-w-[38px] flex-col items-center justify-center gap-[5px] transition-colors hover:text-white active:text-[var(--brand-yellow)]"
                   aria-label="Menu"
                 >
-                  {/* Animated hamburger icon */}
                   <span
-                    className={`block h-[2px] w-6 rounded-full bg-current text-(--brand-yellow) transition-all duration-300 ${
+                    className={`block h-[2px] w-6 rounded-full bg-current transition-all duration-300 ${
                       menuOpen ? 'translate-y-[7px] rotate-45' : ''
                     }`}
                   />
                   <span
-                    className={`block h-[2px] w-6 rounded-full bg-current text-(--brand-yellow) transition-all duration-300 ${
+                    className={`block h-[2px] w-6 rounded-full bg-current transition-all duration-300 ${
                       menuOpen ? 'opacity-0' : ''
                     }`}
                   />
                   <span
-                    className={`block h-[2px] w-6 rounded-full bg-current text-(--brand-yellow) transition-all duration-300 ${
+                    className={`block h-[2px] w-6 rounded-full bg-current transition-all duration-300 ${
                       menuOpen ? '-translate-y-[7px] -rotate-45' : ''
                     }`}
                   />
@@ -129,19 +131,18 @@ export function PublicHeader() {
                   </div>
                 </DropdownMenuItem>
 
-                {/* Calculadora */}
+                {/* Calculadora - agora como link */}
                 {calculadoraAtiva && (
-                  <DropdownMenuItem
-                    className="min-h-[44px] cursor-pointer gap-3"
-                    onClick={() => setCalculadoraOpen(true)}
-                  >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10">
-                      <Calculator className="h-4 w-4 text-blue-400" />
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-medium">Calculadora</span>
-                      <span className="text-xs text-zinc-500">Simule parcelas</span>
-                    </div>
+                  <DropdownMenuItem className="min-h-[44px] cursor-pointer gap-3" asChild>
+                    <Link href="/calculadora">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10">
+                        <Calculator className="h-4 w-4 text-blue-400" />
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium">Calculadora</span>
+                        <span className="text-xs text-zinc-500">Simule parcelas</span>
+                      </div>
+                    </Link>
                   </DropdownMenuItem>
                 )}
 
@@ -169,7 +170,7 @@ export function PublicHeader() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Dialogs controlados externamente */}
+            {/* Dialog do WhatsApp controlado externamente */}
             <div className="hidden">
               <WhatsAppContactButton
                 open={whatsappOpen}
@@ -178,11 +179,6 @@ export function PublicHeader() {
                 className="hidden"
                 label="WhatsApp"
                 message="Olá, vim do catálogo do Léo iPhone."
-              />
-              <CalculadoraTaxasDialog
-                open={calculadoraOpen}
-                onOpenChange={setCalculadoraOpen}
-                triggerClassName="hidden"
               />
             </div>
           </div>

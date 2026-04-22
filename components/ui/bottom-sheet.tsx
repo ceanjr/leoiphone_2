@@ -206,7 +206,7 @@ const BottomSheetContent = React.forwardRef<
 
         {/* Desktop: Botão fechar */}
         {!isMobile && (
-          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm text-white opacity-70 ring-offset-black transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#ffcc00] focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-[#0d0d0d]">
+          <DialogPrimitive.Close className="absolute z-10 right-4 top-4 rounded-sm text-white opacity-70 ring-offset-black transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[#ffcc00] focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-[#0d0d0d]">
             <X className="h-4 w-4" />
             <span className="sr-only">Fechar</span>
           </DialogPrimitive.Close>
